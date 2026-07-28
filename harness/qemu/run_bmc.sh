@@ -16,10 +16,17 @@ TARGET="${1:-bletchley}"
 #              w25q01jvq device requires 134217728 bytes,
 #              mtd0 block backend provides 58610688 bytes
 #            這等同於真實燒錄時，燒錄器把剩餘空間留空。
+#
+#            每塊板子的晶片型號不同，容量也不同：
+#              bletchley-bmc  w25q01jv     128 MiB
+#              gb200nvl-bmc   mx66u51235f   64 MiB
+#              romulus-bmc    (AST2500)     32 MiB
+#            填錯的話 QEMU 一樣會拒絕啟動，而且錯誤訊息裡的
+#            "requires N bytes" 就是正確答案 —— 照著填即可。
 case "${TARGET}" in
   bletchley|bletchley15) MACHINE="${QEMU_MACHINE:-bletchley-bmc}" ; FLASH_MB="${FLASH_MB:-128}" ;;
   catalina)              MACHINE="${QEMU_MACHINE:-catalina-bmc}"  ; FLASH_MB="${FLASH_MB:-128}" ;;
-  gb200nvl-obmc)         MACHINE="${QEMU_MACHINE:-gb200nvl-bmc}"  ; FLASH_MB="${FLASH_MB:-128}" ;;
+  gb200nvl-obmc)         MACHINE="${QEMU_MACHINE:-gb200nvl-bmc}"  ; FLASH_MB="${FLASH_MB:-64}"  ;;
   romulus)               MACHINE="${QEMU_MACHINE:-romulus-bmc}"   ; FLASH_MB="${FLASH_MB:-32}"  ;;
   *)                     MACHINE="${QEMU_MACHINE:-ast2600-evb}"   ; FLASH_MB="${FLASH_MB:-128}" ;;
 esac

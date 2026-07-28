@@ -180,3 +180,38 @@
 - **其他影響後續設計的量測**:`/` 是唯讀(`rootfs ro`),`/etc` 與 `/var` 是
   overlay 可寫,`/usr/share` 唯讀 → 設定必須放 `/etc` 並用 systemd drop-in 指過去。
   開機耗時 **149.7 秒**(QEMU 上,非真實硬體)。
+
+## 2026-07-28(W1 D5 續)我自己踩了一次同樣的坑,方向相反
+
+- **現象**:開 `gb200nvl-obmc` 時 QEMU 又拒絕啟動,但數字反過來:
+  ```
+  mx66u51235f device requires 67108864 bytes,
+  mtd0 block backend provides 134217728 bytes
+  ```
+- **根因**:我在 `run_bmc.sh` 的 `case` 裡把 `gb200nvl-obmc` 的 `FLASH_MB` 預設
+  成 128,**是照 bletchley 抄的**。但 `gb200nvl-bmc` 用的是 `mx66u51235f`
+  (512 Mbit = **64 MiB**),不是 `w25q01jv`(1 Gbit = 128 MiB)。補過頭了。
+- **教訓(兩層)**:
+  1. 表面教訓:每塊板子的 flash 型號不同,容量要一顆一顆查。
+     現在 `run_bmc.sh` 的註解裡列了三顆的容量,並寫明「錯誤訊息裡的
+     `requires N bytes` 就是正確答案」。
+  2. **真正的教訓:我把「一個平台的觀察」當成「所有平台的通則」了。**
+     這跟我在 D2 批評參考資料的錯誤是**同一種錯誤**——它把 anacapa 的映像狀態
+     當成 QEMU 的機型狀態。**指出別人的推理錯誤,不代表自己不會犯同一種錯。**
+- **附帶收穫**:設計本身是對的。因為 `FLASH_MB` 一開始就跟 `MACHINE` 放在同一個
+  `case` 分支裡,修正只需要改一個數字;如果當初寫成全域常數,就要重構。
+  **把「會因平台而異」的東西放在一起,是這次唯一做對的決定。**
+
+## 2026-07-28(W1 D5 續)現場確認 gb200nvl-obmc 沒有 swampd
+
+- 從 manifest 推論(D4)→ 實際開機驗證(D5),證據鏈接上:
+  ```
+  OPENBMC_TARGET_MACHINE="gb200nvl-obmc"
+  ls: /usr/bin/swampd: No such file or directory
+  Unit phosphor-pid-control.service could not be found.
+  bmcweb: active        ← 機器本身開得起來,單純就是沒有這個套件
+  ```
+- **為什麼要多做這一步**:manifest 是**間接證據**(套件清單),開機是**直接證據**
+  (檔案系統)。兩者一致才能說「我確認過」;如果不一致,那本身就是更值得追的事。
+- 保留 `bmcweb: active` 這一行是刻意的——它排除了「機器根本開不起來」這個
+  混淆因素,證明缺的就只是 `phosphor-pid-control`。
