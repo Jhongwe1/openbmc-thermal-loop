@@ -1,0 +1,37 @@
+# ── 個人計畫文件,不公開 ───────────────────────────
+plan/
+archive/
+
+# ── 建置產物 ───────────────────────────────────────
+build/
+builddir/
+*.o
+*.a
+*.so
+
+# ── Python ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# ── QEMU 映像(數百 MB,不進 git) ──────────────────
+images/
+*.mtd
+
+# ── meson subprojects:只留 .wrap,不收上游原始碼 ──
+subprojects/*/
+!subprojects/*.wrap
+
+# ── 編輯器 / OS ───────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ⚠️ 刻意「不」忽略的東西(別手癢加進來):
+#   bench/data/*.csv  ← 原始量測數據是「證據」,必須進 git
+#   figures/*.png     ← 六張圖是交付物
+
+# ── 私人複習紀錄(答錯的紀錄,先不公開) ──────────
+study/

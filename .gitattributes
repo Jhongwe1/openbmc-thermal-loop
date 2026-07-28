@@ -1,0 +1,4 @@
+# 一律用 LF 存進 repo,避免任何人在 Windows clone 後 shell script 掛掉
+* text=auto eol=lf
+*.png binary
+*.jpg binary
