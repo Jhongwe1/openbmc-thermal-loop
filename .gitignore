@@ -15,8 +15,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# ── QEMU 映像(數百 MB,不進 git) ──────────────────
-images/
+# ── QEMU 映像(數百 MB,不進 git),但 manifest 是證據要留 ──
+images/**
+# 下一行先把「目錄」重新納入,否則 manifest 的例外不會生效
+# (git 規則:父目錄被排除後,裡面的檔案無法用 ! 救回來)
+!images/**/
+!images/**/*.manifest
 *.mtd
 
 # ── meson subprojects:只留 .wrap,不收上游原始碼 ──

@@ -11,10 +11,18 @@
 
 ## 目標平台
 
-主線 `bletchley`，備援 `anacapa`。
-**此選擇待 `harness/qemu/platform_matrix.sh` 掃描 Jenkins target 後確認**
-（見 `docs/platform-matrix.md`）——選平台的依據是該 target 的映像裡是否
-實際含有 `phosphor-pid-control`，不是猜的。
+主線 **`bletchley`**（QEMU `bletchley-bmc`），備援 **`catalina`**（QEMU `catalina-bmc`）。
+兩台都是 AST2600 / Cortex-A7。
+
+此選擇來自 `harness/qemu/platform_matrix.sh` 對 19 個 Jenkins target 的實測掃描
+（見 [`docs/platform-matrix.md`](docs/platform-matrix.md)）——依據是三個條件的交集：
+
+```
+{ Jenkins 有出映像 } ∩ { QEMU 有 machine model } ∩ { 映像含 phosphor-pid-control }
+```
+
+`romulus` 與 `gb200nvl-obmc` 明確排除：manifest 顯示它們**沒有**
+`phosphor-pid-control`。這一步是查證，不是試錯。
 
 ## 架構
 
