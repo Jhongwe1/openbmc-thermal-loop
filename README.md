@@ -3,7 +3,8 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中（2026-07 起）。目前進度：開發環境落地，Gate 0 進行中。
+> 🚧 進行中（2026-07 起）。目前進度：**Gate 0 環境就緒**——
+> `bletchley` 在 QEMU 上開機、SSH 與 Redfish 皆通、`swampd` 執行中。
 
 ## 為什麼做這個
 
@@ -30,8 +31,10 @@
 
 ## 現況
 
-- [ ] Gate 0　環境就緒　　　　　　　← 進行中
-- [ ] Gate 1　端到端可觀測
+- [x] Gate 0　環境就緒　　　　　　　← [env-baseline.md](docs/env-baseline.md)
+- [ ] Gate 1　端到端可觀測　　　　　← 進行中：swampd 目前回報
+      `No fan zones, application pausing until new configuration`，
+      任務是給它一份設定
 - [ ] Gate 2　被控對象 + 跨層追蹤
 - [ ] Gate 3　控制器與量測
 - [ ] Gate 4　失效安全

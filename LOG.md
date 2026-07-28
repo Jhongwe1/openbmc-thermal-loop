@@ -123,3 +123,60 @@
   ——缺席本身也是資訊。
 - **副產物**:`docs/env-baseline.md` 記下 `phosphor-pid-control` 的 git hash
   `c5e59550d3`。W5 的 meson wrap 要釘死它,W7 的圖說明要引用它。
+
+## 2026-07-28(W1 D5 提前)QEMU 拒絕開機:映像大小與模擬晶片容量不符
+
+- **現象**:`./harness/qemu/run_bmc.sh bletchley` 一啟動就死,連 U-Boot 都沒到:
+  ```
+  qemu-system-arm: w25q01jvq device '/machine/unattached/device[17]'
+                   requires 134217728 bytes, mtd0 block backend provides 58610688 bytes
+  ```
+- **假設**:(1) machine 選錯了(該用 `ast2600-evb` 而非 `bletchley-bmc`)
+  (2) 映像下載不完整　(3) 映像大小與模擬的 flash 晶片容量不符
+- **先驗哪個、為什麼**:先驗 (3)。**理由是錯誤訊息本身已經給了兩個數字**——
+  134217728 = 128 MiB,58610688 ≈ 56 MiB,而 `w25q01jv` 是一顆 **1 Gbit = 128 MiB**
+  的 SPI NOR flash。**驗證成本接近零**(查一下型號就知道)。
+  相較之下 (1) 要重跑一輪、(2) 要重新下載並比對雜湊,成本高一個數量級。
+- **驗證方式**:把映像複製一份並 `truncate -s 128M` 補零,再開一次。
+- **根因**:QEMU 模擬的是**一顆實體 SPI flash 晶片**,block backend 的大小必須等於
+  晶片容量。Yocto 產出的 `.static.mtd` 只包含實際用到的部分(56 MiB),
+  尾端未使用的區域沒有寫進檔案。真實燒錄時,燒錄器會把剩餘空間留空——
+  補零就是在做同一件事。
+- **處置**:把補零寫進 `run_bmc.sh`,並讓 `FLASH_MB` 跟著 `MACHINE` 一起放在
+  `case` 裡——**因為晶片容量是「板子」的屬性,不是「映像」的屬性**
+  (AST2500 的 `romulus` 只有 32 MiB)。只在缺檔或原始映像較新時才重建,
+  避免每次開機都複製 128 MB。
+- **教訓**:**錯誤訊息裡的數字要當成線索讀,不要只讀文字。** 這則訊息把答案直接
+  寫在兩個數字的比值裡。另外——模擬器模擬的是**硬體約束**,它會拒絕物理上不可能
+  的組態;這跟軟體錯誤不同,不能靠改參數繞過。
+
+## 2026-07-28(W1 D6 提前)十分鐘體檢:三個腳本 bug,與整個專案的起點
+
+- **現象**:照參考資料寫的 `healthcheck.sh` 有多項輸出是錯誤訊息而非資料。
+- **逐項排查**:
+  1. `head: invalid option -- '3'` → BMC 上的 coreutils 是 **BusyBox v1.38.0**,
+     不是 GNU。BusyBox 的 `head` 不接受 `head -5` 簡寫,必須 `head -n 5`。
+     **跑在 BMC 端的指令全部要檢查一遍。**
+  2. Redfish 的 `Thermal` / `ThermalSubsystem` / `Sensors` 全回 `ResourceNotFound`
+     → 因為腳本把 chassis id 寫死成 `chassis`,但這台的實際 id 是
+     **`Bletchley_Front_Panel_Board`**。改成先 `GET /redfish/v1/Chassis` 取
+     `Members[0]` 再組路徑。**改完之後 `ThermalSubsystem` 就出現了**——
+     原本會誤判成「這個映像沒有新 schema」。
+  3. `systemd-analyze: command not found` → 這個映像沒裝。改用
+     `systemctl show -p FinishTimestampMonotonic`(單位微秒)。
+- **★ 最重要的發現**:
+  ```
+  swampd[1729]: No fan zones, application pausing until new configuration
+  ```
+  `swampd` 有在跑(`systemctl is-active` = active),但它**沒有拿到任何風扇 zone
+  設定**,印完這行就停著等。
+- **這一行同時解釋了另外兩個觀察**:`busctl tree xyz.openbmc_project.State.FanCtrl`
+  底下沒有任何 zone 物件;Redfish 的 Sensors collection 存在但 Members 是空的。
+  **三者是同一件事的三個面向。**
+- **教訓**:「服務有沒有在跑」跟「服務有沒有在工作」是兩個問題。
+  `systemctl is-active` 回 active 只代表行程還活著。
+  **要看它的 journal,才知道它到底在做什麼。**
+  → 所以 Gate 1 的任務不是「讓 swampd 跑起來」,而是**給它一份設定**。
+- **其他影響後續設計的量測**:`/` 是唯讀(`rootfs ro`),`/etc` 與 `/var` 是
+  overlay 可寫,`/usr/share` 唯讀 → 設定必須放 `/etc` 並用 systemd drop-in 指過去。
+  開機耗時 **149.7 秒**(QEMU 上,非真實硬體)。
