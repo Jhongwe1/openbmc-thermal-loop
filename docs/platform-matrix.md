@@ -72,6 +72,74 @@ Ubuntu 24.04 內建的是 QEMU 8.2.2(2024 年初)。實測它**只有** `bletchl
 主線 `bletchley` 用 8.2.2 是跑得動的,但**備援平台會消失**——而 D5 的止損條件正是
 「主線開不起來就換備援」。所以改用 OpenBMC Jenkins 每日建置的 11.0.1。
 
+## ★ OpenBMC 有兩套風扇控制堆疊,不是一套
+
+**「BMC 就是用 PID 控風扇」是錯的。** 上游同時存在兩套彼此獨立的風扇控制實作,
+一個平台裝哪一套(或兩套)取決於它的**血統**,不是取決於技術優劣。
+
+| | `phosphor-pid-control`(swampd) | `phosphor-fan-presence` 底下的 control |
+|---|---|---|
+| 控制範式 | **PID 回授**(串級:熱迴路 1 Hz → 風扇迴路 10 Hz) | **事件驅動**:D-Bus 物件群組 ＋ trigger → action |
+| 設定 | `config.json` 或 entity-manager 的 D-Bus | JSON(YAML 已棄用):fans / zones / events / zone_conditions |
+| 血統 | Google / Intel 路線 | IBM 路線 |
+| 執行檔 | `swampd` | `phosphor-fan-control` |
+
+### 這張矩陣本身就是證據
+
+上表(下一節的掃描結果)提供了三種平台的對照:
+
+| 平台 | `phosphor-pid-control` | `phosphor-fan-control` | 代表什麼 |
+|---|:---:|:---:|---|
+| **`p10bmc`**(IBM Power10) | **—** | ✅ | **只有事件驅動那套,根本沒裝 swampd** |
+| **`romulus`** | **—** | ✅ | 同上(這也是它不能當本專案備援的原因之一) |
+| `gbs`、`evb-npcm845` | ✅ | **—** | 反過來:只有 PID 那套 |
+| **`bletchley`**(本專案主線) | ✅ | ✅ | **兩套都裝** |
+
+**所以選 `bletchley` 不只是「它有 swampd」,而是「它兩套都有,而我要驗的是 PID 那條」。**
+
+### 【驗】執行時期的確認(2026-08-05,不只看 manifest)
+
+manifest 只證明「**裝了**」。開機之後用 `busctl list` 確認**兩套真的都在跑**:
+
+```bash
+ssh -p 2222 root@127.0.0.1 'busctl list --no-pager | grep -iE "fan|thermal"'
+```
+
+實測輸出(節錄,服務名與 D-Bus name 都是穩定的;PID 每次開機會變):
+
+| D-Bus name | systemd unit | 屬於哪一套 |
+|---|---|---|
+| `xyz.openbmc_project.State.FanCtrl` | `phosphor-pid-control.service`(`swampd`) | **PID 回授** |
+| `xyz.openbmc_project.Control.Thermal` | `phosphor-fan-control@0.service` | **事件驅動** |
+| `xyz.openbmc_project.Thermal.Alert` | `phosphor-fan-monitor@0.service` | 事件驅動(風扇故障監測) |
+| — | `phosphor-fan-presence-tach@0.service` | 事件驅動(風扇在位偵測) |
+
+**兩套在同一台機器上同時執行,各自擁有不同的 D-Bus 名稱。**
+
+對應的套件版本(`images/bletchley/image.manifest`):
+
+```
+phosphor-pid-control        armv7ahf-vfpv4d16  0.1+git0+c5e59550d3-r1
+phosphor-fan-control        bletchley          1.0+git0+3fb6d9f474-r1
+phosphor-fan-monitor        bletchley          1.0+git0+3fb6d9f474-r1
+phosphor-fan-presence-tach  bletchley          1.0+git0+3fb6d9f474-r1
+```
+
+> ⚠️ **`phosphor-pid-control` 的 hash `c5e59550d3` 要記住** —— W5 的 meson wrap 要釘它,
+> 否則本機建置的版本與映像裡跑的版本不一致,量到的東西無法宣稱是同一份程式碼。
+
+### 面試講法
+
+> 「OpenBMC 其實有**兩套**風扇控制。`phosphor-pid-control` 是 PID 回授,
+> `phosphor-fan-presence` 底下的 control 是事件驅動的 —— 一組 D-Bus 物件配一組
+> trigger 跟 action。**IBM 的 p10bmc 用後者,我比對 19 個平台的 manifest 時發現
+> 它根本沒裝 swampd**;反過來 `gbs` 只有 swampd 沒有另一套。
+> **所以「BMC 怎麼控風扇」沒有唯一答案,要看平台的血統。**
+> 我選 `bletchley` 是因為它兩套都裝,而我要驗的是 PID 那條 ——
+> 我開機後用 `busctl list` 確認過兩個 daemon 真的都在跑,不只是 manifest 上有。」
+
+---
+
 ## 掃描結果(腳本原始輸出)
 
 | target | phosphor-pid-control | dbus-sensors | entity-manager | phosphor-virtual-sensor | phosphor-fan-control |
