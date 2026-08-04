@@ -14,7 +14,7 @@
 | SSH 金鑰(ed25519)產生並註冊到 Gerrit | **已完成** | 2026-08-04 | fingerprint `SHA256:+vMt3DBvhBz+bm/QKIJiV79IXnxZJQHhY4S4TKcyDL0` |
 | `~/.ssh/config` 設定 `openbmc.gerrit` | **已完成** | 2026-08-04 | Port 29418;`ssh openbmc.gerrit` 回 `Hi Chung-Wei Lan` |
 | 三個 repo clone ＋ `commit-msg` hook 安裝 | **已完成** | 2026-08-04 | hook 來自 Gerrit 3.11.7;三個 repo 預設分支皆為 `master` |
-| 推一次 `%private,wip` change 驗證流程 | 待驗證 | — | 預計 W2 D3;驗證後立即 Abandon |
+| 推一次 `%private,wip` change 驗證流程 | **已完成** | 2026-08-05 | change [93169](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93169),3 個 patchset(含一組單一變因 A/B),驗完立即 Abandon |
 | `run-unit-test-docker.sh` 對目標 repo 綠燈 | 未開始 | — | 預計 W8 |
 | 至少一筆 change 已推上 Gerrit | 未開始 | — | 預計 W8 |
 | 至少收到一次 reviewer 回覆 | 未開始 | — | 預計 W10~W11 |
@@ -33,9 +33,21 @@
 | Gerrit → Profile → Full name | `Chung-Wei Lan` | ✅(2026-08-04 修正) |
 
 **踩到的坑:** 用 GitHub 帳號登入 Gerrit 時,Gerrit 會拿 GitHub 個人檔案的 Name
-去預填 Full name,結果被填成 `wei`。**不一致的話 Gerrit 會在 push 時擋下來**,
-而這個錯誤要到第一次送 patch 才會爆。驗證方式是 `ssh openbmc.gerrit` ——
+去預填 Full name,結果被填成 `wei`。驗證方式是 `ssh openbmc.gerrit` ——
 歡迎訊息會直接把 Gerrit 認定的名字念出來(`Hi <Full name>`)。
+
+> ⚠️ **2026-08-05 更正:** 這裡原本寫「不一致的話 Gerrit 會在 push 時擋下來」。
+> **那句話是錯的,而且是從二手計畫抄來、沒有實測的。**
+> D3 用同一個 Change-Id 做了單一變因 A/B(見 `LOG.md` 2026-08-05):
+>
+> | 變因 | 結果 |
+> |---|---|
+> | `Signed-off-by` 的**名字**與 Profile Full name 不一致(`wei`) | **✅ Gerrit 收下** |
+> | **committer email** 不在帳號註冊清單裡 | **❌ 拒絕:`invalid committer`** |
+>
+> **Gerrit 驗的是 email,不是名字。** 名字四處一致仍然要做,
+> 但理由是**證據價值**(主管要在 Gerrit 上看到本名),不是技術上會被擋。
+> 這兩個理由不能混,面試講錯會被追問到答不出來。
 
 ## 【查】2026-08-04 親自確認的上游原文
 
@@ -100,3 +112,23 @@
 > ⚠️ **【驗】`OWNERS` 在送 patch 前要重讀一次** —— 名單會變。
 
 ## 1. (尚未提交任何 change)
+
+---
+
+## W8 patch 候選 #1:`openbmc/docs` 的 `development/gerrit-setup.md`
+
+【查】2026-08-05 讀原文找到三個缺口。**合併成一個 patch 送**
+(同一份文件、同一個主題「怎麼確認你的 Gerrit 設定是對的」= 一個邏輯變更)。
+
+| # | 缺口 | 依據 |
+|:--:|---|---|
+| **A** | 有〈Add full name to Gerrit〉但只有一行「填 Full name」,**沒說要跟 `Signed-off-by` 一致**,也沒提用 GitHub 登入時 Full name 會被 GitHub profile 的 Name 預填 | 我本人被填成 `wei`,見上 |
+| **B** | 〈Confirm Setup Success〉只叫你 **clone 一個 repo**,**沒提 `ssh openbmc.gerrit`** | clone 是重驗證(要下載整個 repo,失敗時分不清是 SSH、權限還是網路);`ssh openbmc.gerrit` 是輕驗證,而且歡迎訊息的 `Hi <Full name>` **一行同時驗了 SSH 通、認證過、Gerrit 認為你是誰** |
+| **C** | `Ensure proper permissions **for for** your .ssh directory: chmod 600 ~/.ssh/*` —— typo,且句子說 directory 指令卻改檔案 | ssh 實際嚴格檢查的是 `~/.ssh/` 目錄 700 與私鑰 600;`.pub`/`known_hosts` 644 即可。屬**不精確**而非錯 |
+
+**⚠️ 措辭注意:** 缺口 A 不可以寫成「不一致會被擋」——**實測不會被擋**。
+正確的寫法是「Full name 會出現在你所有 change 的作者欄,建議與 `Signed-off-by`
+使用相同的全名」,並補上「Gerrit 拒絕的是未註冊的 committer email」。
+
+> ⚠️ **【驗】W8 送出前要重讀一次這份文件** —— 上游隨時可能已經改掉,
+> 改掉的話這個候選作廢,要另外找。
