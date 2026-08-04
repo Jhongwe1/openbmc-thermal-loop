@@ -53,8 +53,24 @@ SSH_PORT="${SSH_PORT:-2222}"; HTTPS_PORT="${HTTPS_PORT:-2443}"
 SERIAL="${QEMU_SERIAL:-mon:stdio}"
 echo "==> ${TARGET} on ${MACHINE}  flash=${FLASH_MB}MiB  (ssh:${SSH_PORT} https:${HTTPS_PORT})"
 
+# UI 旗標的選擇取決於 console 送去哪裡。
+#
+#   互動模式（預設 QEMU_SERIAL=mon:stdio）：-nographic 把 serial 與 monitor
+#   都接到終端機，Ctrl-a 放開再按 x 可以離開。
+#
+#   無終端機模式（QEMU_SERIAL=file:... 或 CI）：serial 已經導去檔案，此時
+#   -nographic 會把 **monitor** 單獨留在 stdio。背景執行時 stdin 一旦 EOF，
+#   monitor 收到 EOF 就讓整個 QEMU 正常結束 —— 現象是「開機開到一半自己消失」，
+#   而且不留任何錯誤訊息、離開碼是 0。改用 -display none + -monitor none，
+#   QEMU 就不再有任何東西掛在 stdin 上。
+QEMU_UI=( -nographic )
+case "${SERIAL}" in
+  mon:stdio|stdio) ;;
+  *) QEMU_UI=( -display none -monitor none ) ;;
+esac
+
 exec qemu-system-arm \
-  -M "${MACHINE}" -m 1G -nographic \
+  -M "${MACHINE}" -m 1G "${QEMU_UI[@]}" \
   -drive "file=${FLASH},format=raw,if=mtd" \
   -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22,hostfwd=tcp:127.0.0.1:${HTTPS_PORT}-:443" \
   -net nic,netdev=net0 \
