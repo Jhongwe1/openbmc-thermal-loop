@@ -72,4 +72,31 @@
 上游對回應時間的明文期待:patch 沒人看可以 email 維護者或在 Discord ping,
 **但合理的時間尺度是「一週」,不是「幾小時」**。
 
+## 目標 repo 投資組合(【查】2026-08-04 親自讀 OWNERS)
+
+同時佈局三個回應性不同的 repo,把「至少收到一次 review」的機率最大化。
+
+| 優先 | Repo | owners | reviewers | 候選改動 | 【判】回應速度 |
+|:--:|---|---|---|---|---|
+| **1** | `openbmc-test-automation` | George Keishing | **2 位**(Sridevi Ramesh / IBM、Nandakumar Babu / AMI) | `test_lists/QEMU_CI` 沒有熱控／感測器案例;或補 QEMU 前置條件文件 | 最快 |
+| **2** | `docs` | **Patrick Williams** | **3 位**(Andrew Jeffery、Gunnar Mills、Lei Yu)＋ 依路徑分流的 matchers | 照 `development/dev-environment.md`、`gerrit-setup.md` 做時沒跑通的步驟 | 快 |
+| **3** | `phosphor-pid-control` | **Ed Tanous、Patrick Williams** | **空** | `configure.md` 補齊 7 個未文件化欄位;`ec::pid()` 的 slew ＋ 前饋回算單元測試 | 慢 |
+
+### 讀完 OWNERS 之後修正的判斷
+
+1. **`phosphor-pid-control` 的 `reviewers` 是空的** —— 計畫的說法成立。
+   沒有第二層可以先幫你看,而兩位 owner 是 OpenBMC 最頂層也最忙的維護者。
+2. **★ `docs` 與 `phosphor-pid-control` 的 owner 是同一個人:Patrick Williams。**
+   所以「先推 `docs`」的價值不只是「在低門檻的 repo 上把格式錯誤犯完」,
+   而是**在同一位守門人面前先建立一次良性往返紀錄**,再去推他守的那個難的。
+   這是計畫沒有指出的一層。
+3. **`docs` 的 reviewer 名單最厚(3 位)且有 path-based matchers**,
+   代表它有成熟的分流機制 —— 對「拿到第一次 review 往返」的目標最有利。
+
+**執行順序:W8 先推 1 或 2,W9~W10 再推 3。**
+理由:第一個 patch 一定會在格式、commit message、CI 上出問題。
+**在門檻低的 repo 上把這些錯犯完**,再去碰維護者最忙的那個。
+
+> ⚠️ **【驗】`OWNERS` 在送 patch 前要重讀一次** —— 名單會變。
+
 ## 1. (尚未提交任何 change)
