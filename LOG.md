@@ -301,3 +301,174 @@
 
 > ⚠️ **待辦(§10 第 7 項):以上三則是指導老師整理的措辭,面試前要用自己的話重寫一次。**
 > 面試官問的是「你當時怎麼想」,那不能是別人的句子。
+## 2026-08-05(W2 D3)Gerrit 擋的是 email 不是名字 —— 推翻我自己 08-04 的紀錄
+
+- **待驗假設(08-04 立,08-05 驗)**:我 08-04 在 `docs/upstream.md` 與
+  `runbook.md` 都寫了「`Signed-off-by` 的名字與 Gerrit Profile 的 Full name
+  不一致,**會被 Gerrit 擋下來**」。**那句話沒有實測,是從計畫抄來的。**
+- **為什麼要驗**:兩種結果的意義完全不同。
+  若**會擋** → 上游文件缺這一句是真的會害人,值得送 patch。
+  若**不會擋** → 名字要一致的理由是「T0 證據要讓主管看到我的本名」,
+  **仍然要一致,但理由完全不同**,面試講錯理由會被抓。
+- **實驗設計(單一變因,同一個 Change-Id)**:
+  | | patchset 1(對照組) | patchset 2(實驗組) | patchset 3 |
+  |---|---|---|---|
+  | diff | 一行 | **完全相同** | 完全相同 |
+  | `Signed-off-by` 名字 | `Chung-Wei Lan` | **`wei`** | `Chung-Wei Lan` |
+  | committer email | `zwwe1f@gmail.com` | 相同 | **`not-registered@example.com`** |
+  | 結果 | ✅ 收 | **✅ 收** | **❌ 拒** |
+- **實測輸出(patchset 3)**:
+  ```
+  ERROR: commit 53054b9: email address not-registered@example.com is not
+  registered in your account, and you lack 'forge committer' permission.
+  The following addresses are currently registered:
+     zwwe1f@gmail.com
+  ! [remote rejected] HEAD -> refs/for/master%private,wip (invalid committer)
+  ```
+- **根因**:Gerrit 的 receive 檢查驗的是 **committer / author 的 email 是否在
+  帳號的註冊清單裡**(對應 `forge committer` 權限),**不驗 `Signed-off-by`
+  這個 trailer 的名字**。名字要不要一致取決於各 server 的設定,
+  OpenBMC 這台**沒有**開這項檢查。
+- **修正**:`docs/upstream.md` 與 `runbook.md` 的那句話已改掉。
+- **教訓**:**我把「兩件都要做的事」的其中一件的理由,錯記成另一件的理由。**
+  「名字四處一致」與「email 要註冊」都要做,但一個是**證據價值**的要求
+  (主管要在 Gerrit 上看到我的本名),另一個是**技術**的要求(不然推不上去)。
+  抄來的文件把兩者混成一句,我就跟著混了。
+  **以後凡是「因為 X 所以會被擋」這種因果句,在寫進交付文件之前要先實測 ——
+  它的成本是一次 push,而講錯的成本是面試當場被追問到答不出來。**
+
+---
+
+## 2026-08-05(W2 D4)QEMU 背景執行時「開機開到一半自己消失」
+
+- **現象**:`QEMU_SERIAL=file:/tmp/boot.log nohup ./harness/qemu/run_bmc.sh bletchley &`
+  丟到背景。三秒後 `ps` 看得到 QEMU 在跑、`qemu-run.log` 也有正常的啟動訊息。
+  但幾分鐘後回來看,**QEMU 行程不見了,`/tmp/boot.log` 與 `/tmp/qemu-run.log`
+  兩個檔案也一起不見了,而且沒有任何錯誤訊息**。
+- **假設**:(1) QEMU 自己 crash (2) WSL distro idle 關機把它帶走
+  (3) QEMU 讀到 stdin 的 EOF 就正常結束
+- **先驗哪個、為什麼**:先驗 (2),因為**它能一刀切一半** ——
+  `/tmp` 裡的檔案一起消失,只有「整個 distro 重開、systemd-tmpfiles 清掉 /tmp」
+  能解釋。crash 不會刪檔案。這一個觀察就把問題分成「環境層」與「QEMU 層」兩半。
+  結果 (2) 成立,但它**不能解釋為什麼 distro 會 idle** —— 有 QEMU 在跑的話
+  distro 不該閒置。所以 (2) 是**結果**不是根因,真正的根因在 (3)。
+- **根因**:`run_bmc.sh` 用 `-nographic`。**這個旗標同時把 serial 與 QEMU
+  monitor 接到終端機。** 當 `QEMU_SERIAL=file:...` 把 serial 導去檔案時,
+  **monitor 仍然單獨留在 stdio**。背景執行時 stdin 一 EOF,monitor 收到 EOF
+  就讓 QEMU **正常結束(離開碼 0)**。QEMU 一死,distro 沒有行程了 → WSL 關掉
+  VM → 下次啟動 systemd 清空 /tmp → 連證據都沒了。
+- **修正**:`run_bmc.sh` 依 console 去向選 UI 旗標 ——
+  互動模式維持 `-nographic`,無終端機模式改用 `-display none -monitor none`,
+  讓 QEMU 完全不掛任何東西在 stdin 上。
+- **教訓**:**「離開碼是 0」不等於「我要它做的事做完了」。**
+  這一則跟 08-04 那則「ssh 吃掉 stdin」是**同一族的坑**:
+  都是「某個我沒注意到的東西掛在 stdin 上」。
+  **凡是要丟到背景長跑的行程,先問一句:它跟 stdin 還有沒有關係?**
+- **附帶結論**:「檔案跟著行程一起消失」是一個很強的訊號,
+  它幾乎必然代表**整個環境重建過**,而不是程式出錯。下次看到要先往這個方向想。
+
+---
+
+## 2026-08-05(W2 D5)swampd 起不來,而且把整台 BMC 拖到重開機
+
+- **現象**:照計畫做完 `mkdir -p /tmp/pidlog` → 傳設定 → 建 systemd drop-in →
+  `systemctl daemon-reload && systemctl restart`。指令逾時。之後 SSH 連不進去,
+  錯誤是 `Connection timed out during banner exchange`(TCP 通,但 SSH 的
+  banner 送不出來)。再過幾分鐘 BMC **自己重開機了**。
+- **假設**:(1) drop-in 寫錯,systemd 卡住 (2) 設定檔有問題讓 swampd 崩潰
+  (3) 整台機器負載過高
+- **先驗哪個、為什麼**:先驗 (3),因為 **banner exchange 逾時這個症狀本身就
+  指向負載,不指向設定** —— TCP 三次握手成功代表 kernel 網路堆疊是活的,
+  送不出 banner 代表 CPU 排不到 sshd。而且驗它只要看 `boot.log` 與宿主機的
+  `ps` 的 CPU 欄,不必進得去 BMC。實測 QEMU 佔 143% CPU、guest load average 7.58。
+- **根因(兩層,缺一不可)**:
+  1. **`/tmp` 是 tmpfs,重開機就清空**,但 drop-in 在 `/etc` 是**持久的**。
+     所以重開機之後 `--log /tmp/pidlog` 指向一個不存在的目錄,
+     swampd 立刻 `exit 105`,journal 寫著 `--log: Directory does not exist: /tmp/pidlog`。
+  2. 上游的 unit 是 **`Restart=always` + `RestartSec=5` + `StartLimitInterval=0`**
+     —— **不限次數地無窮重啟**。於是每 5 秒起一次、每次失敗,把 QEMU 的 CPU 吃光。
+- **修正(兩條都要)**:
+  1. 把執行前提放進 unit 本身:
+     `ExecStartPre=/bin/mkdir -p /tmp/pidlog /tmp/sys` 以及兩行建假 sysfs 檔的
+     `ExecStartPre`。**這樣前提跟 unit 同生共死,不依賴任何人記得手動 mkdir。**
+  2. 在測試床上把 `StartLimitIntervalSec=60` / `StartLimitBurst=3` 加回來。
+- **★ 這一則最值得講的地方 —— 為什麼上游的設定沒有錯**:
+  `StartLimitInterval=0`(永不放棄)在**真實伺服器**上是正確的:
+  風扇控制停掉會燒硬體,寧可一直重試。但在**測試床**上,同一個設定會讓一個
+  起不來的服務把整台機器拖垮。**同一份設定在不同環境下的正確答案不一樣 ——
+  這不是上游的 bug,是我要判斷我在哪個環境。**
+- **教訓**:**「持久的設定」搭「非持久的執行前提」= 重開機後必炸,
+  而且炸在你不會聯想到的地方。** 症狀(SSH 連不上、機器重開)離根因
+  (少了一個 /tmp 目錄)非常遠,中間隔著 systemd 的重啟策略。
+  以後寫任何 unit,都要問:**它依賴的每一樣東西,壽命跟它一樣長嗎?**
+
+---
+
+## 2026-08-05(W2 D4/D6)這台 QEMU 上沒有風扇硬體 —— zone 怎麼建起來
+
+- **現象**:swampd 的地雷是「每個 zone 至少要一顆風扇 ＋ 一顆溫感,否則
+  `No fan zones` 起來就退出」。但實測這台 bletchley:
+  `/sys/class/pwm/` 是空的、`/sys/class/hwmon/*/pwm*` 不存在、
+  D-Bus 的 `/xyz/openbmc_project/sensors/` 底下**一顆 `fan_tach` 都沒有**
+  (只有六顆 nvme 溫感與一顆 Virtual_Inlet_Temp)。計畫給的設定範本
+  (`writePath` 指向 sysfs pwm)在這台機器上不可能成立。
+- **我沒有用猜的,我去讀了原始碼**(`phosphor-pid-control` @ `f6d4cb9e5`)。
+  `sensors/build_utils.cpp` 決定 `readPath`/`writePath` 走哪一條實作:
+  ```cpp
+  static constexpr auto sysfs = "/sys/";
+  if (path.find(sysfs) != std::string::npos) { return IOInterfaceType::SYSFS; }
+  ```
+- **關鍵發現**:它用的是 **`find(...) != npos`(子字串比對)**,不是「開頭是」。
+  所以 **`/tmp/sys/pwm0` 也會被判定成 SYSFS**。再看 `sysfs/sysfsread.cpp` 與
+  `sysfs/sysfswrite.cpp`,實作就是單純的 `std::ifstream` / `std::ofstream` ——
+  **對普通檔案完全適用**。
+- **解法**:fan0 的 `readPath` 指向 `/tmp/sys/fan0_input`(內容是假的 tach 值),
+  `writePath` 指向 `/tmp/sys/pwm0`。zone 於是有了「一顆風扇」,起得來。
+- **另外兩個從原始碼讀出來、範本沒寫對的地方**:
+  1. **`readPath` 不可以留空。** 留空會走 `default:` 建出 `WriteOnly`,
+     而 `WriteOnly::read()` 是 `throw std::runtime_error("Not supported.")`。
+  2. **`min`/`max` 只對 `type: "fan"` 有效。** `sensors/buildjson.cpp` 對非 fan
+     型別會忽略並印 `Non-fan types ignore min value specified`。
+     計畫範本在溫感 `die0` 上填了 `min/max`,那是噪音。
+- **量化印證(這一段證明我讀對了)**:`builder.cpp` 在 `max > 0` 時選
+  `SysFsWritePercent`,寫入值 = `min + (max-min) × value`;而
+  `pid/fancontroller.cpp` 在寫之前做 `percent /= 100.0`。
+  所以 `min:0 / max:255` 配 fan PID 的 `outLim 30~100`(百分比)應該得到:
+  failsafe 100% → 255,正常 30% → 76。**實測 `/tmp/sys/pwm0` 就是 255 與 76。**
+- **教訓**:**「範本在我的環境上跑不起來」的第一個動作,是去讀那個範本對應的
+  解析程式碼,不是去改範本試。** 讀了三個檔案(約 20 分鐘)換到的是
+  「我說得出每一欄為什麼那樣填」,而不是「我試到它會動」。
+  後者在面試裡是負分。
+- **誠實標註**:這顆風扇是**檔案背板的替身**,不是真實硬體。
+  它證明的是「swampd 的寫出路徑被執行了、值是多少」,**不是「風扇真的轉了」**。
+  README 與所有圖說都要這樣寫。
+
+---
+
+## 2026-08-05(W2 D6)`zone_0.log` 看起來停住了 —— 其實是緩衝
+
+- **現象**:推完溫度後立刻 `grep` `zone_0.log`,**找不到剛推的值**;
+  `tail -n 1` 拿到的是**半行**(`1785868892361,3000,Minimum,` 就斷了)。
+  但 `pidcore.die0` 裡明明已經有 `input=40` 的紀錄。
+  隔 5 秒再 `ls -l`,檔案大小**一個 byte 都沒變**,而 `systemctl is-active` 是 active。
+- **假設**:(1) zone 停止運作了 (2) log 檔輪替 (3) **std::ofstream 的緩衝還沒 flush**
+- **先驗哪個、為什麼**:先驗 (3),因為**「半行」這個細節幾乎只有緩衝能解釋** ——
+  行寫到一半就沒了,代表資料是以固定大小的區塊落地的,而不是以行為單位。
+  而且驗它只要「等久一點再看一次」,成本趨近於零。
+- **根因**:swampd 用 `std::ofstream` 寫 CSV,預設是**全緩衝**(通常 4096 bytes)。
+  以 10 Hz × 約 45 bytes/行 計算,大約 **每 9 秒才 flush 一次**。
+  所以「5 秒內檔案大小沒變」是完全正常的。
+- **驗證後拿到的真數字**:等 flush 之後回頭比對兩份 log 的 `epoch_ms`:
+  | 事件 | epoch_ms | 差 |
+  |---|---|---|
+  | `pidcore.die0` 看到 `input=40` | 1785868902363 | — |
+  | `zone_0.log` 記錄 `die0=40` | 1785868902461 | **98 ms** |
+  | `pidcore.die0` 看到 `input=80` | 1785868904362 | — |
+  | `zone_0.log` 記錄 `die0=80` | 1785868904461 | **99 ms** |
+
+  **正好一個 zone 迴圈週期**(`cycleIntervalTimeMS` 預設 100 ms)。
+- **教訓(這一則直接影響 W9)**:**`tail -f zone_0.log` 不能用來量時序。**
+  你看到某一行的時間,不是那一行被產生的時間,而是緩衝滿了的時間 ——
+  誤差可以到好幾秒,而且是**不固定**的。
+  **要量延遲,必須用檔案裡自帶的 `epoch_ms` 欄位互相比對,不能用觀察者的時鐘。**
+  W9 的端到端延遲量測如果用錯方法,量到的會是緩衝區大小,不是系統延遲。
