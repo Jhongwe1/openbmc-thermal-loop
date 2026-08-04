@@ -1,0 +1,66 @@
+{
+  "sensors": [
+    {
+      "name": "die0",
+      "type": "temp",
+      "readPath": "/xyz/openbmc_project/extsensors/temperature/die0",
+      "timeout": 5
+    },
+    {
+      "name": "fan0",
+      "type": "fan",
+      "readPath": "/tmp/sys/fan0_input",
+      "writePath": "/tmp/sys/pwm0",
+      "min": 0,
+      "max": 255,
+      "timeout": 0
+    }
+  ],
+  "zones": [
+    {
+      "id": 0,
+      "minThermalOutput": 3000.0,
+      "failsafePercent": 100.0,
+      "pids": [
+        {
+          "name": "die0",
+          "type": "temp",
+          "inputs": ["die0"],
+          "setpoint": 65.0,
+          "pid": {
+            "samplePeriod": 1.0,
+            "proportionalCoeff": 0.0,
+            "integralCoeff": 0.0,
+            "feedFwdOffsetCoeff": 0.0,
+            "feedFwdGainCoeff": 0.0,
+            "integralLimit_min": 0.0,
+            "integralLimit_max": 0.0,
+            "outLim_min": 3000.0,
+            "outLim_max": 15000.0,
+            "slewNeg": 0.0,
+            "slewPos": 0.0
+          }
+        },
+        {
+          "name": "fan0",
+          "type": "fan",
+          "inputs": ["fan0"],
+          "setpoint": 0.0,
+          "pid": {
+            "samplePeriod": 0.1,
+            "proportionalCoeff": 0.0,
+            "integralCoeff": 0.0,
+            "feedFwdOffsetCoeff": 0.0,
+            "feedFwdGainCoeff": 0.0,
+            "integralLimit_min": 0.0,
+            "integralLimit_max": 0.0,
+            "outLim_min": 30.0,
+            "outLim_max": 100.0,
+            "slewNeg": 0.0,
+            "slewPos": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}
