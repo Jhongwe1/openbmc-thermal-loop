@@ -26,23 +26,40 @@
 > 這一點決定了下面 `fan0` 的做法。而且**順序有意義** —— `extsensors` 先檢查,
 > 所以 external 的路徑不會被誤判成 passive dbus。
 
-### `die0`(溫感,route (a))
+### `die0`(溫感,**route (b′):hwmon 被動 D-Bus 感測器**)
 
 ```json
 { "name": "die0", "type": "temp",
-  "readPath": "/xyz/openbmc_project/extsensors/temperature/die0",
-  "timeout": 5 }
+  "readPath": "/xyz/openbmc_project/sensors/temperature/die0",
+  "timeout": 0,
+  "ignoreDbusMinMax": true }
 ```
 
+> **2026-08-06 改動:** 原本走 route (a)(`/xyz/openbmc_project/extsensors/...`,
+> swampd 自己 own 的 `HostSensor`)。改成讀 `dbus-sensors` 的 `hwmontempsensor`
+> 建的那顆,因為**只有它有 association,Redfish 才看得到**。
+> 舊版設定保留在 git 歷史 commit `52f84c8`。
+> 為什麼不是計畫寫的 route (b),見
+> [`config/entity-manager/README.md`](../entity-manager/README.md) §0。
+
 - `type: "temp"` → 在 `builder.cpp` 走 read-only 分支。
-- `EXTERNAL` → 建成 `HostSensor`,**由 swampd 自己在 D-Bus 上發布這個物件**,
-  值由外部用 `busctl set-property` 寫入。不需要 entity-manager、不需要真實硬體 probe。
-- **實測服務名是 `xyz.openbmc_project.Hwmon.external`**(2026-08-05,bletchley)。
-  **不是** `xyz.openbmc_project.ExternalSensor` —— 那是 route (b) 的 dbus-sensors。
-- `timeout: 5` → 5 秒沒有新值就判定 stale,整個 zone 進 failsafe。**實測有效**。
+- 路徑含 `/xyz/openbmc_project/` 但**不含** `extsensors` → `DBUSPASSIVE`,
+  建成 `DbusPassive`,訂閱 `PropertiesChanged`。
+- **`timeout: 0` 不是偷懶,是正解。** `pid/zone.hpp` 的 stale 判定是
+  `now - r.updated >= timeout`,而 `_updated` **只在收到 `PropertiesChanged`
+  時才更新**;dbus-sensors 端又是**值有變才發訊號**。
+  結果是「溫度穩定不動」＝「感測器死了」。實測 `timeout: 5` 時 `failsafe=1`、
+  `pwm0=255`,journal 印 `die0: The sensor has timed out`。
+  上游走 entity-manager 設定那條路時會**自動**設 0(`dbus/dbusconfiguration.cpp`
+  註解:*"D-Bus passive sensor updates are pushed in, not pulled by timer poll"*),
+  但走 `--conf` JSON 這條路不會。
+- **`ignoreDbusMinMax: true` 也不是可有可無。** 沒有它,`dbuspassive.cpp` 會用
+  感測器的 `MinValue`/`MaxValue`(−128 / 127)把讀值正規化到 [0,1],
+  於是 PID 拿 `0.8154` 去跟 `setpoint 65` 相減。
+  **不會報錯,只有 `pidcore.*` 看得見。** 上游註解:
+  *"which would mess up the PID loop math"*。
 - **沒有寫 `min`/`max`。** `sensors/buildjson.cpp` 明文:非 fan 型別會忽略 min/max,
-  而且會印 `Non-fan types ignore min value specified`。計畫範本在這裡填了
-  `"min": 0, "max": 120`,那是噪音。
+  而且會印 `Non-fan types ignore min value specified`。
 
 ### `fan0`(風扇)
 

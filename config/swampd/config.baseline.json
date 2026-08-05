@@ -3,8 +3,9 @@
     {
       "name": "die0",
       "type": "temp",
-      "readPath": "/xyz/openbmc_project/extsensors/temperature/die0",
-      "timeout": 5
+      "readPath": "/xyz/openbmc_project/sensors/temperature/die0",
+      "timeout": 0,
+      "ignoreDbusMinMax": true
     },
     {
       "name": "fan0",
@@ -25,7 +26,9 @@
         {
           "name": "die0",
           "type": "temp",
-          "inputs": ["die0"],
+          "inputs": [
+            "die0"
+          ],
           "setpoint": 65.0,
           "pid": {
             "samplePeriod": 1.0,
@@ -44,7 +47,9 @@
         {
           "name": "fan0",
           "type": "fan",
-          "inputs": ["fan0"],
+          "inputs": [
+            "fan0"
+          ],
           "setpoint": 0.0,
           "pid": {
             "samplePeriod": 0.1,
