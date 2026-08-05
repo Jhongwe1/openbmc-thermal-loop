@@ -472,3 +472,141 @@
   誤差可以到好幾秒,而且是**不固定**的。
   **要量延遲,必須用檔案裡自帶的 `epoch_ms` 欄位互相比對,不能用觀察者的時鐘。**
   W9 的端到端延遲量測如果用錯方法,量到的會是緩衝區大小,不是系統延遲。
+
+---
+
+## 2026-08-06(W3 D1,計畫排 08/11)計畫要走的那條路,這個映像裡根本沒有
+
+- **現象**:W3 D1 的任務是走 route (b) —— 用 entity-manager 設定一顆
+  `"Type": "ExternalSensor"`,由 `dbus-sensors` 建立、由外部 `busctl set-property`
+  寫值。設定寫好之前我先看了一眼服務清單:
+  ```
+  /usr/lib/systemd/system/ 只有 adcsensor / fansensor / hwmontempsensor / psusensor
+  /usr/libexec/dbus-sensors/ 也只有那四支
+  find / -xdev -iname '*external*'  →  只有 rsyslog 跟 tpm2 的無關檔案
+  ```
+  **`externalsensor` 這支程式在這個映像裡不存在。**
+- **假設**:(1) 我看錯地方,它在別的路徑 (2) 這個 build 壞了/漏包
+  (3) **上游預設沒開這個 PACKAGECONFIG** (4) 這是平台特定的決定
+- **先驗哪個、為什麼**:先驗 (3)。因為 (1) 已經被 `find /` 排除;
+  而 (2) 與 (4) 都要下載別的映像才能驗(每次 56 MB + 2.5 分鐘開機),
+  (3) 只要抓一個 4 KB 的 recipe 檔就能看。**先做最便宜且能一次排除最多可能的那個。**
+- **查到什麼(推翻了假設 3)**:上游
+  `meta-phosphor/recipes-phosphor/sensors/dbus-sensors_git.bb` 的預設**有** `external`。
+  而且我特地抓了**映像建置當天(2026-07-27)那個 commit 的版本**核對,不是抓今天的
+  master —— 因為「今天的預設」不等於「我這顆映像建的時候的預設」。
+- **根因(在 vendor layer)**:
+  ```bitbake
+  # meta-facebook/recipes-phosphor/sensors/dbus-sensors_%.bbappend
+  FACEBOOK_REMOVED_DBUS_SENSORS = " exitairtempsensor  external  intelcpusensor \
+                                    intrusionsensor  ipmbsensor  mcutempsensor "
+  PACKAGECONFIG:remove = "${FACEBOOK_REMOVED_DBUS_SENSORS}"
+  ```
+  **Meta 在他們自己的 layer 裡把 `external` 明文移除。** 這是長期決定,不是壞掉。
+- **這個根因同時殺掉三個「再試試看」的方向**(所以值得多花 20 分鐘查):
+  1. **換新映像沒用** —— 它不是某天的 build flake。
+  2. **換備援平台沒用** —— `catalina` 也是 meta-facebook,吃同一個 bbappend。
+  3. **沒有第三個平台可換** —— 依 `platform-matrix.md`,
+     {Jenkins 有映像} ∩ {QEMU 有 machine} ∩ {有 swampd} 的交集就只有
+     `bletchley` 與 `catalina`。
+- **解法(route b′)**:改用這台機器上**真的存在**的硬體。
+  `bletchley-bmc` 這個 QEMU machine 建了 **10 顆 tmp421 溫度晶片**,
+  guest 裡的 Linux driver 已經綁上去、hwmon 節點都在(讀值 0 °C)。
+  而 `hwmontempsensor` **在映像裡**,它的支援清單裡**有 `TMP421`**,
+  而且它建感測器時會呼叫 `createInventoryAssoc()` —— **association 是免費送的**。
+  溫度怎麼改?QEMU 的 tmp421 模型有可寫的 QOM property
+  (`hw/sensor/tmp421.c` 的 `object_class_property_add("temperature0", ...)`),
+  用 QMP `qom-set` 從外面寫。
+- **換到的東西比原本的計畫更好**:注入點從「BMC 內部的假感測器」下移到
+  **模擬硬體層**,下游多經過 **kernel driver** 與 **hwmon sysfs** 兩層真實程式碼。
+  Gate 2 要的跨層追蹤與 Fig 6 直接到手。
+- **教訓**:**「文件說要做 X」的第一個動作,是確認 X 在我的環境裡存在。**
+  我如果直接寫設定、部署、重啟、看不到東西,再回頭查,會多花半天在
+  「是不是我 JSON 寫錯」上。**先花兩分鐘 `ls` 一下,省下半天。**
+  另外:**查上游 recipe 要查「我這顆映像建置當天」的版本**,不是 master。
+
+---
+
+## 2026-08-06(W3 D2)同一個 `timeout: 5`,在兩條路上意思不一樣
+
+- **現象**:把 swampd 的 `die0` 從 route (a) 的 `extsensors` 換成 route (b′) 的
+  passive D-Bus 感測器之後,溫度明明讀得到(`zone_0.log` 的 `die0_raw = 44.938`),
+  但 `failsafe` 欄一直是 `1`、`/tmp/sys/pwm0` 卡在 `255`。
+  journal 直接指名:`Zone 0 is in failsafe mode. With update at die0: The sensor has timed out.`
+- **假設**:(1) 感測器真的沒在更新 (2) `timeout: 5` 的語意在 passive 上不一樣
+- **先驗哪個、為什麼**:先驗 (2)。因為 (1) 已經被 `die0_raw = 44.938` 這個
+  **有效的讀值**推翻了 —— 值進得來,卻被判定逾時,**那就不是「有沒有值」的問題,
+  是「怎麼算逾時」的問題**。
+- **去讀原始碼**(`phosphor-pid-control` @ `f6d4cb9e5`,`pid/zone.hpp`):
+  ```cpp
+  ReadReturn r = sensor->read();
+  auto duration = duration_cast<seconds>(now - r.updated).count();
+  auto period   = seconds(timeout).count();
+  ```
+  而 `r.updated`(`dbus/dbuspassive.cpp` 的 `_updated`)**只在收到
+  `PropertiesChanged` 時才更新**。dbus-sensors 端則是**值有變才發訊號**。
+  → **溫度穩定不動 = 沒有訊號 = 被當成感測器死掉。**
+- **單一變因 A/B(唯一改動:`die0` 的 `timeout`)**:
+
+  | | `timeout: 5` | `timeout: 0` |
+  |---|---|---|
+  | `failsafe` 欄 | **1** | **0** |
+  | `/tmp/sys/pwm0` | **255** | **76** |
+  | journal | `die0: The sensor has timed out.` | `Zone 0 fans, returning to normal mode, output pwm: 30` |
+
+- **上游自己怎麼說**:`dbus/dbusconfiguration.cpp`(entity-manager 那條設定路徑)
+  的註解白紙黑字:
+  > *"Setting timeout to 0 is intentional, as D-Bus passive sensor updates are
+  > **pushed in, not pulled by timer poll**."*
+
+  也就是說**上游知道這件事,而且走 entity-manager 設定時會自動幫你設 0**。
+  但我們走的是 `--conf` JSON 檔那條路(`sensors/buildjson.cpp`),
+  **那條路照著 JSON 填什麼就是什麼,不會幫你改。**
+- **教訓**:**同一個設定欄位,在不同的資料來源路徑下有不同的預設與語意。**
+  route (a) 的 `HostSensor` 是「推進來」的,每次寫入都更新時間戳,
+  所以 `timeout: 5` 是有意義的 stale 偵測;
+  passive 感測器的時間戳綁在**值的變化**上,`timeout` 就變成了
+  「多久沒變化就當它死了」—— 那對一顆穩定的溫感是錯的判準。
+  **passive 感測器的存活狀態應該看 `OperationalStatus.Functional` 與
+  `Availability.Available`(swampd 本來就有訂閱),不是看值變不變。**
+- **W8 patch 候選**:`phosphor-pid-control` 的文件沒有寫這件事。
+  JSON 設定那條路的使用者踩到的機率是 100%,而錯誤訊息
+  (`The sensor has timed out`)會把人引導到完全錯誤的方向。
+
+---
+
+## 2026-08-06(W3 D2)PID 拿 0.8154 去跟 65 比 —— 換了感測器,單位悄悄變了
+
+- **現象**:failsafe 解掉之後,`zone_0.log` 看起來正常,但打開
+  `pidcore.die0`(PID 內部軌跡)發現:
+  ```
+  epoch_ms,input,setpoint,error,...
+  1785947785628,0.815443,65,64.1846,...
+  ```
+  **`input = 0.8154`,`setpoint = 65`,`error = 64.18`。** 溫度是 79.938 °C。
+- **假設**:(1) log 欄位對錯位 (2) **輸入被正規化到 0~1 了**
+- **先驗哪個、為什麼**:先驗 (2),因為 0.815443 這個數字**看起來就像一個比例**。
+  兩秒的心算就驗掉了:
+  `(79.938 - (-128)) / (127 - (-128)) = 0.81544` —— **完全吻合**。
+  而 `-128` / `127` 正是這顆 tmp421 在 D-Bus 上的 `MinValue` / `MaxValue`。
+- **根因**:`dbus/dbuspassive.cpp` 對 passive 感測器會呼叫
+  `scaleSensorReading(_min, _max, value)`,把讀值正規化成 `[0,1]`,
+  而 `_min`/`_max` 是**從 D-Bus 感測器的 `MinValue`/`MaxValue` 屬性抓來的**。
+  route (a) 的 `HostSensor` 沒有這兩個屬性,所以之前不會發生。
+- **解法**:`sensors/buildjson.cpp` 有一個每顆感測器的旗標
+  `"ignoreDbusMinMax": true`。加上去之後:
+  ```
+  zone_0.log :  ... ,die0=59.938, die0_raw=59.938, failsafe=0
+  pidcore    :  input=59.938, setpoint=65, error=5.062      ← 對了
+  ```
+- **上游自己怎麼說**(同一段註解,就在 `timeout = 0` 的下一行):
+  > *"Setting ignoreDbusMinMax is intentional, as this prevents normalization of
+  > values to [0.0, 1.0] range, **which would mess up the PID loop math**.
+  > All non-fan PID classes should be initialized this way."*
+- **這一則最可怕的地方:它不會報錯。** 沒有警告、沒有 journal 訊息,
+  服務是 `active (running)`,`zone_0.log` 的 `die0_raw` 也是對的。
+  **只有打開 `pidcore.*` 才看得見。** 如果我沒有在 W2 就加上 `-g`(corelogging),
+  這個錯會一路帶到 W6 調參 —— 那時候我會以為是我的 λ 算錯了。
+- **教訓**:**換掉一個元件之後,不要只驗「有沒有東西出來」,要驗「單位對不對」。**
+  而且**要驗最裡面那一層**:`zone_0.log` 三個欄位全對,錯的在 `pidcore.*`。
+  外層正常不代表內層正常。
