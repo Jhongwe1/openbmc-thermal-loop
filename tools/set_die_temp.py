@@ -52,6 +52,20 @@ DEFAULT_ADDR = 0x4F
 # temp1_input（本地），temperature1 對應 temp2_input，依此類推。
 # hwmontempsensor 的設定裡 "Name" 綁 temp1、"Name1" 綁 temp2 —— 我們只用 temp1。
 DEFAULT_CHANNEL = 0
+# ★ tmp421 的量程。QEMU 的 setter 會檢查並**回錯誤**（不是安靜截斷）：
+#     hw/sensor/tmp421.c
+#     static const int32_t mins[2] = { -40000, -55000 };
+#     static const int32_t maxs[2] = { 127000, 150000 };
+#     if (temp >= maxs[ext_range] || temp < mins[ext_range]) { error_setg(...); }
+#   用哪一組看晶片 CONFIG 暫存器的 range 位元，那個位元從 QOM 讀不到，
+#   所以這裡不硬猜：先照使用者給的值寫，被拒絕才夾制到保守的那一組再試一次。
+#
+#   為什麼需要這個：W5 之後熱模型會自動餵值進來，而 0 RPM + 400 W 的開環穩態
+#   是 165 °C —— **超出這顆感測器的量程**。沒有夾制的話整個實驗會在半路
+#   噴例外中斷；夾制之後實驗跑得完，而且 stderr 上留下「感測器飽和了」的紀錄。
+#   ⚠️ 夾制發生時 BMC 讀到的值與模型的值**不一致**，那一段數據不能用來擬合。
+SENSOR_MIN_C = -40.0
+SENSOR_MAX_C = 126.999
 
 
 class Qmp:
@@ -152,8 +166,21 @@ def main():
         # QEMU 這個 property 的單位是「千分之一度 C」，而且它內部存成
         # 8.8 定點數：value = (temp*256 - 128)/1000 + offset。
         # 所以寫進去再讀回來會有 1/256 ≈ 0.0039 °C 的量化誤差，這是正常的。
-        qmp.cmd("qom-set", path=path, property=prop, value=int(round(args.degc * 1000)))
-        print(f"set i2c-{args.bus} 0x{args.addr:02x} {prop} = {args.degc} C")
+        wrote = args.degc
+        try:
+            qmp.cmd("qom-set", path=path, property=prop,
+                    value=int(round(args.degc * 1000)))
+        except RuntimeError as err:
+            if "out of range" not in str(err):
+                raise
+            wrote = max(SENSOR_MIN_C, min(SENSOR_MAX_C, args.degc))
+            print(f"⚠️  感測器飽和：{args.degc} °C 超出 tmp421 量程，"
+                  f"夾制到 {wrote} °C 後重寫。"
+                  f"\n    這一段的模型值與 BMC 讀值不一致，不可用來擬合。",
+                  file=sys.stderr)
+            qmp.cmd("qom-set", path=path, property=prop,
+                    value=int(round(wrote * 1000)))
+        print(f"set i2c-{args.bus} 0x{args.addr:02x} {prop} = {wrote} C")
 
     if args.read or args.degc is None:
         millidegc = qmp.cmd("qom-get", path=path, property=prop)
