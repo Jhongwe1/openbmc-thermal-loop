@@ -1,0 +1,29 @@
+{
+    "Exposes": [
+        {
+            "Address": "0x4f",
+            "Bus": 0,
+            "Name": "die0",
+            "Thresholds": [
+                {
+                    "Direction": "greater than",
+                    "Index": 1,
+                    "Name": "upper non critical",
+                    "Severity": 0,
+                    "Value": 80.0
+                },
+                {
+                    "Direction": "greater than",
+                    "Index": 1,
+                    "Name": "upper critical",
+                    "Severity": 1,
+                    "Value": 95.0
+                }
+            ],
+            "Type": "TMP421"
+        }
+    ],
+    "Name": "Thermal Loop Demo",
+    "Probe": "TRUE",
+    "Type": "Board"
+}
