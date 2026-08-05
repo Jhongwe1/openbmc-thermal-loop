@@ -3,11 +3,12 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中（2026-07 起）。目前進度：**Gate 0 完成、Gate 1 前半達成**——
-> `swampd` 已用本 repo 的設定跑起來，一行 `busctl set-property` 就能把
-> `die0` 的溫度從 40 改成 80，`zone_0.log` 與 PID 內部軌跡都出得來。
-> **Redfish 那一段還沒通**（見下方 Gate 1 的未打勾項），原因已查明並記錄在
-> [`docs/redfish-notes.md`](docs/redfish-notes.md)。
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0 完成、Gate 1 完成**——
+> 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
+> 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
+> **`busctl`、`swampd` 的 PID 軌跡、Redfish 三個地方同時變**。
+> 每一段的行程數與 IPC 次數都量過,見
+> [`docs/architecture.md`](docs/architecture.md) 的〈一個溫度值的旅程〉。
 
 ## 為什麼做這個
 
@@ -35,20 +36,34 @@
 ## 現況
 
 - [x] Gate 0　環境就緒　　　　　　　← [env-baseline.md](docs/env-baseline.md)
-- [ ] Gate 1　端到端可觀測　　　　　← **前兩條達成，Redfish 那段待 W3**
-  - [x] 一行指令把溫度從 40 改成 80　　← `tools/push_temp.sh`
-  - [x] `busctl` 看得到 `Value` 變了，且 `swampd` 收得到
-        （`pidcore.die0` 的 `input` 欄從 40 變 80）
-  - [ ] Redfish 看到同一變化　　　　　← W3（route (b)：entity-manager）
-  - [ ] 畫得出從指令到 Redfish JSON 經過哪幾個行程、幾次 IPC
+- [x] Gate 1　端到端可觀測
+  - [x] 一行指令把溫度從 40 改成 80　　← `tools/set_die_temp.py`(QMP → tmp421)
+  - [x] `busctl` 看得到 `Value` 變了,且 `swampd` 收得到
+        (`pidcore.die0` 的 `input` 欄跟著變,`error = setpoint − input`)
+  - [x] Redfish 看到同一變化
+        ← `/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0`
+  - [x] 畫得出從指令到 Redfish JSON 經過哪幾個行程、幾次 IPC
+        ← [architecture.md](docs/architecture.md)。**實測:一次 Redfish GET =
+        3 個 method call(認證 / ObjectMapper / GetAll)+ 3 個回覆,牽涉 5 個行程**
   - [x] 知道**為什麼**有些感測器出現在 Redfish、有些沒有
-        ← [redfish-notes.md](docs/redfish-notes.md)
+        ← [redfish-notes.md](docs/redfish-notes.md)。**同機對照組:**
+        我這顆有 `chassis`/`all_sensors` association → 看得到;
+        上游的 `nvme1`~`nvme6` 沒有 → 看不到
 
-  > ⚠️ **誠實標註：** 這台 QEMU 沒有任何風扇硬體（`/sys/class/pwm/` 是空的，
-  > D-Bus 上沒有 `fan_tach`）。設定裡的 `fan0` 讀寫的是 `/tmp/sys/` 底下的
-  > **普通檔案**，它證明的是「swampd 的寫出路徑被執行了、值是多少」，
-  > **不是「風扇真的轉了」**。理由與做法見
-  > [`config/swampd/README.md`](config/swampd/README.md)。
+  > ⚠️ **誠實標註(兩件事):**
+  > 1. **溫度來自 QEMU 的 tmp421 裝置模型,不是真實硬體。** 它證明的是
+  >    「從 i2c 晶片到 Redfish 的整條軟體路徑是通的、每一層讀到什麼值」。
+  >    這顆晶片物理上是板上溫感,叫它 `die0` 是我的建模選擇。
+  > 2. **這台 QEMU 沒有任何風扇硬體**(`/sys/class/pwm/` 是空的,
+  >    D-Bus 上沒有 `fan_tach`)。設定裡的 `fan0` 讀寫的是 `/tmp/sys/` 底下的
+  >    **普通檔案**,證明的是「swampd 的寫出路徑被執行了、值是多少」,
+  >    **不是「風扇真的轉了」**。理由與做法見
+  >    [`config/swampd/README.md`](config/swampd/README.md)。
+  >
+  > 📌 **計畫原訂的 route (b)(`dbus-sensors` 的 `ExternalSensor`)在這個映像上
+  > 不存在** —— `meta-facebook` 的 bbappend 明文 `PACKAGECONFIG:remove`。
+  > 根因與替代路線見 [`config/entity-manager/README.md`](config/entity-manager/README.md)。
+
 - [ ] Gate 2　被控對象 + 跨層追蹤
 - [ ] Gate 3　控制器與量測
 - [ ] Gate 4　失效安全
