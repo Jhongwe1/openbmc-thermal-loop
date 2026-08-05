@@ -64,7 +64,14 @@
   > 不存在** —— `meta-facebook` 的 bbappend 明文 `PACKAGECONFIG:remove`。
   > 根因與替代路線見 [`config/entity-manager/README.md`](config/entity-manager/README.md)。
 
-- [ ] Gate 2　被控對象 + 跨層追蹤
+- [ ] Gate 2　被控對象 + 跨層追蹤　　← **起步中(W3 D4~D7 完成,W4 補完)**
+  - [x] **熱系統模型**(C++,一階熱容 + 對流熱阻 + 風扇慣性 + 傳輸死區 + 感測遲滯)
+        ← [`plant/`](plant/)、[`docs/plant-model.md`](docs/plant-model.md)
+  - [x] meson + gtest 骨架,與上游 `phosphor-pid-control` 同一套
+  - [x] 我說得出每個參數的物理意義與量級理由(含哪些是【判】、哪些是【驗】)
+  - [ ] 七個 L0 gtest 全綠 —— **目前 2/7**(`SteadyState`、`MonotonicInPwm`)
+  - [ ] 開環階躍跑得出 K、τ、θ(FOPDT 兩點法)→ **Fig 1**
+  - [ ] **Fig 6**:dts → i2c bus → hwmon → D-Bus → Redfish 的完整對照
 - [ ] Gate 3　控制器與量測
 - [ ] Gate 4　失效安全
 - [ ] Gate 5　官方測試套件
