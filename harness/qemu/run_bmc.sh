@@ -50,8 +50,18 @@ if [[ ! -f "${FLASH}" || "${RAW}" -nt "${FLASH}" ]]; then
 fi
 
 SSH_PORT="${SSH_PORT:-2222}"; HTTPS_PORT="${HTTPS_PORT:-2443}"
+
+# QMP = QEMU Machine Protocol：QEMU 自己的控制通道（JSON over unix socket）。
+# 本專案用它做「模擬硬體層的溫度注入」——tmp421 這顆晶片在 QEMU 裡是一個 QOM
+# 物件，有可寫的 temperature0~3 property（單位：千分之一度 C，見 hw/sensor/tmp421.c）。
+# 寫進去之後，guest 裡的 kernel tmp421 driver 讀 i2c 就會拿到新值，一路往上到
+# hwmon sysfs -> dbus-sensors -> D-Bus -> bmcweb / swampd。見 tools/set_die_temp.sh。
+#
+# 上一輪留下的 socket 檔要先清掉，否則 QEMU bind 會噴 Address already in use。
+QMP_SOCK="${QMP_SOCK:-/tmp/qmp-${TARGET}.sock}"
+unlink "${QMP_SOCK}" 2>/dev/null || true
 SERIAL="${QEMU_SERIAL:-mon:stdio}"
-echo "==> ${TARGET} on ${MACHINE}  flash=${FLASH_MB}MiB  (ssh:${SSH_PORT} https:${HTTPS_PORT})"
+echo "==> ${TARGET} on ${MACHINE}  flash=${FLASH_MB}MiB  (ssh:${SSH_PORT} https:${HTTPS_PORT} qmp:${QMP_SOCK})"
 
 # UI 旗標的選擇取決於 console 送去哪裡。
 #
@@ -74,4 +84,5 @@ exec qemu-system-arm \
   -drive "file=${FLASH},format=raw,if=mtd" \
   -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:${SSH_PORT}-:22,hostfwd=tcp:127.0.0.1:${HTTPS_PORT}-:443" \
   -net nic,netdev=net0 \
+  -qmp "unix:${QMP_SOCK},server=on,wait=off" \
   -serial "${SERIAL}" -serial null
