@@ -57,6 +57,10 @@ plant_dep = declare_dependency(
 # controller/ 在 W5 加入
 # controller_lib = static_library('controller', ['controller/pi.cpp'], ...)
 
+# ── 手動驗收工具（W3 D6）──────────────────────────────────────────────
+# 不是測試，是「用眼睛看曲線合不合物理直覺」用的。測試在 test/。
+executable('plant_probe', 'bench/plant_probe.cpp', dependencies: [plant_dep])
+
 # ── L1 模擬執行檔（吐 CSV 給 bench/ 用）────────────────────────────────
 # executable('sim', 'bench/sim.cpp', dependencies: [plant_dep])   # W5 啟用
 
