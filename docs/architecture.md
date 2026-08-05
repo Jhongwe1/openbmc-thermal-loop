@@ -130,3 +130,108 @@ QEMU 時間不精確,量到的延遲摻雜模擬器抖動;CI 跑不動,別人重
 
 上面兩張是 ASCII 版。**手繪版(紙筆)尚未完成** —— 面試白板題要的是能徒手畫出來,
 不是能貼出 ASCII。手繪稿完成後放進 `docs/` 並在此連結。
+
+---
+
+# 資料流:一個溫度值的旅程(2026-08-05 實測)
+
+> **Gate 1 DoD 第 4 條要求的就是這一節:「我畫得出從指令到 Redfish JSON 經過
+> 哪幾個行程、幾次 IPC。」下面每一個數字都是量出來的,不是估的。**
+
+## 完整路徑
+
+```
+  ① 我的指令(開發機,WSL)
+     ./tools/set_die_temp.py 80
+         │  QMP over unix socket  (/tmp/qmp-bletchley.sock)
+         │  {"execute":"qom-set","arguments":{
+         │     "path":"/machine/unattached/device[19]",
+         │     "property":"temperature0","value":80000}}
+         ▼
+╔═════════════════════════ QEMU 行程(開發機上) ═════════════════════════╗
+║  ② tmp421 裝置模型  (hw/sensor/tmp421.c)                              ║
+║     temperature[0] = (80000*256 - 128)/1000 = 20479   ← 8.8 定點數      ║
+║         │  模擬的 i2c 匯流排 (aspeed.i2c.bus.0)                        ║
+║         ▼                                                             ║
+║ ┌───────────────────── guest:OpenBMC(ARM) ────────────────────────┐  ║
+║ │  ③ Linux tmp421 driver  ← 真的 kernel driver                     │  ║
+║ │     暫存器只回傳 12 bit → 0.0625 °C 量化 → 79.9375                │  ║
+║ │         │                                                        │  ║
+║ │         ▼  /sys/class/hwmon/hwmon0/temp1_input = 79938  (m°C)    │  ║
+║ │  ④ hwmontempsensor (dbus-sensors)  ← 行程 1                       │  ║
+║ │     每秒輪詢 sysfs;值有變才發訊號                                  │  ║
+║ │         │                                                        │  ║
+║ │         ▼  D-Bus                                                 │  ║
+║ │  ⑤ dbus-broker  ← 行程 2(所有訊息都經過它,常被漏掉)               │  ║
+║ │      ├── PropertiesChanged (broadcast)  ──▶ ⑥ swampd    ← 行程 3  │  ║
+║ │      │                                        熱 PID → 風扇 PID   │  ║
+║ │      │                                        → /tmp/sys/pwm0    │  ║
+║ │      └── ThresholdAsserted (broadcast)  ──▶ ⑦ sel-logger ← 行程 4 │  ║
+║ │                                                                  │  ║
+║ │  ⑧ bmcweb  ← 行程 5(只有在有人來要的時候才動)                      │  ║
+║ │      HTTPS GET /redfish/v1/Chassis/Thermal_Loop_Demo/            │  ║
+║ │                Sensors/temperature_die0                          │  ║
+║ └──────────────────────────────────────────────────────────────────┘  ║
+╚═══════════════════════════════════════════════════════════════════════╝
+```
+
+## 【驗】行程數與 IPC 次數 —— 自己數的
+
+量法:在 BMC 上 `timeout 8 busctl monitor > /tmp/x.txt`,期間**只做一件事**,
+把輸出抓回開發機用 Python 依 `Sender` / `Destination` / `Path` 分類。
+(直接比「訊息總數」會被雜訊淹沒 —— 每一次 `ssh` 進去都會產生一批
+`NameOwnerChanged`。**要按物件路徑或連線名過濾。**)
+
+### 注入一次溫度(88 °C,跨過 80 °C 的 warning 門檻)
+
+| # | 訊息 | 發送者 → 接收者 | 說明 |
+|:-:|---|---|---|
+| 1 | `PropertiesChanged` | hwmontempsensor → **broadcast** | `Value` 變了 |
+| 2 | `PropertiesChanged` | hwmontempsensor → **broadcast** | `WarningAlarmHigh` 變了 |
+| 3 | `ThresholdAsserted` | hwmontempsensor → **broadcast** | 越過門檻的事件 |
+| 4 | `Properties.GetAll` | sel-logger → hwmontempsensor | 記事件前先把感測器讀齊 |
+| 5 | `Properties.Get` | sel-logger → hwmontempsensor | 同上 |
+
+**swampd 收到第 1 則就更新了,它送出 0 則訊息。**
+因為 D-Bus 訊號是**推**的 —— 訂閱者不需要回問。這就是為什麼 L2 控制迴路可以
+用 D-Bus 而不會被拖慢。
+
+**不跨門檻時只有第 1 則**;而且**值沒變就一則都沒有**(見下面的坑)。
+
+### 讀一次 Redfish(單一感測器)
+
+| # | method call | bmcweb → 誰 | 為什麼需要 |
+|:-:|---|---|---|
+| 1 | `Manager.GetUserInfo` | `xyz.openbmc_project.User.Manager` | **認證授權** —— 這一次幾乎沒人猜得到 |
+| 2 | `ObjectMapper.GetObject` | `xyz.openbmc_project.ObjectMapper` | 問「這個路徑歸誰管」 |
+| 3 | `Properties.GetAll` | `xyz.openbmc_project.HwmonTempSensor` | 一次把所有屬性讀回來 |
+
+**合計 3 個 method call + 3 個回覆 = 6 則訊息,牽涉 5 個行程**
+(bmcweb、user-manager、ObjectMapper、hwmontempsensor,加上 dbus-broker 本身)。
+
+> **這張表就是〈為什麼 Redfish 不能當 PID 輸入〉的量化依據。**
+> 一次讀值要 TLS 握手 + 3 次跨行程往返 + JSON 序列化;
+> 而 swampd 的內圈迴路是 **100 ms 一輪**。W9 會實際去量這條鏈路的延遲。
+
+## 圖例與現況
+
+**實線(上面全部)＝ 已完成、有實測證據。** 2026-08-05 起,從 ① 到 ⑧ 全部是實線。
+
+尚未實作(虛線,之後補):
+- `harness/dbus_bridge.py` —— L2 用,W7
+- 閉環:PWM 讀回開發機 → 餵進 plant model → 算出新溫度 → 再注入 ①,W7
+
+## 兩條注入路線的對照
+
+| | route (a) `extsensors` | **route (b′) hwmon(現行)** |
+|---|---|---|
+| 注入點 | BMC 內部(`busctl set-property`) | **模擬硬體層(QMP → tmp421)** |
+| 誰擁有感測器 | swampd 自己(`HostSensor`) | `hwmontempsensor`(上游 daemon) |
+| 經過 kernel driver | ❌ | **✅** |
+| 經過 hwmon sysfs | ❌ | **✅** |
+| 有 association | ❌ | **✅** |
+| Redfish 看得到 | ❌ | **✅** |
+| swampd 的介面 | `HostSensor`(推) | `DbusPassive`(訂閱) |
+| 量化誤差 | 無 | **0.0625 °C(晶片暫存器只有 4 個小數位元)** |
+
+route (a) 的設定仍留在 git 歷史裡(commit `52f84c8`),**它證明的是我兩條都做過**。

@@ -113,3 +113,61 @@ $C$CH/PowerSubsystem     | jq
 $C$CH/Sensors            | jq
 $C$CH/ThermalSubsystem/Fans | jq
 ```
+
+---
+
+## 5. ★ 2026-08-06 更新:感測器出現在 Redfish 了(route b′)
+
+`Sensors` collection 不再是空的。做法**不是**計畫寫的 route (b)
+(那支 daemon 不在這個映像裡,根因見 `config/entity-manager/README.md` §0),
+而是用 entity-manager 宣告一塊 board + 一顆**真的存在**的 TMP421,
+交給上游 `hwmontempsensor` 建立感測器。
+
+### 實測結果
+
+```bash
+$ C="curl -sk -u root:0penBmc https://127.0.0.1:2443"
+$ $C/redfish/v1/Chassis | jq -r '.Members[]."@odata.id"'
+/redfish/v1/Chassis/Bletchley_Front_Panel_Board
+/redfish/v1/Chassis/Thermal_Loop_Demo          ← ★ 新的,由我的 EM 設定產生
+```
+
+```json
+{
+  "@odata.id": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0",
+  "@odata.type": "#Sensor.v1_11_1.Sensor",
+  "Id": "temperature_die0",
+  "Name": "die0",
+  "Reading": 79.938,
+  "ReadingRangeMax": 127.0,
+  "ReadingRangeMin": -128.0,
+  "ReadingType": "Temperature",
+  "ReadingUnits": "Cel",
+  "Status": { "Health": "OK", "State": "Enabled" },
+  "Thresholds": {
+    "UpperCaution":  { "Reading": 80.0 },
+    "UpperCritical": { "Reading": 95.0 },
+    "LowerCaution":  { "Reading": null },
+    "LowerCritical": { "Reading": null }
+  }
+}
+```
+
+### ★ 三個計畫沒講、實測才知道的細節
+
+| # | 細節 | 為什麼重要 |
+|---|---|---|
+| 1 | **Redfish 的 `Id` 是 `temperature_die0`,不是 `die0`** | bmcweb 用 `<型別>_<名字>` 當 id。計畫寫的 `/Sensors/die0` 會 404。**腳本不可寫死,要從 `Sensors` collection 讀回來** |
+| 2 | **多了一個 Chassis** | 我的 EM 設定 `"Type": "Board"` 產生 `Inventory.Item.Board` 物件,bmcweb 就把它列成一個 Chassis。感測器掛在**我的** chassis 底下,不是原本那顆前面板 |
+| 3 | **`ReadingRangeMin/Max` 是 −128/127** | 那是 tmp421 的量程,由 `hwmontempsensor` 填。**這兩個數字在 swampd 那邊會被拿去做 [0,1] 正規化** —— 見 `LOG.md` 2026-08-06 第三則 |
+
+### 上游那七顆感測器仍然看不到 —— 而這正好印證了 §3 的根因
+
+`nvme1`~`nvme6`(`xyz.openbmc_project.nvme.manager`)與 `Virtual_Inlet_Temp`
+(`xyz.openbmc_project.VirtualSensor`)**到今天還是不在任何 Chassis 的
+`Sensors` 底下**。`busctl introspect` 顯示它們**沒有
+`xyz.openbmc_project.Association.Definitions` 介面**。
+
+**同一台機器上,有 association 的出現在 Redfish、沒有的沒出現 —— 這是對照組。**
+§3 那句「缺了 association 感測器就是孤兒」在 2026-08-05 還只是「讀文件得到的推論」,
+2026-08-06 變成**同機對照的實測結論**。
