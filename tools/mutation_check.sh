@@ -156,9 +156,13 @@ run_case "I2 28.3% 改成 40%" "$IDN" \
 run_case "I3 crossingTime 方向判斷反向" "$IDN" \
     'const bool rising = target > y0;' 'const bool rising = target < y0;'
 
+# ⚠️ I4 刻意寫成「把平均的點數改成 1」而不是「整行換成 y[iStep]」。
+#    後者會讓 nBase 變成未使用變數，被 -Werror 擋在編譯期 ——
+#    腳本會回報「✅ 編不過」，看起來過關，但**斷言根本沒被執行到**。
+#    「編不過」是比「測試變紅」弱的證據，設計 mutation 時要避開它。
 run_case "I4 基準值改回單點（計畫原本的寫法）" "$IDN" \
-    'const double y0 = baselineMean(y, iStep, nBase);' \
-    'const double y0 = y[iStep];'
+    'static_cast<std::size_t>(std::max(1.0, baselineS' \
+    'static_cast<std::size_t>(std::min(1.0, baselineS'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
