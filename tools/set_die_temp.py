@@ -138,8 +138,10 @@ def main():
     ap.add_argument("degc", nargs="?", type=float, help="要設定的溫度（°C）")
     ap.add_argument("--socket", default=DEFAULT_SOCK, help=f"QMP socket（預設 {DEFAULT_SOCK}）")
     ap.add_argument("--bus", type=int, default=DEFAULT_BUS, help="i2c bus 編號")
-    ap.add_argument("--addr", type=lambda s: int(s, 0), default=DEFAULT_ADDR, help="i2c 位址（可寫 0x4f）")
-    ap.add_argument("--channel", type=int, default=DEFAULT_CHANNEL, help="tmp421 通道 0~3（0 = 本地 = temp1_input）")
+    ap.add_argument("--addr", type=lambda s: int(s, 0), default=DEFAULT_ADDR,
+                    help="i2c 位址（可寫 0x4f）")
+    ap.add_argument("--channel", type=int, default=DEFAULT_CHANNEL,
+                    help="tmp421 通道 0~3（0 = 本地 = temp1_input）")
     ap.add_argument("--read", action="store_true", help="讀回目前值")
     ap.add_argument("--list", action="store_true", help="列出所有 tmp421")
     args = ap.parse_args()
