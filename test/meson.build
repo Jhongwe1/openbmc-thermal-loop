@@ -12,6 +12,12 @@ test(
     protocol: 'gtest',
 )
 
+test(
+    'identify',
+    executable('test_identify', 'test_identify.cpp', dependencies: test_deps),
+    protocol: 'gtest',
+)
+
 # W5 加入：
 # test('pi', executable('test_pi', 'test_pi.cpp', dependencies: test_deps))
 # test(
