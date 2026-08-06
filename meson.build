@@ -62,7 +62,8 @@ plant_dep = declare_dependency(
 executable('plant_probe', 'bench/plant_probe.cpp', dependencies: [plant_dep])
 
 # ── L1 模擬執行檔（吐 CSV 給 bench/ 用）────────────────────────────────
-# executable('sim', 'bench/sim.cpp', dependencies: [plant_dep])   # W5 啟用
+# stdout = CSV，stderr = 這次執行生效的完整參數。bench/exp01_sysid.py 兩個都收。
+executable('sim', 'bench/sim.cpp', dependencies: [plant_dep])
 
 # ── L0 測試 ────────────────────────────────────────────────────────────
 if get_option('tests').allowed()
