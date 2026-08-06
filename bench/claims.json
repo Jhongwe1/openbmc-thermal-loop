@@ -1,0 +1,76 @@
+{
+  "_readme": [
+    "我對外宣稱的每一個數字，連同它的來源、容差與對應的圖。",
+    "規則一：value 一律先填 null，等真的量到再填。先寫好看的數字再去湊是造假的起點。",
+    "規則二：每一個 claim 都必須指得到一份原始 CSV 與一張圖（誠實準則第 1 條）。",
+    "規則三：tolerance_pct 是重跑之後允許的相對偏移。W10 會把這個檔案接上 CI —",
+    "        重跑實驗、重算指標，任何一個 claim 超出容差就讓 build 失敗。",
+    "        意思是：README 上的數字如果哪天不再成立，CI 會先告訴我。",
+    "定義與實驗協定見 docs/measurement.md。"
+  ],
+
+  "fopdt_k_c_per_pct": {
+    "value": -0.314708,
+    "tolerance_pct": 0.05,
+    "unit": "°C/%PWM",
+    "meaning": "開環階躍識別出的製程增益（5 seed 中位數）。風扇迴路必為負。",
+    "measured_on": "2026-08-07",
+    "source": "bench/data/exp01_sysid_seed*.csv",
+    "figure": "figures/fig1_sysid.png",
+    "seed_range": [-0.315142, -0.314434]
+  },
+
+  "fopdt_tau_s": {
+    "value": 43.972,
+    "tolerance_pct": 0.10,
+    "unit": "s",
+    "meaning": "開環階躍識別出的一階時間常數（5 seed 中位數）。",
+    "measured_on": "2026-08-07",
+    "source": "bench/data/exp01_sysid_seed*.csv",
+    "figure": "figures/fig1_sysid.png",
+    "seed_range": [40.2483, 44.4484],
+    "note": "比模型設定的 tau_die = 45 小，因為 FOPDT 只有一個時間常數而模型有兩個一階環節；感測器遲滯被算進 theta。可檢查的不變量是 tau + theta。"
+  },
+
+  "fopdt_theta_s": {
+    "value": 7.2013,
+    "tolerance_pct": 0.15,
+    "unit": "s",
+    "meaning": "開環階躍識別出的死區時間（5 seed 中位數）。",
+    "measured_on": "2026-08-07",
+    "source": "bench/data/exp01_sysid_seed*.csv",
+    "figure": "figures/fig1_sysid.png",
+    "seed_range": [6.5768, 8.8382],
+    "note": "比模型設定的 deadTime = 3 大，理由同上。"
+  },
+
+  "fopdt_tau_plus_theta_s": {
+    "value": 50.9917,
+    "tolerance_pct": 0.05,
+    "unit": "s",
+    "meaning": "tau + theta。★ 這是交叉驗證用的不變量：模型設定的 tau_die + tau_sense + deadTime = 51.0 s，兩點法擬出來的總和應該守恆於它。",
+    "measured_on": "2026-08-07",
+    "source": "bench/data/exp01_sysid_seed*.csv",
+    "figure": "figures/fig1_sysid.png",
+    "seed_range": [49.0865, 51.5872],
+    "expected_from_model": 51.0
+  },
+
+  "recover_s_ratio": {
+    "value": null,
+    "tolerance_pct": 0.15,
+    "unit": "ratio",
+    "meaning": "無抗飽和 / 有抗飽和 的恢復時間比值。",
+    "source": "bench/data/exp03_*.csv",
+    "figure": "figures/fig3_antiwindup.png"
+  },
+
+  "reversals_reduction_ratio": {
+    "value": null,
+    "tolerance_pct": 0.20,
+    "unit": "ratio",
+    "meaning": "slew rate λ 放大後，每分鐘 PWM 方向反轉次數的下降比。",
+    "source": "bench/data/exp05_*.csv",
+    "figure": "figures/fig5_slew_sweep.png"
+  }
+}
