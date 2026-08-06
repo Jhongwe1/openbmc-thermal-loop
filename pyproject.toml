@@ -1,0 +1,38 @@
+# bench/ 的 Python 這一側：相依套件宣告 + 工具設定。
+#
+# C++ 那一側由 meson 管（見 meson.build）。兩套建置系統不是懶惰，是分工：
+# plant 與模擬要編成執行檔，實驗編排與畫圖不用。
+#
+# 安裝：
+#   source ~/.venvs/thermal/bin/activate
+#   pip install -e ".[dev]"
+#
+# 這個套件本身沒有任何 Python 模組（py-modules = []），
+# `pip install -e .` 的唯一作用是把下面的相依裝起來，
+# 並讓 ruff / pytest 找得到設定。
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openbmc-thermal-loop-bench"
+version = "0.1.0"
+description = "Experiment orchestration and plotting for the thermal control loop"
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "matplotlib", "pandas"]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "dbus-next", "robotframework", "robotframework-requests"]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E/F = pycodestyle + pyflakes（基本錯誤）
+# I   = import 排序        UP = 用新版 Python 語法
+# B   = flake8-bugbear，抓「語法對但幾乎一定是 bug」的寫法
+select = ["E", "F", "I", "UP", "B"]
