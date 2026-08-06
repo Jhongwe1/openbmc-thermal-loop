@@ -14,6 +14,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+# `pip install -e .` 產生的中繼資料目錄，是建置產物不是原始碼
+*.egg-info/
 
 # ── QEMU 映像(數百 MB,不進 git),但 manifest 是證據要留 ──
 images/**
