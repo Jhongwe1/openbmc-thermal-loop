@@ -1,0 +1,21 @@
+# exp01 兩點法擬合結果。由 build/identify_csv 從上面那些 CSV 算出。
+k=-0.314708
+k_min=-0.315142
+k_max=-0.314434
+tau=43.972000
+tau_min=40.248300
+tau_max=44.448400
+theta=7.201300
+theta_min=6.576800
+theta_max=8.838200
+residual_rms=0.060227
+residual_rms_min=0.055777
+residual_rms_max=0.089476
+seed0=k:-0.314434,tau:44.4149,theta:6.5768,residual_rms:0.060227
+seed1=k:-0.314708,tau:43.9720,theta:7.3047,residual_rms:0.058247
+seed2=k:-0.315069,tau:40.2483,theta:8.8382,residual_rms:0.089476
+seed3=k:-0.315142,tau:44.4484,theta:7.1388,residual_rms:0.055777
+seed4=k:-0.314705,tau:43.6880,theta:7.2013,residual_rms:0.061384
+tau_plus_theta=50.9917
+tau_plus_theta_min=49.0865
+tau_plus_theta_max=51.5872

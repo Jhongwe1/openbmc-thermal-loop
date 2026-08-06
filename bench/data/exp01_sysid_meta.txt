@@ -1,0 +1,31 @@
+# exp01 — 開環系統識別。欄位定義見 docs/measurement.md。
+step_at_s=300.0
+pwm_base=40.0
+pwm_step=60.0
+du=20.0
+power_w=150.0
+seconds=900.0
+dt=0.1
+seeds=[0, 1, 2, 3, 4]
+repo_commit=9d5fab5
+# ↓ 以下是 sim 回報的、這批資料實際生效的 plant 參數
+dt=0.1
+seconds=900
+power_base=150
+power_step=400
+power_at=-1
+pwm_base=40
+pwm_step=60
+pwm_at=300
+t_amb=25
+rth_max=0.35
+rth_min=0.12
+flow_exp=0.8
+tau_die=45
+tau_sense=3
+tau_fan=1.5
+dead_time=3
+rpm_max=15000
+pwm_min_spin=12
+lsb=0.0625
+noise_sigma=0.05
