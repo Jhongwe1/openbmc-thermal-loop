@@ -46,7 +46,7 @@ inc = include_directories('.')
 
 plant_lib = static_library(
     'plant',
-    ['plant/thermal_plant.cpp'],
+    ['plant/thermal_plant.cpp', 'plant/identify.cpp'],
     include_directories: inc,
 )
 plant_dep = declare_dependency(
@@ -64,6 +64,12 @@ executable('plant_probe', 'bench/plant_probe.cpp', dependencies: [plant_dep])
 # ── L1 模擬執行檔（吐 CSV 給 bench/ 用）────────────────────────────────
 # stdout = CSV，stderr = 這次執行生效的完整參數。bench/exp01_sysid.py 兩個都收。
 executable('sim', 'bench/sim.cpp', dependencies: [plant_dep])
+
+# ── 分析工具：吃 CSV、吐 FOPDT 參數 ────────────────────────────────────
+# 刻意與 sim 分開：sim 只產生資料，這支只消費資料。
+# 合併的話很容易寫出「跑完順便擬合」的捷徑，那會讓「圖上的 tau 來自 repo 裡
+# 那份 CSV」這個環節消失 —— 別人 clone 下來就只能相信我。
+executable('identify_csv', 'bench/identify_csv.cpp', dependencies: [plant_dep])
 
 # ── L0 測試 ────────────────────────────────────────────────────────────
 if get_option('tests').allowed()

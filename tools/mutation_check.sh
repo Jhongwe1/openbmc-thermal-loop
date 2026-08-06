@@ -31,6 +31,7 @@ cd "$REPO" || exit 1
 BUILD="${1:-build}"
 SRC="plant/thermal_plant.cpp"
 HDR="plant/thermal_plant.hpp"
+IDN="plant/identify.cpp"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -41,11 +42,10 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-cp "$SRC" "$HDR" "$BACKUP/"
+cp "$SRC" "$HDR" "$IDN" "$BACKUP/"
 
 restore() {
-    cp "$BACKUP/$(basename "$SRC")" "$SRC"
-    cp "$BACKUP/$(basename "$HDR")" "$HDR"
+    restore_sources
     rm -rf "$BACKUP"
 }
 trap restore EXIT
@@ -106,6 +106,7 @@ run_case() {
 restore_sources() {
     cp "$BACKUP/$(basename "$SRC")" "$SRC"
     cp "$BACKUP/$(basename "$HDR")" "$HDR"
+    cp "$BACKUP/$(basename "$IDN")" "$IDN"
 }
 
 # ── 植入的錯誤清單 ────────────────────────────────────────────────────
@@ -139,6 +140,25 @@ run_case "M5 rng 改成全域共用" "$SRC" \
 
 run_case "M6 rthMin 調小（飽和條件消失）" "$HDR" \
     'double rthMin = 0.12;' 'double rthMin = 0.08;'
+
+# ── 識別演算法（plant/identify.cpp）────────────────────────────────────
+#   I1  兩點法的係數 1.5 是從 t₂−t₁ = ⅔τ 推導出來的，不是調出來的
+#   I2  28.3% 這個百分比也是推導出來的 —— 改了就消不掉 theta
+#   I3  升降方向判斷 —— 只跑降溫方向的測試抓不到，所以有 HandlesRisingResponse
+#   I4  基準值改回單點 —— 這是我刻意偏離計畫的地方，必須有測試守著，
+#       否則哪天被「簡化」回去，不會有任何人發現（單點也會吐出正常的數字）
+run_case "I1 兩點法係數 1.5 -> 1.0" "$IDN" \
+    'f.tau = 1.5 * (t2 - t1);' 'f.tau = 1.0 * (t2 - t1);'
+
+run_case "I2 28.3% 改成 40%" "$IDN" \
+    '0.283 * (yInf - y0)' '0.400 * (yInf - y0)'
+
+run_case "I3 crossingTime 方向判斷反向" "$IDN" \
+    'const bool rising = target > y0;' 'const bool rising = target < y0;'
+
+run_case "I4 基準值改回單點（計畫原本的寫法）" "$IDN" \
+    'const double y0 = baselineMean(y, iStep, nBase);' \
+    'const double y0 = y[iStep];'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
