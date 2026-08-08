@@ -32,6 +32,7 @@ BUILD="${1:-build}"
 SRC="plant/thermal_plant.cpp"
 HDR="plant/thermal_plant.hpp"
 IDN="plant/identify.cpp"
+CTL="controller/pi.cpp"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -42,7 +43,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-cp "$SRC" "$HDR" "$IDN" "$BACKUP/"
+cp "$SRC" "$HDR" "$IDN" "$CTL" "$BACKUP/"
 
 restore() {
     restore_sources
@@ -107,6 +108,7 @@ restore_sources() {
     cp "$BACKUP/$(basename "$SRC")" "$SRC"
     cp "$BACKUP/$(basename "$HDR")" "$HDR"
     cp "$BACKUP/$(basename "$IDN")" "$IDN"
+    cp "$BACKUP/$(basename "$CTL")" "$CTL"
 }
 
 # ── 植入的錯誤清單 ────────────────────────────────────────────────────
@@ -163,6 +165,35 @@ run_case "I3 crossingTime 方向判斷反向" "$IDN" \
 run_case "I4 基準值改回單點（計畫原本的寫法）" "$IDN" \
     'static_cast<std::size_t>(std::max(1.0, baselineS' \
     'static_cast<std::size_t>(std::min(1.0, baselineS'
+
+# ── 控制器（controller/pi.cpp，W5）────────────────────────────────────
+#
+# C1~C3 動的是 AntiWindup::UpstreamParity 那條路徑 —— 它的規格不是「好的控制器」，
+# 是「上游 ec::pid() 此刻的行為」，所以只有 parity 測試能判它對錯。
+# 這三條剛好就是我讀原始碼時，計畫給的虛擬碼寫錯的那三個地方：
+# 如果 parity 測試抓不到它們，那份測試等於沒有在證明「我讀懂了上游」。
+#
+# C4~C5 動的是我自己的兩個策略。
+run_case "C1 上游回算條件 || 改成 &&" "$CTL" \
+    'p_.slewNeg != 0.0 || p_.slewPos != 0.0' \
+    'p_.slewNeg != 0.0 && p_.slewPos != 0.0'
+
+run_case "C2 上游回算多扣前饋" "$CTL" \
+    'integralTerm = output - pTerm;' \
+    'integralTerm = output - pTerm - ffTerm;'
+
+run_case "C3 上游最後那次箝位拿掉" "$CTL" \
+    'integralTerm = clamp(integralTerm, p_.integralMin, p_.integralMax);
+
+    integral_ = integralTerm;' \
+    'integral_ = integralTerm;'
+
+run_case "C4 條件積分永不生效" "$CTL" \
+    'if (worseHigh || worseLow)' 'if (worseHigh && worseLow)'
+
+run_case "C5 標準回算少扣前饋" "$CTL" \
+    'candidate = clamp(out - pTerm - dTerm - ffTerm, p_.integralMin,' \
+    'candidate = clamp(out - pTerm - dTerm, p_.integralMin,'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
