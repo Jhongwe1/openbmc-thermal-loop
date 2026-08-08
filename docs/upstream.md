@@ -115,6 +115,54 @@
 
 ---
 
+## 未提交的候選(同樣有訊號值)
+
+### 候選 1:`ec::pid()` 在 slew 生效時的積分回算
+
+- **觀察**(commit `c5e59550d3`,`pid/ec/pid.cpp`):slew rate limit 那一段結束時,
+  程式把積分回算成 `integralTerm = output - proportionalTerm` ——
+  **沒有扣掉 `derivativeTerm` 與 `feedFwdTerm`**。
+- **而且觸發條件是「`slewNeg` 或 `slewPos` 有設定」,不是「slew 真的限制住了輸出」。**
+  這一點計畫的虛擬碼寫錯了,我照著寫的第一版 parity 測試直接紅,回去讀原始碼才發現。
+- **影響:** `feedFwdGain != 0`(fan PID 很常見,因為 PWM→RPM 近似線性)
+  且 slew 有設定時,回算出的積分會把前饋那一份吸收進去,下一輪前饋又再加一次。
+- **我的驗證:** `test/test_parity_upstream.cpp` 的
+  `DivergesWhenSlewAndFeedForwardCoexist`。
+  參數 `slewPos=2`、`slewNeg=-3`、`ffGain=0.4`、`setpoint=65`、`outLim=[30,100]` 時:
+
+  | 量測 | 值 |
+  |---|---|
+  | 第一個分岔的時間步 | **13** |
+  | 輸出最大差 | **4.75**(輸出範圍寬 70,約 6.8%) |
+  | 積分最大差 | **62.5** |
+
+  同一組參數把 `ffGain` 設成 0,兩者逐步一致到 `1e-12`
+  (`NoDivergenceWhenFeedForwardIsZero`)—— 這條控制組證明分歧確實來自前饋項,
+  不是我實作裡的其他差異。
+- **我打算怎麼做:** **先在 Discord 問,不直接送 patch。** 我不確定這是刻意的
+  設計還是我理解錯。如果對方認為值得,我送的會是一個**把現行行為釘住的單元測試**
+  (不改行為)—— 這符合上游「可被測試的變更要附測試」的要求,而且不管結論是
+  「這是對的」還是「這要改」,測試本身都有價值。
+- **狀態:** 待 W10 提問。
+
+> ⚠️ **絕對不要說「OpenBMC 有 bug」。** 正確講法:
+> 「我讀 `ec::pid()` 時注意到,slew 生效時的積分回算是 `output − proportionalTerm`,
+> 沒扣前饋跟微分。我不確定是刻意還是我理解錯,所以我寫了一個單元測試把行為釘住,
+> 然後推去問。」
+
+### 候選 2:`configure.md` 沒有記錄的欄位
+
+計畫列了 7 個(`cycleIntervalTimeMS`、`updateThermalsTimeMS`、`accumulateSetPoint`、
+`derivativeCoeff`、`convertTempToMargin`、`convertMarginZero`、`missingIsAcceptable`)。
+**送出前必須逐一重驗**,不能照抄 —— 上游隨時可能已經補上了。
+
+其中 `derivativeCoeff` 這次順手確認過:程式碼支援(`pid/ec/pid.cpp` **每一輪無條件**
+計算 D 項),但 `configure.md` 的 PID 範例沒有列它。
+
+- **狀態:** 待 W10 逐項重驗後再決定送幾個。
+
+---
+
 ## W8 patch 候選 #1:`openbmc/docs` 的 `development/gerrit-setup.md`
 
 【查】2026-08-05 讀原文找到三個缺口。**合併成一個 patch 送**

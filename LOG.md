@@ -896,3 +896,229 @@
      **但檢查表問的是「讀者看不看得到」，不是「我知不知道」。**
      這跟前面兩則（驗證工具自己是綠的、mutation 編不過）是同一個病：
      **我一直在檢查我已經知道答案的東西。**
+
+---
+
+## 2026-08-09（W5 D1）PID 係數的符號：兩分鐘的實驗，省掉兩天的除錯
+
+> ⚠️ **這一則不是除錯紀錄，是預防性實驗。** 我沒有先遇到「風扇越熱轉越慢」
+> 再回頭查 —— 我是在寫任何係數之前，先花兩分鐘把符號量出來。
+> 格式仍然照〈假設 → 先驗哪個 → 根因〉走，但「現象」那一欄是我**製造**的，
+> 不是撞到的。這個差別要講清楚，否則就是把一個順利的決定包裝成一次英勇的除錯。
+
+- **待驗的命題**：`ec::pid()` 的誤差定義是 `error = setpoint - input`。
+  `input` 是絕對溫度（`type: "temp"`）時，溫度上升會讓 `error` 變負，
+  所以**比例係數必須是負的**，輸出（風扇轉速需求）才會隨溫度上升。
+  **這句話是從原始碼推出來的，不是量出來的。** 地雷 #9（係數符號搞反）
+  預估損失 1~2 天，而驗證成本是兩分鐘。
+- **實驗設計，以及兩個計畫沒說、但會讓實驗失敗的細節**：
+  1. **觀察的是溫度 PID 自己的輸出，不是 PWM。**
+     swampd 是**串級**的：溫度 PID（1 Hz）算出 RPM setpoint，
+     風扇 PID（10 Hz）才把 RPM 誤差轉成 PWM。本專案的風扇 PID 係數目前是 0，
+     **PWM 根本不會動**，照計畫盯著 PWM 看會得到「兩組一模一樣」的結論。
+     改看 `swampd -g` 寫的 `/tmp/pidlog/pidcore.die0`（欄位定義在上游
+     `pid/ec/logging.cpp` 的 `DumpContextHeader()`）。
+  2. **係數用 ±500，不是計畫寫的 ±100。**
+     `die0` 的 `outLim_min` 是 3000（zone 的 `minThermalOutput`），誤差是 ±10 °C，
+     `Kp=100` 時 `|輸出|` 只有 1000 —— **兩個溫度點都會被箝到 3000，
+     實驗會「成功地什麼都沒測到」。**
+- **量到什麼**（`./tools/sign_check.sh 500` 與 `./tools/sign_check.sh -500`，
+  原始資料 `bench/data/exp02_signcheck/`；設定檔只有 `proportionalCoeff`
+  一個欄位不同，而且是用程式改的，改完 `assert` 只動到一個 PID）：
+
+  | `proportionalCoeff` | 55 °C 的輸出 | 75 °C 的輸出 | 判讀 |
+  |---|---:|---:|---|
+  | **+500**（正） | **5031** | **3000** | ❌ 越熱轉越慢 |
+  | **−500**（負） | 3000 | **4969** | ✅ 越熱轉越快 |
+
+- **根因（命題成立）**：`temp` 型別要用負係數。
+  或者用 `convertTempToMargin` + `convertMarginZero` 在設定檔層級把它轉成 margin
+  —— **那兩個欄位 `configure.md` 沒有記錄**（見 `docs/upstream.md` 候選 2）。
+- **★ 一個計畫沒預期的觀察**：兩組在 3000 那一格是**完全一樣**的
+  （都被 `outLim_min` 箝住）。也就是說：
+  - **單點量測分不出符號對錯。** 這正是它叫「**兩點**檢查」的原因，
+    不是文件寫爽的。
+  - 而且符號錯的真正症狀不是「風扇越熱轉越慢」那麼明顯 —— 在誤差不夠大的
+    工作區間裡，症狀是**風扇卡在最低速，而且一切看起來都正常**。
+    **箝位把一半的資訊吃掉了。** 安靜的錯誤比大聲的錯誤難查。
+- **教訓三條**：
+  1. **不要假設「PID 就是那個 PID」。** 控制律的符號取決於誤差怎麼定義，
+     而那是**實作決定的**，不是理論決定的。以後接手任何控制器，
+     第一件事就是兩點符號檢查。
+  2. **設計實驗時要先問「這個量測看得到我要驗的東西嗎」。**
+     這次有兩個地方會讓實驗變成空的（看錯訊號、係數太小被箝位），
+     兩個都不會報錯，都只會給我一組「看起來很正常」的數字。
+  3. **箝位會吃掉資訊。** 這對之後的 anti-windup A/B（W7）是直接的提醒：
+     實驗參數要先確認**待測的差異落在沒有被箝住的區間裡**。
+
+---
+
+## 2026-08-09（W5 D1）背景跑的 QEMU 在 U-Boot 倒數結束時消失，而 `nohup` 擋不住
+
+- **現象**：把 QEMU 丟到背景開機（`nohup ./harness/qemu/run_bmc.sh bletchley &`），
+  三分鐘後 `ssh` 回 `Connection refused`。開機 log 停在
+  `Hit any key to stop autoboot:  2  1`，之後一個字都沒有，`pgrep qemu-system-arm`
+  也是空的。**看起來跟 W2 D4 的坑 14 一模一樣。**
+- **三個假設**：
+  1. **H1** 就是坑 14：`-nographic` 把 monitor 留在 stdio，背景執行時 stdin EOF
+     讓 QEMU 正常結束。
+  2. **H2** U-Boot 在等鍵盤輸入，serial 導到檔案之後讀不到東西。
+  3. **H3** QEMU 收到了某個訊號。
+- **先驗哪個、為什麼**：先驗 **H1**，因為它有前例、而且**兩秒就驗得完**
+  ——`run_bmc.sh` 裡已經有那段修正（`QEMU_SERIAL` 不是 stdio 時改用
+  `-display none -monitor none`），只要確認那條分支有走到即可。
+  結果：確實走到了，`ps` 的指令列印著 `-display none -monitor none`。**H1 排除。**
+  接著看啟動器的 stderr（我本來只看開機 log，沒看啟動器自己的輸出）：
+  ```
+  qemu-system-arm: terminating on signal 1
+  ```
+- **根因**：**signal 1 = SIGHUP，而 `nohup` 對 QEMU 無效。**
+  `nohup` 的做法是把 SIGHUP 設成 SIG_IGN 再 exec；`exec` 的確會保留「被忽略」
+  這個狀態。但 **QEMU 自己註冊了 SIGHUP 的處理函式**，那一步把繼承來的 SIG_IGN
+  蓋掉，於是 `wsl` 這一次呼叫結束、session 被拆掉時，SIGHUP 送進來就把它收掉了。
+  改用 `setsid`（開一個新的 session，根本不會收到那個 SIGHUP）之後正常。
+- **教訓兩條**：
+  1. **同一個症狀可以有兩個完全不同的根因。** 坑 14 與這次的畫面幾乎一樣
+     （開機開到一半安靜消失、離開碼看起來沒事），但一個是 stdin EOF、一個是 SIGHUP。
+     分辨它們的**只有一行**：啟動器的 stderr 上那句 `terminating on signal 1`。
+     **我第一次沒看那個檔案，因為我已經先認定是坑 14 了。**
+  2. **`nohup` 只保證「訊號處理狀態被繼承」，不保證程式不去改它。**
+     要真的讓一個程式脫離 session，用 `setsid`。
+
+---
+
+## 2026-08-09（W5 D2）我以為那顆 tmp421 是 entity-manager 建的 —— 錯了
+
+- **背景**：W3 為了讓 swampd 有溫度可讀，我用 entity-manager 設定了一顆 TMP421
+  （`/etc/entity-manager/configurations/ThermalLoopDemo.json`，bus 0、位址 `0x4f`）。
+  所以做 Fig 6 之前，我的預設是「這顆裝置是 entity-manager 在執行時期
+  用 `new_device` 建出來的」。**如果這是真的，Fig 6 的第一格（device tree）
+  就不存在，整張圖的敘事要重寫。**
+- **怎麼驗的**：讀 sysfs，兩個欄位就分得出來。
+  ```
+  $ readlink -f /sys/bus/i2c/devices/0-004f/of_node
+  /sys/firmware/devicetree/base/ahb/apb/bus@1e78a000/i2c@80/tmp421@4f
+  $ cat /sys/bus/i2c/devices/0-004f/modalias
+  of:Ntmp421T(null)Cti,tmp421
+  ```
+- **根因**：**裝置本來就在 device tree 裡**（`bletchley` 的 dts 宣告了 **10 顆**
+  tmp421），kernel 依 `compatible = "ti,tmp421"` 直接綁上。
+  `of_node` 存在、`modalias` 以 `of:` 開頭，兩者都是「從 device tree 來的」的證據；
+  執行時期建出來的會是 `i2c:tmp421`，而且沒有 `of_node`。
+  **entity-manager 做的是另一件事**：它發布一個 Configuration 物件，
+  讓 `dbus-sensors` 的 `hwmontempsensor` 知道「這顆要認領、名字叫 die0」。
+- **順帶量到的東西（比原本要做的還值錢）**：一顆感測器要出現在 D-Bus 上，
+  **「硬體在」與「設定在」是兩個獨立的必要條件**，而這台機器同時給了我兩種失敗：
+
+  | | 硬體在 | 硬體不在 |
+  |---|---|---|
+  | 有 EM 設定 | ✅ `die0` | ❌ `FRONT_PANEL_TEMP`（SI7020 @ bus10 `0x40`，QEMU 沒模擬那顆） |
+  | 沒有 EM 設定 | ❌ 另外 9 顆 tmp421 | — |
+
+  證據在 `bench/data/exp03_trace/raw/42_counts.txt`、`44_config_without_hardware.txt`、
+  `45_dts_tmp421_count.txt`。
+- **教訓兩條**：
+  1. **「我做了 X，所以 X 是原因」是最容易騙過自己的推論。** 我確實設定了
+     entity-manager，感測器確實出現了，但那兩件事之間少了一環 ——
+     裝置本來就在。**沒有去看 `of_node`，Fig 6 的第一格就是編的。**
+  2. **這個誤會被抓到，是因為圖規定「每一格都要是我機器上的真實字串」。**
+     如果我只是照計畫的範例圖畫，永遠不會發現。**反造假設計順便抓到了我的無知。**
+
+---
+
+## 2026-08-09（W5 D5）計畫抄的 `ec::pid()` 有三處與原始碼不符
+
+- **背景**：D5 要寫自己的 PI，D6 要跟上游 `ec::pid()` 逐步比對。
+  計畫在 D1 給了一段 `ec::pid()` 的虛擬碼。
+- **現象**：我先讀了釘住那個 commit（`c5e59550d3`）的真正原始碼，
+  發現與計畫給的虛擬碼有三處不同。三處**都會改變輸出**：
+
+  | # | 計畫寫的 | 原始碼實際上 | 什麼時候會咬到 |
+  |:--:|---|---|---|
+  | 1 | `if (derivativeCoeff != 0) { 算 D }` | **沒有這個判斷**，每輪無條件計算 | `ts` 為 0 時會是 inf/NaN（上游註解自己寫了 "assumes the ts field is non-zero"） |
+  | 2 | 最後那次 `clamp(integralTerm)` 只在 slew 生效時做 | **無條件執行**，每輪都做 | 回算把積分推出 `integralLimit` 時 |
+  | 3 | 回算發生在「slew **限制住了**輸出」時 | **只要 `slewNeg` 或 `slewPos` 不是 0 就回算** | slew 有設定但沒咬到的每一輪 |
+
+- **第 3 點為什麼最重要**：它把分歧的條件從「slew 咬到」放寬成「slew 有設定」。
+  照計畫寫，`slewPos=2` 而輸出根本沒被限速的那些輪，我不會回算、上游會 ——
+  兩邊的積分從那一刻起就分家，而且**輸出要好幾輪之後才看得出來**。
+- **我怎麼處理**：`controller/pi.hpp` 多一個 `AntiWindup::UpstreamParity` 模式，
+  逐行複製上游的順序，**刻意不與我自己的四種策略共用程式碼** ——
+  那條路徑的規格不是「一個好的控制器」，是「上游此刻的行為」。
+  共用的話，我哪天改進自己的實作，會把比對基準一起改掉，而那正是 parity 測試
+  唯一要防的事。
+- **教訓**：**二手的程式碼摘要不能當規格。**
+  計畫那段虛擬碼看起來完全合理，三個差異都是「合理化」的方向
+  （加上 `if` 判斷、把 clamp 收進條件式裡）——**它比原始碼「更像正確的程式碼」，
+  所以更不容易起疑。** 逐行比對的成本是 20 分鐘，被它咬到的成本是整個 parity 測試
+  的結論失效。
+
+---
+
+## 2026-08-09（W5 D6）meson 不准我碰 subproject 的檔案，而止損方案會弄壞我的宣稱
+
+- **現象**：照計畫把 `subprojects/phosphor-pid-control/pid/ec/pid.cpp` 直接加進
+  parity 測試的 target，`meson setup` 直接失敗：
+  ```
+  ERROR: Sandbox violation: Tried to grab file pid.cpp from a nested subproject.
+  ```
+- **計畫的止損方案**：把 `pid.cpp` / `pid.hpp` 兩個檔案 vendor 進 `third_party/`，
+  README 註明來源 commit 與 Apache-2.0。
+- **為什麼我不用它**：這個測試的價值整個押在一句話上 ——
+  「**我的測試真的在編上游的程式碼**，不是重寫一版然後宣稱一樣」。
+  複製進來之後，那句話就退化成「我的測試在編一份我自己維護的副本」。
+  止損方案本身沒錯，但它損失的正好是我最想留的那樣東西。
+- **改用的做法**：meson wrap 的 **`patch_directory`** ——
+  我在 `subprojects/packagefiles/phosphor-pid-control-parity/meson.build` 寫一份
+  只編三個編譯單元的 `meson.build`，wrap 下載後會用它蓋掉上游那份。
+  commit 仍然釘死在 `.wrap` 裡、編的仍然是上游的原始碼、repo 裡沒有任何副本。
+- **實際踩到的三件事**：
+  1. `pid.cpp` 不只需要自己 —— 它呼叫 `LogInit/LogPeek/LogContext`（`pid/ec/logging.cpp`），
+     那支又用到 `coreLoggingEnabled` 等全域旗標（`pid/tuning.cpp`）。
+     **三個編譯單元，而且合起來只依賴標準函式庫**（不需要 sdbusplus / boost / systemd）。
+  2. 上游那三個檔在我的 `warning_level=3 + werror=true` 底下編不過。
+     解法是在 subproject 的 `meson.build` 裡設 `warning_level=0, werror=false` ——
+     **不是去改上游的程式碼**。改了的話，比對的就不是上游那一份了。
+  3. ★ **`dependency(..., required: false)` 不會去看 wrap。** 輸出是
+     `Run-time dependency upstream-ec-pid found: NO (tried pkgconfig and cmake)`，
+     然後 parity 測試**安靜地從測試清單裡消失**，`meson test` 依然全綠。
+     要加 `allow_fallback: true`。
+- **教訓兩條**：
+  1. **止損方案要看它損失的是什麼。** 「退版也完全可以接受」這句話成立的前提是
+     退掉的東西不是這件事的重點。這次退掉的正好就是重點。
+  2. **「少建了一個測試」比「建置失敗」危險。** 建置失敗會叫，少一個測試不會 ——
+     `Ok: 3 Fail: 0` 看起來跟 `Ok: 4 Fail: 0` 一樣令人放心。
+
+---
+
+## 2026-08-09（W5 D7）parity 一次就綠，所以我去證明它會紅
+
+- **現象**：`test_parity_upstream` 第一次執行就全綠 —— 72 組參數組合、
+  每組約 90 個時間步，逐步吻合到 `1e-12`。
+- **為什麼這是可疑的訊號**：這一週前面才剛發生兩件事 ——
+  我照計畫寫的兩個 PI 測試紅了（而且錯的是我的前提），
+  以及計畫的虛擬碼有三處與原始碼不符。
+  在那個背景下，「一次就完全吻合」比較像是**測試沒在測**，而不是我寫得好。
+  這也是 W3 D7 就立下的規矩：**測試綠 ≠ 測試有在保護我。**
+- **怎麼驗的**：把 `controller/pi.cpp` 加進 `tools/mutation_check.sh`，
+  植入 5 個「我真的可能寫錯」的錯（C1~C5），其中 C1~C3 就是上面那三處
+  計畫寫錯的地方。**如果 parity 測試抓不到那三個，它證明的就不是「我讀懂了上游」，
+  只是「兩份實作今天剛好一致」。**
+- **★ 設計 C2 的時候發現 parity 測試自己有洞**：
+  C2 是「上游的回算多扣了前饋」。但我原本的主要比對**只掃 `ffGain = 0`**
+  （我當時的理由是「ff != 0 時會分歧」）—— 那是把兩件事混在一起：
+  分歧的是**我自己的標準回算**，而 `UpstreamParity` 這個模式的規格是
+  「**不管參數是什麼**，都要跟上游一模一樣」。
+  補上 `ffGain ∈ {0, 0.4}` 之後（組合數 36 → 72），C2 才抓得到。
+  **補之前它會是 survivor。**
+- **結果**：15 個植入的錯誤全部至少被一個測試抓到。
+- **量到的分歧**（`DivergesWhenSlewAndFeedForwardCoexist`，
+  `slewPos=2 slewNeg=-3 ffGain=0.4 setpoint=65 outLim=[30,100]`）：
+  第一個分岔在第 **13** 步，輸出最大差 **4.75**（輸出範圍寬 70），積分最大差 **62.5**。
+  把 `ffGain` 設成 0 則逐步一致到 `1e-12` —— 這條控制組證明分歧確實來自前饋項。
+- **教訓兩條**：
+  1. **設計負向驗證會逼你重讀正向測試的涵蓋範圍。**
+     這個洞不是跑測試發現的（跑幾次都綠），是「我要植入哪一種錯」逼出來的。
+  2. **「因為會分歧所以不掃」是錯的推論。** 該問的是「這個模式的規格是什麼」——
+     規格是「複製上游」，那就沒有任何參數可以豁免。
+     會分歧的是**另一個模式**，那該由另一個測試去管。

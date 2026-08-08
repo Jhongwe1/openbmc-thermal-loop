@@ -3,7 +3,7 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0 完成、Gate 1 完成、Gate 2 進度 4/6**——
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~2 完成、Gate 3 進度 3/7**——
 > 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
 > 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
 > **`busctl`、`swampd` 的 PID 軌跡、Redfish 三個地方同時變**。
@@ -64,7 +64,7 @@
   > 不存在** —— `meta-facebook` 的 bbappend 明文 `PACKAGECONFIG:remove`。
   > 根因與替代路線見 [`config/entity-manager/README.md`](config/entity-manager/README.md)。
 
-- [ ] Gate 2　被控對象 + 跨層追蹤　　← **4/6(W4 完成,剩下兩條 W5 做)**
+- [x] Gate 2　被控對象 + 跨層追蹤　　← **6/6(W5 收關)**
   - [x] **熱系統模型**(C++,一階熱容 + 對流熱阻 + 風扇慣性 + 傳輸死區 + 感測遲滯)
         ← [`plant/`](plant/)、[`docs/plant-model.md`](docs/plant-model.md)
   - [x] meson + gtest 骨架,與上游 `phosphor-pid-control` 同一套
@@ -72,8 +72,9 @@
   - [x] **七個 L0 gtest 全綠**(能量守恆、單調性、死區、時間常數、決定性、**飽和條件**)
         —— 外加五個識別測試,共 12 個
   - [x] **開環階躍跑得出 K、τ、θ**(FOPDT 兩點法,5 個 seed)→ **Fig 1**,見下
-  - [ ] **Fig 6**:dts → i2c bus → hwmon → D-Bus → Redfish 的完整對照 ← W5
-  - [ ] 我能指著 dts 的一行說「這一行決定了 Redfish 上這個 URI」 ← W5
+  - [x] **Fig 6**:dts → i2c bus → hwmon → D-Bus → Redfish 的完整對照,見下
+  - [x] 我能指著 dts 的一行說「這一行決定了 Redfish 上這個 URI」
+        ← [devicetree-to-dbus.md](docs/devicetree-to-dbus.md)
 
 ### ★ Fig 1 —— 開環系統識別(第一張證據圖)
 
@@ -100,11 +101,72 @@ PWM 從 40 % 階躍到 60 %,功耗固定 150 W,5 個不同雜訊 seed。
 > python bench/plot.py --fig 1                   # 從那些 CSV 產生上面這張圖
 > ```
 
+### ★ Fig 6 —— 一顆感測器從 device tree 到 Redfish
+
+![Fig 6 — device tree 到 Redfish 的跨層追蹤](figures/fig6_dts_to_redfish.png)
+
+**圖上每一格都是這台機器的真實輸出**,每一格右下角標的是它來自哪一條指令的
+stdout(全部在 [`bench/data/exp03_trace/raw/`](bench/data/exp03_trace/))。
+device tree 取的是 `/sys/firmware/fdt` ——**kernel 實際載入的那一份**,
+不是映像裡的 `.dtb`。
+
+```bash
+./tools/trace_sensor.sh      # 擷取五層的原始輸出,產生 layers.json
+python bench/plot_fig6.py    # 從 layers.json 畫出上面這張圖
+```
+
+**這張圖的兩個重點:**
+
+| | |
+|---|---|
+| **單位換了三次** | `42438`(毫度 C)→ `42.438`(度 C)→ Redfish 的 `Cel` |
+| **名字換了四次** | `tmp421@4f` → `0-004f` → `hwmon0` → `die0` → `temperature_die0` |
+
+沒有任何一層看得到下一層的名字,**每一層的對應關係都是另外一份設定決定的**:
+`compatible` 綁 driver、entity-manager 的 Configuration 讓 `dbus-sensors` 認領、
+association 讓 bmcweb 掛進 Chassis。
+
+> **★ 順手量到的東西:** 一顆感測器要出現在 D-Bus 上,
+> 「**硬體在**」與「**設定在**」是兩個獨立的必要條件,
+> 而這台機器同時提供了兩種失敗:
+> dts 宣告了 **10 顆** tmp421、kernel 全部綁上,但只有 `die0` 有 entity-manager
+> 設定(有硬體沒設定);而 `FRONT_PANEL_TEMP` 有設定,QEMU 卻沒模擬那顆 SI7020
+> (有設定沒硬體)。細節見
+> [`docs/devicetree-to-dbus.md`](docs/devicetree-to-dbus.md) 第 4 節。
+
+> 📌 **誠實標註:** 這是「讀 ＋ 對照」。**我沒有寫過 kernel driver,
+> 也沒有改過 device tree 重新編譯驗證。** 底下那顆晶片是 QEMU 模擬的,
+> 從 i2c driver 往上才是真的軟體。
+
+### Gate 3 起步:我自己的 PI,以及與上游的逐步比對
+
+[`controller/pi.cpp`](controller/pi.cpp) 是一版 C++ PI,含四種抗飽和策略
+(無處理 / 積分箝位 / 條件積分 / 標準回算),外加第五個模式
+`UpstreamParity` —— **逐行複製上游 `ec::pid()` 的行為**。
+
+[`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp) 把上游
+`pid/ec/pid.cpp` **真的編進這個測試**(meson wrap 釘住 commit `c5e59550d3`,
+與這台 BMC 映像同一版),掃 **72 組參數組合**逐步比對,吻合到 `1e-12`。
+
+**比對的是序列不是單點**,而且輸入一定要「爬升 → 飽和 → 解除」——
+那正是 anti-windup 的作用區間,**不製造飽和的測試等於沒測**
+(這件事本身也有一個測試守著:`TheBatteryActuallySaturatesBothLimits`)。
+
+**★ 有一個組合是刻意讓它分歧的,而且我沒有改我的實作去配合上游:**
+slew rate limit 有設定、而且前饋增益不為零時,上游把積分回算成
+`output − proportionalTerm`,**沒有扣掉前饋那一份**。實測第 **13** 個時間步
+開始分岔,輸出最大差 **4.75**、積分最大差 **62.5**;把前饋設成 0 則完全一致
+—— 那條控制組證明分歧確實來自前饋項。
+
+> 我不確定這是刻意的設計還是我理解錯,所以**寫成一個獨立測試留在 repo 裡,
+> 打算去 Discord 問**,而不是斷言上游有問題。見
+> [`docs/upstream.md`](docs/upstream.md) 的〈未提交的候選〉。
+
 ### 證據怎麼被守住
 
 ```bash
-meson test -C build          # 12 個測試（7 個 plant + 5 個 identify）
-./tools/mutation_check.sh    # 故意植入 10 個錯誤，每一個都必須讓某個測試變紅
+meson test -C build          # 4 支測試執行檔（plant / identify / pi / parity_upstream）
+./tools/mutation_check.sh    # 故意植入 15 個錯誤，每一個都必須讓某個測試變紅
 ```
 
 **第二行才是重點。** 「測試是綠的」只證明目前沒有斷言被觸發,
@@ -113,9 +175,24 @@ meson test -C build          # 12 個測試（7 個 plant + 5 個 identify）
 把 `rthMin` 調小讓飽和條件悄悄消失……),重編、重跑、記錄哪些測試變紅,
 **有任何一個活下來就離開碼 1**。
 
-實測 10 個全被抓到,其中四個**各自只有一個測試抓得到** ——
-那四個測試是它們各自性質的唯一防線,而這份對照證明了它們守得住。
-- [ ] Gate 3　控制器與量測
+實測 **15 個全被抓到**,其中數個**各自只有一個測試抓得到** ——
+那些測試是它們各自性質的唯一防線,而這份對照證明了它們守得住。
+
+> ★ **設計 mutation 的過程,抓出了 parity 測試自己的漏洞。**
+> 有一個植入的錯誤是「上游的積分回算多扣了前饋」。我原本的比對只掃
+> `ffGain = 0`,所以那個錯**活得下來**。補上 `ffGain ∈ {0, 0.4}`
+> (組合數 36 → 72)之後才抓得到。
+> 這個洞不是跑測試發現的(跑幾次都綠),是「**我要植入哪一種錯**」逼出來的。
+
+- [ ] Gate 3　控制器與量測　　　　← **3/7(W5 起步)**
+  - [x] 我自己的 PI(C++,四種抗飽和 + 一個上游相容模式)← [`controller/`](controller/)
+  - [x] 與上游 `ec::pid()` 的 gtest parity 測試(72 組參數,`1e-12`)
+  - [x] **符號檢查實驗**(兩點法;`temp` 型別要用負係數)
+        ← [`tools/sign_check.sh`](tools/sign_check.sh)、`bench/data/exp02_signcheck/`
+  - [ ] λ 整定 → **Fig 2**　← W6
+  - [ ] **anti-windup A/B(L1 + L2)**　← W7,核心證據
+  - [ ] slew 掃描(含風扇功耗)　← W8
+  - [ ] 量出 swampd 的兩個時間常數,驗證串級架構　← W6
 - [ ] Gate 4　失效安全
 - [ ] Gate 5　官方測試套件
 - [ ] Gate 6　Upstream
