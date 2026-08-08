@@ -5,6 +5,12 @@ option(
     description: '建置 L0 gtest（auto = 有 gtest 就建）',
 )
 
-# W5 之後會加：
-# option('with-upstream-parity', type: 'boolean', value: true,
-#        description: 'Build the gtest that compares against upstream ec::pid()')
+# auto 而不是 true：沒有網路（或刻意不抓 subproject）的人仍然編得出整個專案，
+# 只是少了 parity 那一個測試。enabled 的話缺 subproject 會直接 configure 失敗，
+# 那是 CI 想要的行為，不是第一次 clone 的人想要的。
+option(
+    'upstream-parity',
+    type: 'feature',
+    value: 'auto',
+    description: '建置與上游 ec::pid() 逐步比對的 gtest（需要 subprojects/phosphor-pid-control）',
+)

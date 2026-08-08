@@ -28,6 +28,10 @@ images/**
 # ── meson subprojects:只留 .wrap,不收上游原始碼 ──
 subprojects/*/
 !subprojects/*.wrap
+# ⚠️ packagefiles/ 是例外:那裡面是**我自己寫的** meson.build,
+#    給 wrap 的 patch_directory 用,不是從上游抓下來的東西。
+#    少了它,別人 clone 之後 parity 測試建不起來,而且錯誤訊息不會告訴他為什麼。
+!subprojects/packagefiles/
 
 # ── 編輯器 / OS ───────────────────────────────────
 .vscode/

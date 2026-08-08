@@ -1,0 +1,19 @@
+[wrap-git]
+url = https://github.com/openbmc/phosphor-pid-control.git
+# ★ 釘死在這台 BMC 上實際跑的那一版。
+#   來源：映像 manifest 的 phosphor-pid-control 0.1+git0+c5e59550d3-r1
+#   （見 docs/env-baseline.md）。
+#
+#   不要用 master。「版本可追溯」是這件事一半的價值 —— parity 測試的結論是
+#   「我的實作與 <某個 commit> 的 ec::pid() 逐步一致」，沒有那個 commit
+#   這句話就沒有意義，而且上游改了行為之後測試會莫名其妙變紅。
+revision = c5e59550d37a5be079f724a6e2633d4aae3ee238
+depth = 1
+# 用我自己的 meson.build 蓋掉上游那一份，只編 ec::pid() 需要的三個編譯單元。
+# 理由寫在 subprojects/packagefiles/phosphor-pid-control-parity/meson.build。
+# （meson 不允許父專案直接抓 subproject 目錄裡的檔案 —— "Sandbox violation"，
+#   patch_directory 是它給的正規解法。）
+patch_directory = phosphor-pid-control-parity
+
+[provide]
+upstream-ec-pid = upstream_ec_pid_dep
