@@ -18,10 +18,24 @@ test(
     protocol: 'gtest',
 )
 
-# W5 加入：
-# test('pi', executable('test_pi', 'test_pi.cpp', dependencies: test_deps))
-# test(
-#     'parity_upstream',
-#     executable('test_parity_upstream', 'test_parity_upstream.cpp',
-#                dependencies: test_deps + [upstream_pid_dep]),
-# )
+test(
+    'pi',
+    executable(
+        'test_pi',
+        'test_pi.cpp',
+        dependencies: test_deps + [controller_dep],
+    ),
+    protocol: 'gtest',
+)
+
+# upstream_pid_dep 在沒有 subproject 時是 disabler()，整個 target 會被跳過，
+# 其他測試照常建置。這正是 disabler 的用途：缺一個可選相依不該讓 build 死掉。
+test(
+    'parity_upstream',
+    executable(
+        'test_parity_upstream',
+        'test_parity_upstream.cpp',
+        dependencies: test_deps + [controller_dep, upstream_pid_dep],
+    ),
+    protocol: 'gtest',
+)
