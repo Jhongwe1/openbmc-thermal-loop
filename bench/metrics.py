@@ -30,8 +30,49 @@ import sys
 import pandas as pd
 
 
+def tail_window(df: pd.DataFrame, tail_s: float) -> pd.DataFrame:
+    """取這份軌跡**最後 tail_s 秒**的那一段。
+
+    ★★ 為什麼用「時間」選，不是用「列數」選（2026-08-09 改）
+
+    原本的寫法是::
+
+        dt = float(df["t_s"].iloc[1] - df["t_s"].iloc[0])   # 從前兩列推取樣週期
+        n = max(1, int(tail_s / dt))
+        df["fan_power_rel"].tail(n)
+
+    它有兩個問題，都是寫測試的時候才逼出來的：
+
+    1. **取樣週期是從前兩列推出來的。** 只要軌跡不是等間隔取樣
+       （例如 L2 從 BMC 收資料 —— 那一側的間隔本來就會抖），
+       視窗長度就會算錯，而且**不會有任何錯誤訊息**：
+       你會拿到一個看起來很正常、但涵蓋時間根本不是 120 秒的平均值。
+    2. **只有一列的 DataFrame 會丟 `IndexError`**（`iloc[1]` 不存在），
+       訊息是「index out of bounds」，看不出真正的原因是什麼。
+
+    用時間篩選同時解掉這兩個 —— 而且**它才是這個指標的定義**：
+    「最後 120 秒的平均」講的是時間，不是列數。
+
+    ⚠️ 這一段之後 W6 的 `settle_s`、`pwm_pp` 與 W7 的 `recover_s` 都會用到。
+       現在把陷阱留著，等於留給那三個指標。
+    """
+    if "t_s" not in df.columns:
+        raise KeyError("軌跡缺少 t_s 欄 —— 指標全部以時間定義，沒有它算不了")
+    if len(df) == 0:
+        raise ValueError("空的軌跡：沒有資料可以算指標")
+    if tail_s <= 0.0:
+        raise ValueError(f"tail_s 必須為正，收到 {tail_s}")
+
+    t_end = float(df["t_s"].iloc[-1])
+    return df[df["t_s"] >= t_end - tail_s]
+
+
 def t_peak_c(df: pd.DataFrame) -> float:
-    """全程最高感測溫度 (°C)。"""
+    """全程最高感測溫度 (°C)。
+
+    ⚠️ 看的是 `t_sense_c`（**感測器讀到的**），不是 `t_die_c`（模型內部真值）。
+       真實系統上量不到後者，用它會讓這個指標變成「模擬才算得出來的東西」。
+    """
     return float(df["t_sense_c"].max())
 
 
@@ -44,12 +85,15 @@ def fan_power_rel(df: pd.DataFrame, tail_s: float = 120.0) -> float:
       這是資料中心風扇控制的全部經濟動機，也是 W6/W8 講「λ 放大的代價」
       時要換算成錢的那個係數。
 
+    ⚠️ **這個函式沒有在算三次方。** 三次方是 `plant/thermal_plant.cpp` 的
+       `fanPowerRel()` 做的，`bench/sim` 把它寫成 CSV 的一欄。
+       這裡做的只是「取最後一段的平均」。搞混的話會寫出測三次方的測試，
+       然後以為自己驗過了這個函式。
+
     ⚠️【判】這是**模型算出來的相對值，不是量到的瓦數**。
        講的時候要說「相對風扇功耗」，不要說「省了多少瓦」。
     """
-    dt = float(df["t_s"].iloc[1] - df["t_s"].iloc[0])
-    n = max(1, int(tail_s / dt))
-    return float(df["fan_power_rel"].tail(n).mean())
+    return float(tail_window(df, tail_s)["fan_power_rel"].mean())
 
 
 def overshoot_c(df: pd.DataFrame, setpoint: float) -> float:  # W6 實作

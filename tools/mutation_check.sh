@@ -33,6 +33,8 @@ SRC="plant/thermal_plant.cpp"
 HDR="plant/thermal_plant.hpp"
 IDN="plant/identify.cpp"
 CTL="controller/pi.cpp"
+MET="bench/metrics.py"
+STD="tools/set_die_temp.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -46,7 +48,7 @@ fi
 #   而 `meson test` 依然回報全綠。那種情況下這支腳本會把 C1~C11 全部判成
 #   survivor —— 訊息是「測試套件有漏洞」，但真正的原因是「那個測試根本沒建」。
 #   **診斷訊息指錯方向，比沒有訊息更浪費時間。**
-EXPECTED_TESTS="plant identify pi parity_upstream"
+EXPECTED_TESTS="plant identify pi parity_upstream metrics"
 AVAILABLE="$(meson test -C "$BUILD" --list 2>/dev/null)"
 MISSING=""
 for t in $EXPECTED_TESTS; do
@@ -66,7 +68,9 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-cp "$SRC" "$HDR" "$IDN" "$CTL" "$BACKUP/"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD"
+# shellcheck disable=SC2086
+cp $ALL_SOURCES "$BACKUP/"
 
 restore() {
     restore_sources
@@ -113,12 +117,26 @@ run_case() {
     # ⚠️ 一定要 --print-errorlogs。沒有它，meson 只印「1/1 plant FAIL」，
     #    gtest 的 [  FAILED  ] 行不會出現，下面的 grep 會永遠抓不到東西
     #    ——整張表會變成一片「沒有任何測試變紅」的假象。（2026-08-07 踩過）
-    # 測試名稱可能含數字、底線，參數化測試還會有 `Suite/0.Case` 這種寫法。
-    # 原本的 [A-Za-z]+ 對它們全部抓不到 —— 而抓不到的症狀是「沒有任何測試變紅」，
-    # 也就是**假的 survivor**。測試名稱的字集要放寬，不要賭它永遠只有英文字母。
-    failed=$(meson test -C "$BUILD" --print-errorlogs 2>&1 \
-        | grep -oE '\[  FAILED  \] [A-Za-z_][A-Za-z0-9_/]*\.[A-Za-z0-9_/]+' \
-        | sed 's/.*\] //' | sort -u | paste -sd, -)
+    # 跑一次，兩種格式各抓一次。
+    #
+    # gtest：  [  FAILED  ] Suite.Case
+    # pytest： FAILED test/python/test_metrics.py::test_case - AssertionError...
+    #
+    # ⚠️ 測試名稱可能含數字、底線，參數化 gtest 還會有 `Suite/0.Case`。
+    #    原本的 [A-Za-z]+ 對它們全部抓不到 —— 而抓不到的症狀是
+    #    「沒有任何測試變紅」，也就是**假的 survivor**。
+    local log
+    log=$(meson test -C "$BUILD" --print-errorlogs 2>&1)
+    failed=$(
+        {
+            printf '%s\n' "$log" \
+                | grep -oE '\[  FAILED  \] [A-Za-z_][A-Za-z0-9_/]*\.[A-Za-z0-9_/]+' \
+                | sed 's/.*\] //'
+            printf '%s\n' "$log" \
+                | grep -oE '^FAILED [^ ]+::[A-Za-z0-9_]+' \
+                | sed 's#^FAILED .*/##; s#\.py::#.#'
+        } | sort -u | paste -sd, -
+    )
 
     if [ -z "$failed" ]; then
         printf '%-38s  ❌ 沒有任何測試變紅\n' "$name"
@@ -131,10 +149,13 @@ run_case() {
 }
 
 restore_sources() {
-    cp "$BACKUP/$(basename "$SRC")" "$SRC"
-    cp "$BACKUP/$(basename "$HDR")" "$HDR"
-    cp "$BACKUP/$(basename "$IDN")" "$IDN"
-    cp "$BACKUP/$(basename "$CTL")" "$CTL"
+    # ⚠️ 迴圈而不是逐行 cp：這份清單加過三次（identify、controller、Python），
+    #    每一次都有可能忘了同步還原那一行。忘了的後果是**植入的錯誤留在原始碼裡**，
+    #    而且 git status 會顯示一個你以為自己沒改過的檔案。
+    local f
+    for f in $ALL_SOURCES; do
+        cp "$BACKUP/$(basename "$f")" "$f"
+    done
 }
 
 # ── 植入的錯誤清單 ────────────────────────────────────────────────────
@@ -260,6 +281,50 @@ run_case "C10 slew 不乘 ts（我的 step）" "$CTL" \
 run_case "C11 微分不除 ts（我的 step）" "$CTL" \
     '(p_.kd != 0.0) ? p_.kd * (error - lastError_) / p_.ts : 0.0;' \
     '(p_.kd != 0.0) ? p_.kd * (error - lastError_) : 0.0;'
+
+# ── Python 這一側（bench/metrics.py、tools/set_die_temp.py）────────────
+#
+# ★ 為什麼 Python 的 mutation 不需要另一套跑法
+#   pytest 已經接進 `meson test`（見 test/meson.build），所以上面那個 run_case
+#   原封不動就能用：改 .py -> meson compile（對 Python 是 no-op）-> meson test。
+#   多寫一套「Python 專用的 mutation 流程」只會多一個會走味的地方。
+#
+# ⚠️ 為什麼一定要有這一段
+#   metrics.py 是**全專案每個應變因的唯一定義來源**，而它到 2026-08-09 為止
+#   一個測試都沒有。補了測試之後如果不做負向驗證，就只是把「沒測試」
+#   換成「有一組沒被證明會咬人的測試」—— 這個專案從 W3 起就不接受那個。
+
+run_case "P1 t_peak_c 取 min 而不是 max" "$MET" \
+    'return float(df["t_sense_c"].max())' \
+    'return float(df["t_sense_c"].min())'
+
+run_case "P2 t_peak_c 抓錯欄位（模型真值）" "$MET" \
+    'return float(df["t_sense_c"].max())' \
+    'return float(df["t_die_c"].max())'
+
+run_case "P3 尾段視窗變成頭段" "$MET" \
+    'return df[df["t_s"] >= t_end - tail_s]' \
+    'return df[df["t_s"] <= t_end - tail_s]'
+
+run_case "P4 視窗起點正負號寫反" "$MET" \
+    'return df[df["t_s"] >= t_end - tail_s]' \
+    'return df[df["t_s"] >= t_end + tail_s]'
+
+run_case "P5 尾段取最大值而不是平均" "$MET" \
+    'return float(tail_window(df, tail_s)["fan_power_rel"].mean())' \
+    'return float(tail_window(df, tail_s)["fan_power_rel"].max())'
+
+# ★ P6/P7 動的是注入路徑的預測式。它們的守門員是 exp04 那批**實測 CSV** ——
+#   也就是說，這兩條同時證明了「那些 CSV 是有在承重的證據，不是裝飾」。
+run_case "P6 QEMU setter 的 −128 拿掉" "$STD" \
+    'stored = _to_int16(_c_div(requested_mC * 256 - 128, 1000) + offset)' \
+    'stored = _to_int16(_c_div(requested_mC * 256, 1000) + offset)'
+
+run_case "P7 C 的整數除法改成 Python 的 //" "$STD" \
+    '    quotient = abs(numerator) // abs(denominator)
+    same_sign = (numerator >= 0) == (denominator > 0)
+    return quotient if same_sign else -quotient' \
+    '    return numerator // denominator'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
