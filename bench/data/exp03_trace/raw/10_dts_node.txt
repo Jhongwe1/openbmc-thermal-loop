@@ -1,0 +1,4 @@
+$ N=/sys/bus/i2c/devices/0-004f/of_node; echo compatible=$(tr -d '\0' < $N/compatible); echo reg=$(hexdump -C $N/reg | head -n 1); echo node=$(basename $(readlink -f $N))
+compatible=ti,tmp421
+reg=00000000 00 00 00 4f |...O|
+node=tmp421@4f

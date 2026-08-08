@@ -1,0 +1,2 @@
+$ busctl get-property xyz.openbmc_project.HwmonTempSensor /xyz/openbmc_project/sensors/temperature/die0 xyz.openbmc_project.Sensor.Value Value
+d 42.438

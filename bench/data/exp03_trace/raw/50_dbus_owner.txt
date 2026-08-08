@@ -1,0 +1,2 @@
+$ busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetObject sas /xyz/openbmc_project/sensors/temperature/die0 0
+a{sas} 2 "xyz.openbmc_project.HwmonTempSensor" 6 "xyz.openbmc_project.Association.Definitions" "xyz.openbmc_project.Sensor.Threshold.Critical" "xyz.openbmc_project.Sensor.Threshold.Warning" "xyz.openbmc_project.Sensor.Value" "xyz.openbmc_project.State.Decorator.Availability" "xyz.openbmc_project.State.Decorator.OperationalStatus" "xyz.openbmc_project.ObjectMapper" 0

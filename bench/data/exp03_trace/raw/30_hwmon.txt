@@ -1,0 +1,4 @@
+$ H=$(ls -d /sys/bus/i2c/devices/0-004f/hwmon/hwmon* | head -n 1); echo path=$H; echo name=$(cat $H/name); echo temp1_input=$(cat $H/temp1_input)
+path=/sys/bus/i2c/devices/0-004f/hwmon/hwmon0
+name=tmp421
+temp1_input=42438

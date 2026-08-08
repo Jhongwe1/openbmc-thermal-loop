@@ -1,0 +1,90 @@
+{
+  "captured_at": "2026-08-09",
+  "platform": "bletchley  (QEMU machine bletchley-bmc)",
+  "sensor": "die0",
+  "i2c_device": "0-004f",
+  "injected_temp_c": 42.5,
+  "how_dts_obtained": "scp root@bmc:/sys/firmware/fdt  →  dtc -I dtb -O dts",
+  "layers": [
+    {
+      "key": "dts",
+      "title": "1. Device Tree",
+      "subtitle": "/sys/firmware/devicetree/base/ahb/apb/bus@1e78a000/i2c@80/tmp421@4f",
+      "lines": [
+        "\t\t\t\ti2c@80 {",
+        "\t\t\t\t\treg = <0x80 0x80>;",
+        "\t\t\t\t\tcompatible = \"aspeed,ast2600-i2c-bus\";",
+        "\t\t\t\t\tbus-frequency = <0x186a0>;",
+        "\t\t\t\t\tstatus = \"okay\";",
+        "\t\t\t\t\t/* ... 2 more device nodes on this bus, elided ... */",
+        "\t\t\t\t\ttmp421@4f {",
+        "\t\t\t\t\t\tcompatible = \"ti,tmp421\";",
+        "\t\t\t\t\t\treg = <0x4f>;",
+        "\t\t\t\t\t};",
+        "\t\t\t\t};"
+      ],
+      "value": null,
+      "unit": null,
+      "evidence": "raw/11_dts_snippet.txt"
+    },
+    {
+      "key": "driver",
+      "title": "2. Kernel driver binding",
+      "subtitle": "/sys/bus/i2c/drivers/tmp421",
+      "lines": [
+        "compatible = \"ti,tmp421\"",
+        "modalias   = of:Ntmp421T(null)Cti,tmp421",
+        "name       = tmp421"
+      ],
+      "value": null,
+      "unit": null,
+      "evidence": "raw/20_binding.txt"
+    },
+    {
+      "key": "hwmon",
+      "title": "3. hwmon sysfs",
+      "subtitle": "/sys/bus/i2c/devices/0-004f/hwmon/hwmon0",
+      "lines": [
+        "name         = tmp421",
+        "temp1_input  = 42438"
+      ],
+      "value": "42438",
+      "unit": "m°C",
+      "evidence": "raw/30_hwmon.txt"
+    },
+    {
+      "key": "dbus",
+      "title": "4. D-Bus",
+      "subtitle": "/xyz/openbmc_project/sensors/temperature/die0",
+      "lines": [
+        "service      = xyz.openbmc_project.HwmonTempSensor",
+        "Value        = 42.438",
+        "Unit         = DegreesC",
+        "Associations = a(sss) 1 \"chassis\" \"all_sensors\" \"/xyz/openbmc_project/inventory/system/board/Thermal_Loop_Demo\""
+      ],
+      "value": "42.438",
+      "unit": "°C",
+      "evidence": "raw/51_dbus_value.txt"
+    },
+    {
+      "key": "redfish",
+      "title": "5. Redfish",
+      "subtitle": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0",
+      "lines": [
+        "Id           = temperature_die0",
+        "Reading      = 42.438",
+        "ReadingUnits = Cel",
+        "Status       = Enabled / OK"
+      ],
+      "value": "42.438",
+      "unit": "Cel",
+      "evidence": "raw/61_redfish_sensor.txt"
+    }
+  ],
+  "edges": [
+    "kernel matches the compatible string to a driver",
+    "driver registers with the hwmon subsystem",
+    "entity-manager Configuration lets dbus-sensors claim this chip",
+    "bmcweb resolves the association into a Chassis URI"
+  ]
+}

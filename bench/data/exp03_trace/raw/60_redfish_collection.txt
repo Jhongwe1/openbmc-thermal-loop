@@ -1,0 +1,13 @@
+$ curl -sk -u root:0penBmc https://127.0.0.1:443/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors
+{
+  "@odata.id": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors",
+  "@odata.type": "#SensorCollection.SensorCollection",
+  "Description": "Collection of Sensors for this Chassis",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Sensors"
+}

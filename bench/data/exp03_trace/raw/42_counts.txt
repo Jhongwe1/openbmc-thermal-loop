@@ -1,0 +1,3 @@
+$ echo hwmon_named_tmp421=$(grep -l tmp421 /sys/class/hwmon/hwmon*/name | wc -l); echo dbus_temperature_sensors=$(busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetSubTreePaths sias /xyz/openbmc_project/sensors/temperature 0 1 xyz.openbmc_project.Sensor.Value | tr ' ' '\n' | grep -c openbmc)
+hwmon_named_tmp421=10
+dbus_temperature_sensors=8

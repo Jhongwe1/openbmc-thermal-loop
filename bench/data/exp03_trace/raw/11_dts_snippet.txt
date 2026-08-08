@@ -1,0 +1,11 @@
+				i2c@80 {
+					reg = <0x80 0x80>;
+					compatible = "aspeed,ast2600-i2c-bus";
+					bus-frequency = <0x186a0>;
+					status = "okay";
+					/* ... 2 more device nodes on this bus, elided ... */
+					tmp421@4f {
+						compatible = "ti,tmp421";
+						reg = <0x4f>;
+					};
+				};

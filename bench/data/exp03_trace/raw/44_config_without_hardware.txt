@@ -1,0 +1,11 @@
+$ busctl introspect xyz.openbmc_project.EntityManager /xyz/openbmc_project/inventory/system/board/Bletchley_Front_Panel_Board/FRONT_PANEL_TEMP | grep -E '\.(Bus|Address|Name|Type) ' ; echo 'ls /sys/bus/i2c/devices/10-0040:'; ls -d /sys/bus/i2c/devices/10-0040 2>&1
+.Address                                             property  t         64                    emits-change
+.Bus                                                 property  t         10                    emits-change
+.Name                                                property  s         "FRONT_PANEL_TEMP"    emits-change
+.Type                                                property  s         "SI7020"              emits-change
+.Name                                                property  s         "upper critical"      emits-change writable
+.Name                                                property  s         "upper non critical"  emits-change writable
+.Name                                                property  s         "lower non critical"  emits-change writable
+.Name                                                property  s         "lower critical"      emits-change writable
+ls /sys/bus/i2c/devices/10-0040:
+ls: /sys/bus/i2c/devices/10-0040: No such file or directory

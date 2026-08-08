@@ -1,0 +1,4 @@
+$ D=/sys/bus/i2c/devices/0-004f; echo name=$(cat $D/name); echo driver=$(readlink -f $D/driver); echo modalias=$(cat $D/modalias)
+name=tmp421
+driver=/sys/bus/i2c/drivers/tmp421
+modalias=of:Ntmp421T(null)Cti,tmp421

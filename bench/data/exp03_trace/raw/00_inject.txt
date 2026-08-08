@@ -1,0 +1,2 @@
+set i2c-0 0x4f temperature0 = 42.5 C
+read back: 42.4960 C  (42496 m°C)

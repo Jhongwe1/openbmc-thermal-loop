@@ -1,0 +1,2 @@
+$ busctl get-property xyz.openbmc_project.HwmonTempSensor /xyz/openbmc_project/sensors/temperature/die0 xyz.openbmc_project.Association.Definitions Associations
+a(sss) 1 "chassis" "all_sensors" "/xyz/openbmc_project/inventory/system/board/Thermal_Loop_Demo"

@@ -1,0 +1,3 @@
+$ busctl tree xyz.openbmc_project.EntityManager | grep -i Thermal_Loop_Demo
+          └─ /xyz/openbmc_project/inventory/system/board/Thermal_Loop_Demo
+            └─ /xyz/openbmc_project/inventory/system/board/Thermal_Loop_Demo/die0
