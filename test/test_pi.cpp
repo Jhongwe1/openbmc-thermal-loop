@@ -79,6 +79,88 @@ TEST(Pi, SlewLimitsTheStepChange)
     EXPECT_DOUBLE_EQ(pi.step(0.0, 10.0), 105.0); // 未限速會是 1000，被壓到 +5
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  取樣週期 ts —— 這三條是 2026-08-09 稽核補的
+//
+//  在此之前**每一個測試的 ts 都是 1.0**，於是所有乘上或除以 ts 的算術
+//  完全沒有被測到（乘 1 跟不乘看起來一樣）。實測植入四個「忘了乘 ts」的錯，
+//  四個全部活下來。
+//
+//  ts = 0.1 不是隨便挑的：那是 config/swampd/config.baseline.json 裡
+//  風扇 PID 的 samplePeriod ——「repo 自己在用的那個值從來沒被驗過」。
+//
+//  ⚠️ 每一條都要用**手算得出來的**期望值，不能寫「跟另一個實作比」——
+//     兩邊都忘了乘 ts 的話那種測試會是綠的。
+// ═══════════════════════════════════════════════════════════════════════
+
+/// 積分是 `ki · e · ts`，不是 `ki · e`。
+TEST(Pi, IntegralScalesWithTheSamplePeriod)
+{
+    PiParams p = basic();
+    p.kp = 0.0;
+    p.ki = 2.0;
+    p.ts = 0.1;
+    p.outMax = 1e6;
+
+    Pi pi(p);
+    for (int i = 0; i < 10; ++i)
+    {
+        pi.step(0.0, 5.0); // error = +5 每一輪
+    }
+    // 10 輪 × 5 × 2.0 × 0.1 = 10.0。忘了乘 ts 的話會是 100.0。
+    EXPECT_DOUBLE_EQ(pi.integral(), 10.0);
+}
+
+/// slew 的單位是「**每秒**最多變化多少」，不是「每步」，所以要乘 ts。
+///
+/// 這一條很容易寫錯，而且寫錯之後 ts = 1.0 的測試全部照樣綠 ——
+/// 錯誤只在取樣週期不是一秒時才顯現，而風扇迴路正好是 0.1 s。
+///
+/// ⚠️ **上升與下降是兩個獨立的欄位（slewPos / slewNeg），要分別測。**
+///    我第一版只測了 slewPos，`mutation_check.sh` 的 C10（slewNeg 不乘 ts）
+///    當場活下來 —— 一個只驗一半的測試，看起來跟驗完整一樣綠。
+TEST(Pi, SlewRateIsPerSecondNotPerStep)
+{
+    PiParams p = basic();
+    p.kp = 100.0;
+    p.ki = 0.0;
+    p.ts = 0.1;
+    p.slewPos = 5.0;
+    p.slewNeg = -5.0;
+    p.outMin = -1e6;
+    p.outMax = 1e6;
+
+    Pi up(p);
+    EXPECT_DOUBLE_EQ(up.step(9.0, 10.0), 100.0); // 第一輪不受 slew 限
+    // 未限速會是 1000；每秒最多 +5、這一步只有 0.1 s → 最多 +0.5。
+    EXPECT_DOUBLE_EQ(up.step(0.0, 10.0), 100.5);
+
+    Pi down(p);
+    EXPECT_DOUBLE_EQ(down.step(0.0, 10.0), 1000.0); // 第一輪
+    // 未限速會掉到 0；每秒最多 −5、這一步 0.1 s → 最多 −0.5。
+    EXPECT_DOUBLE_EQ(down.step(10.0, 10.0), 999.5);
+}
+
+/// D 項算的是**變化率**：`(e − e_prev) / ts`，所以 ts 在分母。
+///
+/// ⚠️ 少了這個除法，D 項的量綱會從「每秒」變成「每步」——
+///    取樣越密 D 項越弱，剛好與物理相反。
+TEST(Pi, DerivativeIsARateSoTheSamplePeriodDivides)
+{
+    PiParams p = basic();
+    p.kp = 0.0;
+    p.ki = 0.0;
+    p.kd = 2.0;
+    p.ts = 0.5;
+    p.outMin = -1e6;
+    p.outMax = 1e6;
+
+    Pi pi(p);
+    pi.step(10.0, 10.0); // error = 0，先建立 lastError_
+    // error 從 0 跳到 +4：dTerm = 2.0 × 4 / 0.5 = 16。不除 ts 的話是 8。
+    EXPECT_DOUBLE_EQ(pi.step(6.0, 10.0), 16.0);
+}
+
 /// ★ 對照組：沒有任何抗飽和處理時，積分真的會爆掉，而且解除飽和之後
 ///   要花明顯更多輪才降得下來。
 ///

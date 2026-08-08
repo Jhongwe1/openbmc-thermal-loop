@@ -39,6 +39,29 @@ if [ ! -d "$BUILD" ]; then
     exit 2
 fi
 
+# ── 開工前：確認該有的測試真的在這個 build 裡 ──────────────────────────
+#
+# ★ 為什麼需要這一段（坑 27 的自動化版）
+#   `upstream-parity` 是 auto，缺 subproject 時 parity 測試會**安靜地消失**，
+#   而 `meson test` 依然回報全綠。那種情況下這支腳本會把 C1~C11 全部判成
+#   survivor —— 訊息是「測試套件有漏洞」，但真正的原因是「那個測試根本沒建」。
+#   **診斷訊息指錯方向，比沒有訊息更浪費時間。**
+EXPECTED_TESTS="plant identify pi parity_upstream"
+AVAILABLE="$(meson test -C "$BUILD" --list 2>/dev/null)"
+MISSING=""
+for t in $EXPECTED_TESTS; do
+    case " $(echo "$AVAILABLE" | sed 's#.* / ##' | paste -sd' ' -) " in
+        *" $t "*) ;;
+        *) MISSING="$MISSING $t" ;;
+    esac
+done
+if [ -n "$MISSING" ]; then
+    echo "⚠️ 這個 build 少了測試：$MISSING" >&2
+    echo "   在植入錯誤之前就少了測試，跑下去只會得到一堆誤報的 survivor。" >&2
+    echo "   parity_upstream 不見的話見 runbook §8 坑 27（要 allow_fallback）。" >&2
+    exit 2
+fi
+
 # ── 備份與還原 ────────────────────────────────────────────────────────
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
@@ -90,8 +113,11 @@ run_case() {
     # ⚠️ 一定要 --print-errorlogs。沒有它，meson 只印「1/1 plant FAIL」，
     #    gtest 的 [  FAILED  ] 行不會出現，下面的 grep 會永遠抓不到東西
     #    ——整張表會變成一片「沒有任何測試變紅」的假象。（2026-08-07 踩過）
+    # 測試名稱可能含數字、底線，參數化測試還會有 `Suite/0.Case` 這種寫法。
+    # 原本的 [A-Za-z]+ 對它們全部抓不到 —— 而抓不到的症狀是「沒有任何測試變紅」，
+    # 也就是**假的 survivor**。測試名稱的字集要放寬，不要賭它永遠只有英文字母。
     failed=$(meson test -C "$BUILD" --print-errorlogs 2>&1 \
-        | grep -oE '\[  FAILED  \] [A-Za-z]+\.[A-Za-z]+' \
+        | grep -oE '\[  FAILED  \] [A-Za-z_][A-Za-z0-9_/]*\.[A-Za-z0-9_/]+' \
         | sed 's/.*\] //' | sort -u | paste -sd, -)
 
     if [ -z "$failed" ]; then
@@ -194,6 +220,46 @@ run_case "C4 條件積分永不生效" "$CTL" \
 run_case "C5 標準回算少扣前饋" "$CTL" \
     'candidate = clamp(out - pTerm - dTerm - ffTerm, p_.integralMin,' \
     'candidate = clamp(out - pTerm - dTerm, p_.integralMin,'
+
+# ── 取樣週期 ts（2026-08-09 稽核補的）────────────────────────────────
+#
+# ★ 為什麼這六條特別重要：在補之前，**每一個測試的 ts 都是 1.0**。
+#   乘 1 跟不乘看起來完全一樣，所以每一處「× ts」「÷ ts」都沒有被測到。
+#   實測 C6~C9 四個植入的錯**全部活了下來**，整套測試依然全綠 ——
+#   那是這次稽核找到最大的一個測試盲區。
+#
+#   而且這不是理論問題：config/swampd/config.baseline.json 裡風扇 PID 的
+#   samplePeriod 就是 **0.1**。之前驗過的 ts = 1.0 是我實際上不會用的那個值。
+#
+# C6/C10/C11 動我自己的 step()，C7/C8/C9 動上游相容路徑 ——
+# 兩條路徑各有一份 ts 算術，要分別植入才涵蓋得到。
+run_case "C6 積分不乘 ts（我的 step）" "$CTL" \
+    'candidate = integral_ + error * p_.ki * p_.ts;' \
+    'candidate = integral_ + error * p_.ki;'
+
+run_case "C7 積分不乘 ts（上游相容路徑）" "$CTL" \
+    'integralTerm += error * p_.ki * p_.ts;' \
+    'integralTerm += error * p_.ki;'
+
+run_case "C8 slew 不乘 ts（上游相容路徑）" "$CTL" \
+    'output = std::max(output, lastOutput_ + p_.slewNeg * p_.ts);' \
+    'output = std::max(output, lastOutput_ + p_.slewNeg);'
+
+run_case "C9 微分不除 ts（上游相容路徑）" "$CTL" \
+    'const double dTerm = p_.kd * ((error - lastError_) / p_.ts);' \
+    'const double dTerm = p_.kd * (error - lastError_);'
+
+# ⚠️ C10/C11 是計畫的修復清單裡**沒有**的兩條。
+#    清單只列了上游那條路徑的 slew 與微分，但我自己的 step() 也各有一份 ——
+#    而且原本同樣沒有任何 ts != 1 的測試碰過它們。
+#    「同一個錯誤在兩個地方」是最容易只修一半的情形。
+run_case "C10 slew 不乘 ts（我的 step）" "$CTL" \
+    'out = std::max(out, lastOutput_ + p_.slewNeg * p_.ts);' \
+    'out = std::max(out, lastOutput_ + p_.slewNeg);'
+
+run_case "C11 微分不除 ts（我的 step）" "$CTL" \
+    '(p_.kd != 0.0) ? p_.kd * (error - lastError_) / p_.ts : 0.0;' \
+    '(p_.kd != 0.0) ? p_.kd * (error - lastError_) : 0.0;'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1

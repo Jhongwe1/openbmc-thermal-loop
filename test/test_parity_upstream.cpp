@@ -22,9 +22,15 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <string>
 #include <vector>
+// ⚠️ <algorithm> 與 <iostream> 原本沒列，程式卻用了 std::max 與 std::cout ——
+//    能編過純粹是因為 gtest 的標頭間接帶進來了。那是**別人的實作細節**，
+//    gtest 哪天整理自己的 include 就會壞，而錯誤訊息會指向我的檔案。
+//    「用什麼就 include 什麼」是上游 C++ 專案的基本紀律。
 
 namespace
 {
@@ -65,11 +71,14 @@ struct Fixture
     pid_control::ec::pid_info_t up{};
     PiParams mineParams{};
 
-    Fixture(double slewPos, double slewNeg, double ffGain, double kd)
+    /// @param ts 取樣週期。**預設 1.0 是危險的預設值** —— 見
+    ///           MatchesAcrossStepBattery 為什麼一定要掃到 0.1。
+    Fixture(double slewPos, double slewNeg, double ffGain, double kd,
+            double ts = 1.0)
     {
         // 兩邊填**完全一樣**的參數。刻意逐欄寫出來而不是寫一個轉換函式：
         // 轉換函式如果哪一欄漏了，測試會綠 —— 而它綠的原因是兩邊都是 0。
-        up.ts = 1.0;
+        up.ts = ts;
         up.proportionalCoeff = -2.0; // temp 型別要負的（見 exp02 符號檢查）
         up.integralCoeff = -0.5;
         up.derivativeCoeff = kd;
@@ -116,8 +125,19 @@ TEST(UpstreamParity, MatchesAcrossStepBattery)
         {
             for (double slewNeg : {0.0, -3.0})
             {
-                for (double kd : {0.0, 1.5})
-                  for (double ffGain : {0.0, 0.4})
+              for (double kd : {0.0, 1.5})
+                for (double ffGain : {0.0, 0.4})
+                  // ★★ ts 一定要掃到 1.0 以外的值。
+                  //   每一個測試都用 ts = 1.0 的話，**所有乘上或除以 ts 的算術
+                  //   都沒有被測到** —— 因為乘 1 跟不乘看起來一樣。
+                  //   實測：拿掉兩處積分的 ts、拿掉 slew 的 ts、拿掉微分的 ts，
+                  //   四個植入的錯誤**全部活了下來**，整套測試依然全綠。
+                  //
+                  //   0.1 不是隨便挑的：那是**這個 repo 自己的**
+                  //   config/swampd/config.baseline.json 裡風扇 PID 的
+                  //   samplePeriod。也就是說，之前「逐步一致到 1e-12」涵蓋的
+                  //   是我實際上不會用到的那個切面。
+                  for (double ts : {1.0, 0.1})
                 {
                     // ★ ffGain 一定要掃到非零。
                     //   我第一版只掃 0，理由是「ff != 0 時會分歧」——那是把兩件事
@@ -125,7 +145,7 @@ TEST(UpstreamParity, MatchesAcrossStepBattery)
                     //   UpstreamParity 這個模式的規格是「不管參數是什麼，都跟上游
                     //   一模一樣」。漏掉 ff != 0 的話，「回算時多扣了前饋」這種錯
                     //   會完全沒有測試抓得到 —— 這是我做 mutation 設計時才發現的。
-                    Fixture f(slewPos, slewNeg, ffGain, kd);
+                    Fixture f(slewPos, slewNeg, ffGain, kd, ts);
                     Pi mine(f.mineParams);
                     ++combos;
 
@@ -138,33 +158,42 @@ TEST(UpstreamParity, MatchesAcrossStepBattery)
                             << "  step=" << i << "  input=" << inputs[i]
                             << "  setpoint=" << setpoint
                             << "  slewPos=" << slewPos
-                            << "  slewNeg=" << slewNeg << "  kd=" << kd;
+                            << "  slewNeg=" << slewNeg << "  kd=" << kd
+                            << "  ts=" << ts;
                         ASSERT_NEAR(f.up.integral, mine.integral(), 1e-12)
-                            << "  積分先分家了，step=" << i;
+                            << "  積分先分家了，step=" << i << "  ts=" << ts;
                     }
                 }
             }
         }
     }
-    EXPECT_EQ(combos, 3 * 3 * 2 * 2 * 2);
+    // setpoint × slewPos × slewNeg × kd × ffGain × ts
+    EXPECT_EQ(combos, 3 * 3 * 2 * 2 * 2 * 2);
 }
 
 /// 序列真的有製造飽和嗎？——「不製造飽和的測試等於沒測」，所以這件事
 /// 本身要有一個測試守著，不能靠我相信自己設計的序列。
+///
+/// ⚠️ 這條前提斷言也要跟著掃 ts。只驗 ts = 1.0 的話，它保護的只是主測試
+///    的一半 —— 而「前提斷言只涵蓋一半」比沒有前提斷言更容易讓人放心。
 TEST(UpstreamParity, TheBatteryActuallySaturatesBothLimits)
 {
-    Fixture f(0.0, 0.0, 0.0, 0.0);
-    Pi mine(f.mineParams);
-    bool hitMax = false;
-    bool hitMin = false;
-    for (double input : rampThenSaturateThenRelease())
+    for (double ts : {1.0, 0.1})
     {
-        const double out = mine.step(input, 65.0);
-        hitMax = hitMax || (out >= f.mineParams.outMax);
-        hitMin = hitMin || (out <= f.mineParams.outMin);
+        Fixture f(0.0, 0.0, 0.0, 0.0, ts);
+        Pi mine(f.mineParams);
+        bool hitMax = false;
+        bool hitMin = false;
+        for (double input : rampThenSaturateThenRelease())
+        {
+            const double out = mine.step(input, 65.0);
+            hitMax = hitMax || (out >= f.mineParams.outMax);
+            hitMin = hitMin || (out <= f.mineParams.outMin);
+        }
+        EXPECT_TRUE(hitMax)
+            << "序列沒有把輸出推到上限，anti-windup 那一段沒被測到  ts=" << ts;
+        EXPECT_TRUE(hitMin) << "序列沒有把輸出推到下限  ts=" << ts;
     }
-    EXPECT_TRUE(hitMax) << "序列沒有把輸出推到上限，anti-windup 那一段沒被測到";
-    EXPECT_TRUE(hitMin) << "序列沒有把輸出推到下限";
 }
 
 /**
