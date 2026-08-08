@@ -61,8 +61,9 @@
     "tolerance_pct": 0.15,
     "unit": "ratio",
     "meaning": "無抗飽和 / 有抗飽和 的恢復時間比值。",
-    "source": "bench/data/exp03_*.csv",
-    "figure": "figures/fig3_antiwindup.png"
+    "source": "bench/data/exp07_*.csv",
+    "figure": "figures/fig3_antiwindup.png",
+    "note": "2026-08-09 實驗重新編號：原本登記為 exp03，但 W5 已經把 exp03 用在跨層追蹤上了。改號時 value 還是 null —— 沒有任何已量到的數字被重新貼標籤。見 docs/measurement.md §4.0。"
   },
 
   "reversals_reduction_ratio": {
@@ -70,7 +71,8 @@
     "tolerance_pct": 0.20,
     "unit": "ratio",
     "meaning": "slew rate λ 放大後，每分鐘 PWM 方向反轉次數的下降比。",
-    "source": "bench/data/exp05_*.csv",
-    "figure": "figures/fig5_slew_sweep.png"
+    "source": "bench/data/exp08_*.csv",
+    "figure": "figures/fig5_slew_sweep.png",
+    "note": "同上，原本登記為 exp05。"
   }
 }

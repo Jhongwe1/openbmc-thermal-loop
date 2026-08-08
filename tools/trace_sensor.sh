@@ -60,8 +60,41 @@ cap() {
 }
 
 echo "############ 0. 注入一個已知溫度（讓五層看到同一個值）############"
-./tools/set_die_temp.py "${TEMP_C}" --read | tee "${RAW}/00_inject.txt"
+# ★ 用 --verify 不用 --read + sleep：
+#   --read 只證明 QEMU 收下了（注入端）；--verify 會輪詢到 BMC 的 hwmon
+#   真的看到預測值為止（接收端）。hwmon 有 500 ms 的 driver 快取，
+#   注入後立刻讀會拿到上一個值 —— 那會讓五層裡的第 3 層與第 1、2 層對不起來，
+#   而且是**安靜地**對不起來。見 runbook §8 坑 29 與 docs/plant-model.md §2.1。
+./tools/set_die_temp.py "${TEMP_C}" --verify | tee "${RAW}/00_inject.txt"
+# 再等一下讓 dbus-sensors 把新值推上 D-Bus、bmcweb 也讀得到。
 sleep 5
+
+# ── 中繼資料 —— 這批證據是在什麼東西上、哪一版擷取的 ──────────────────
+#    沒有它，raw/ 底下那 17 個檔案指不回任何一個版本。
+{
+  echo "# exp03 — dts 到 Redfish 的五層追蹤。欄位定義見 docs/measurement.md §4。"
+  echo "# repo_dirty=yes 是正常的：資料一定在收錄它的那個 commit **之前**產生。"
+  echo "captured_at=$(date +%F)"
+  echo "repo_commit=$(git rev-parse --short HEAD)"
+  echo "repo_dirty=$( [ -n "$(git status --porcelain)" ] && echo yes || echo no )"
+  echo "image=$(grep -m1 '主線映像' docs/env-baseline.md | cut -d'`' -f2)"
+  echo "swampd_version=$(grep -m1 -F '`phosphor-pid-control`' docs/env-baseline.md | cut -d'`' -f4)"
+  echo "dbus_sensors_version=$(grep -m1 -F '`dbus-sensors`' docs/env-baseline.md | cut -d'`' -f4)"
+  echo "bmcweb_version=$(grep -m1 -F '`bmcweb`' docs/env-baseline.md | cut -d'`' -f4)"
+  echo "bmc_build_id=$("${S[@]}" '. /etc/os-release && echo $BUILD_ID')"
+  echo "bmc_kernel=$("${S[@]}" 'uname -r')"
+  echo "qemu_machine=bletchley-bmc"
+  echo "chip=i2c-${BUS} 0x${ADDR} (${NAME})"
+  echo "injected_temp_c=${TEMP_C}"
+  echo "board=${BOARD}"
+  echo "dtc_version=$(dtc --version | head -n 1)"
+  echo "# 重複次數 = 1，而且這是**刻意的**：這個實驗的應變因是一組字串"
+  echo "# （路徑、名字、單位），不是一個會抖動的數值。重複五次會得到五份"
+  echo "# 一模一樣的檔案。決定性由 exp04 用同一條注入路徑量過（5 次重複逐點相同）。"
+  echo "repeats=1"
+} > "${OUT}/meta.txt"
+echo "--- ${OUT}/meta.txt"
+cat "${OUT}/meta.txt"
 
 echo
 echo "############ 1. device tree ############"

@@ -1,0 +1,20 @@
+# exp03 — dts 到 Redfish 的五層追蹤。欄位定義見 docs/measurement.md §4。
+# repo_dirty=yes 是正常的：資料一定在收錄它的那個 commit **之前**產生。
+captured_at=2026-08-09
+repo_commit=e593cb3
+repo_dirty=yes
+image=obmc-phosphor-image-bletchley-20260728025045.static.mtd
+swampd_version=0.1+git0+c5e59550d3-r1
+dbus_sensors_version=0.1+git0+fc2953c5fa-r0
+bmcweb_version=1.0+git0+e05fbc0500-r0
+bmc_build_id=20260728025045
+bmc_kernel=6.18.40-c2b9fc3
+qemu_machine=bletchley-bmc
+chip=i2c-0 0x004f (die0)
+injected_temp_c=42.5
+board=Thermal_Loop_Demo
+dtc_version=Version: DTC 1.7.0
+# 重複次數 = 1，而且這是**刻意的**：這個實驗的應變因是一組字串
+# （路徑、名字、單位），不是一個會抖動的數值。重複五次會得到五份
+# 一模一樣的檔案。決定性由 exp04 用同一條注入路徑量過（5 次重複逐點相同）。
+repeats=1

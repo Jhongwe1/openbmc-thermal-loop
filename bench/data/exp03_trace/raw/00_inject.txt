@@ -1,2 +1,2 @@
 set i2c-0 0x4f temperature0 = 42.5 C
-read back: 42.4960 C  (42496 m°C)
+verify (BMC hwmon, receiving side): OK  expected=42438 actual=42438 m°C  waited=2.24s
