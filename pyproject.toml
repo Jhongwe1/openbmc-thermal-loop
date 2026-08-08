@@ -41,7 +41,7 @@ select = ["E", "F", "I", "UP", "B"]
 # bench/ 與 tools/ 刻意不是 package（沒有 __init__.py，見 py-modules = []），
 # 所以 ruff 預設會把 `import metrics` 當成第三方套件，排序規則就跟著錯。
 # 這些**就是**這個 repo 自己的模組，直接講清楚，不要靠改 import 順序去迎合它。
-known-first-party = ["metrics", "plot", "set_die_temp"]
+known-first-party = ["metrics", "plot", "provenance", "set_die_temp"]
 
 [tool.pytest.ini_options]
 # 只有 test/python/ 底下是 Python 測試。不寫的話 pytest 會從當前目錄往下掃，

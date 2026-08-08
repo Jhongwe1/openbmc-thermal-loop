@@ -126,13 +126,22 @@ python bench/plot_fig6.py    # 從 layers.json 畫出上面這張圖
 `compatible` 綁 driver、entity-manager 的 Configuration 讓 `dbus-sensors` 認領、
 association 讓 bmcweb 掛進 Chassis。
 
-> **★ 順手量到的東西:** 一顆感測器要出現在 D-Bus 上,
+> **★ 順手量到的東西:** 在 **`dbus-sensors` 這一條路上**,
 > 「**硬體在**」與「**設定在**」是兩個獨立的必要條件,
 > 而這台機器同時提供了兩種失敗:
 > dts 宣告了 **10 顆** tmp421、kernel 全部綁上,但只有 `die0` 有 entity-manager
 > 設定(有硬體沒設定);而 `FRONT_PANEL_TEMP` 有設定,QEMU 卻沒模擬那顆 SI7020
-> (有設定沒硬體)。細節見
-> [`docs/devicetree-to-dbus.md`](docs/devicetree-to-dbus.md) 第 4 節。
+> (有設定沒硬體)。
+>
+> ⚠️ **但「沒有 EM Configuration 就不會出現在 D-Bus 上」是過度推廣,不成立。**
+> 同一台機器上有 **8 顆**溫度感測器、**3 個**不同的擁有者,
+> 而 entity-manager 上只有 **2 個** Configuration:
+> `nvme1`~`nvme6` 屬 `xyz.openbmc_project.nvme.manager`(讀 `/etc/nvme/nvme_config.json`)、
+> `Virtual_Inlet_Temp` 屬 `xyz.openbmc_project.VirtualSensor`(讀它自己那套 JSON)。
+> **EM Configuration 是 `dbus-sensors` 那一族的閘門,不是普遍條件。**
+> 所以 debug 的第一步是先問「這顆是誰在 own」,再去看對應的設定檔。
+> 細節與實測見
+> [`docs/devicetree-to-dbus.md`](docs/devicetree-to-dbus.md) 第 4 節與 §4.1。
 
 > 📌 **誠實標註:** 這是「讀 ＋ 對照」。**我沒有寫過 kernel driver,
 > 也沒有改過 device tree 重新編譯驗證。** 底下那顆晶片是 QEMU 模擬的,

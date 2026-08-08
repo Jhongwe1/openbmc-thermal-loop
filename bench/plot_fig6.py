@@ -28,8 +28,9 @@ matplotlib.use("Agg")
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
+import provenance  # noqa: E402
+
 TRACE = pathlib.Path("bench/data/exp03_trace/layers.json")
-ENV = pathlib.Path("docs/env-baseline.md")
 OUT = pathlib.Path("figures/fig6_dts_to_redfish.png")
 
 # 每一層一個顏色。刻意用低飽和度：這張圖的主角是字串，不是配色。
@@ -37,16 +38,6 @@ BOX_FACE = "#f7f7f9"
 BOX_EDGE = "#5b6472"
 UNIT_FACE = "#fff4e0"
 UNIT_EDGE = "#c8912a"
-
-
-def _image_name() -> str:
-    """從 docs/env-baseline.md 撈釘選的映像檔名（與 bench/plot.py 同一套規則）。"""
-    if not ENV.exists():
-        return "(docs/env-baseline.md not found)"
-    for line in ENV.read_text(encoding="utf-8").splitlines():
-        if "主線映像" in line and "`" in line:
-            return line.split("`")[1]
-    return "(image name not found)"
 
 
 def main() -> int:
@@ -163,8 +154,13 @@ def main() -> int:
         fontsize=13.5, fontweight="bold", y=0.995,
     )
 
+    # ★ 第一行的版本資訊由 bench/provenance.py 產生 —— 與 Fig 1 同一份實作。
+    #   在此之前這張圖的 caption **只有映像名、沒有 repo commit**，
+    #   而〈誠實準則〉第 6 條要求兩個都要有。同一條規則兩個標準，
+    #   代表其中一張圖指不回產生它的那一版程式碼。
     caption = (
-        f'Platform: {doc["platform"]}    Image: {_image_name()}    Captured: {doc["captured_at"]}\n'
+        f'Platform: {doc["platform"]}    {provenance.version_line()}\n'
+        f'Captured: {doc["captured_at"]}    '
         f'Sensor "{doc["sensor"]}" = the tmp421 at i2c {doc["i2c_device"]}. '
         f'{doc["injected_temp_c"]} C was injected into the emulated chip over QMP; '
         f"every box below is real output from that machine.\n"
@@ -173,6 +169,8 @@ def main() -> int:
         "Two things change on the way up: the UNIT (millidegree -> degree -> "
         "Redfish 'Cel') and the NAME "
         "(tmp421@4f -> 0-004f -> hwmon0 -> die0 -> temperature_die0).\n"
+        "The reading is one full LSB below the injected value; that bias is the "
+        "QEMU setter's truncation, not quantisation - see docs/plant-model.md 2.1.\n"
         "Raw evidence for every string: bench/data/exp03_trace/raw/"
     )
     fig.text(0.012, 0.008, caption, fontsize=7.4, va="bottom", ha="left",

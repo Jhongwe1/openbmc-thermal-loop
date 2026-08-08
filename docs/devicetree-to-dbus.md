@@ -142,7 +142,7 @@ $ busctl tree xyz.openbmc_project.EntityManager
 
 證據:`raw/40_em.txt`、`raw/43_em_all_configs.txt`
 
-**一顆感測器要出現在 D-Bus 上,需要兩個條件同時成立:**
+**一顆 `dbus-sensors` 感測器要出現在 D-Bus 上,需要兩個條件同時成立:**
 
 | | 硬體在(kernel 綁得起來) | 硬體不在 |
 |---|---|---|
@@ -152,18 +152,50 @@ $ busctl tree xyz.openbmc_project.EntityManager
 這三格**都在同一台機器上量得到**:
 
 - **有硬體沒設定:** 這份 dts 宣告了 **10 顆** `tmp421`,kernel 全部綁上了
-  (`/sys/class/hwmon/*/name` 裡有 **10** 個 `tmp421`),但 D-Bus 上只有 `die0`
-  這一顆 —— 因為只有它有 entity-manager 的 Configuration。
+  (`/sys/class/hwmon/*/name` 裡有 **10** 個 `tmp421`),但 `dbus-sensors` 只認領了
+  `die0` 這一顆 —— 因為只有它有 entity-manager 的 Configuration。
   證據:`raw/45_dts_tmp421_count.txt`(10)、`raw/42_counts.txt`
 - **有設定沒硬體:** `FRONT_PANEL_TEMP` 是這個映像自帶的 EM 設定,
   型別 `SI7020`、bus 10、位址 `0x40`(十進位 64)。但 QEMU 的 `bletchley-bmc`
   沒有模擬那顆晶片 —— `/sys/bus/i2c/devices/10-0040` 不存在,所以它也沒出現。
   證據:`raw/44_config_without_hardware.txt`
 
-> **面試講法:** 「『這顆感測器在 Redfish 上看不到』有兩個完全不同的根因:
-> 硬體那一側沒 probe 起來,或是 entity-manager 那一側沒有對應的 Configuration。
-> 我在同一台機器上同時觀察到這兩種,所以我 debug 的第一步一定是先分清楚是哪一種
-> —— 看 `/sys/bus/i2c/devices/` 有沒有那個節點,兩秒就分出來了。」
+### ⚠️ 4.1 但上面那張表**只管 `dbus-sensors` 那一族**,不是 D-Bus 感測器的普遍條件
+
+> **2026-08-09 更正。** 這一節原本寫的是「一顆感測器要出現在 D-Bus 上,
+> 需要兩個條件同時成立」—— 沒有限定範圍。
+> **那句話用這台機器自己的資料就能戳破**,而且 README 的 Gate 1 段落
+> 前面才剛提到那些反例。
+
+**實測(同一次擷取,`busctl ... GetObject` 逐顆問擁有者):**
+
+| 感測器 | D-Bus 擁有者 | 設定從哪來 | 有 EM Configuration? |
+|---|---|---|:--:|
+| `die0` | `xyz.openbmc_project.HwmonTempSensor` | entity-manager | ✅ |
+| `nvme1`~`nvme6` | **`xyz.openbmc_project.nvme.manager`** | **`/etc/nvme/nvme_config.json`** | ❌ |
+| `Virtual_Inlet_Temp` | **`xyz.openbmc_project.VirtualSensor`** | **`/usr/share/phosphor-virtual-sensor/virtual_sensor_config_*.json`** | ❌ |
+
+**用 repo 自己 commit 的資料就對得出來:**
+`raw/42_counts.txt` 寫 `dbus_temperature_sensors=8`,
+`raw/43_em_all_configs.txt` 只有 **2** 個 Configuration 物件。**8 ≠ 2。**
+
+**正確的說法是:**
+
+> **entity-manager 的 Configuration 是 `dbus-sensors` 那一族的閘門**,
+> 不是「上 D-Bus」的普遍條件。這台機器上至少還有兩條獨立的路徑
+> —— `phosphor-nvme` 與 `phosphor-virtual-sensor` —— **各自有自己的設定機制**。
+
+> **面試講法(改完之後反而更值錢):**
+> 「一顆感測器上 D-Bus 有好幾條路。`dbus-sensors` 那條要 entity-manager 的
+> Configuration;`phosphor-nvme` 走自己的 `/etc/nvme/nvme_config.json`;
+> 虛擬感測器又是另一套 JSON。**所以 debug 的第一步不是去翻 EM 設定,
+> 是先問這顆是從哪一條路上來的** ——
+> `busctl call ... GetObject` 兩秒就知道擁有者是誰,
+> 知道擁有者才知道該去看哪一份設定檔。」
+>
+> 「而**在 `dbus-sensors` 那一條路裡面**,『硬體在』與『設定在』才是兩個獨立的
+> 必要條件 —— 我在同一台機器上同時觀察到兩種失敗,看
+> `/sys/bus/i2c/devices/` 有沒有那個節點,兩秒就分得出來是哪一種。」
 
 ---
 
@@ -221,10 +253,13 @@ Associations = a(sss) 1 "chassis" "all_sensors"
    沒有任何一層看得到下一層的名字,**每一層的對應關係都是另外一份設定決定的**。
 3. **`compatible` 是 dts 與 driver 之間的唯一契約。**
 4. **association 是感測器與 Chassis 之間的唯一契約。**
-5. **entity-manager 的 Configuration 是 hwmon 與 D-Bus 之間的唯一契約** ——
-   而且它與硬體是兩個獨立的必要條件(第 4 節的表)。
+5. **entity-manager 的 Configuration 是 hwmon 與 D-Bus 之間的契約 ——
+   但只在 `dbus-sensors` 這一條路上。** 它與硬體是兩個獨立的必要條件
+   (第 4 節的表),而**同一台機器上還有兩條完全不經過它的路**(§4.1)。
 6. 所以 **BMC 團隊 debug 一顆感測器要跨這麼多層,不是因為架構複雜,
    是因為每一層之間都靠一份「對應關係」黏著,而問題可能出在任何一份上。**
+7. ★ **而且「是哪一份」要先問「這顆是誰在 own」** —— 不同的 daemon 讀不同的設定檔。
+   先查擁有者再查設定,順序反了會在錯的檔案裡找很久。
 
 ---
 

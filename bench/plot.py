@@ -15,7 +15,6 @@
 
 import argparse
 import pathlib
-import subprocess
 import sys
 
 import matplotlib
@@ -26,9 +25,10 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+import provenance  # noqa: E402
+
 DATA = pathlib.Path("bench/data")
 FIGS = pathlib.Path("figures")
-ENV = pathlib.Path("docs/env-baseline.md")
 
 # ── 顏色（見 dataviz 的色彩規則，已跑過驗證器）─────────────────────────
 #   量到的東西 -> 系列色；我下的命令與模型 -> ink；註解區塊 -> 淡底色。
@@ -54,33 +54,22 @@ def _read_kv(path: pathlib.Path) -> dict[str, str]:
     return out
 
 
-def _image_name() -> str:
-    """從 docs/env-baseline.md 撈釘選的映像檔名。
-
-    ⚠️ 計畫範本是「讀第 4 行」——那一行其實是產生日期，不是映像名。
-       改成找「主線映像」那一行，文件多加一段也不會壞掉。
-    """
-    if not ENV.exists():
-        return "image: n/a"
-    for line in ENV.read_text().splitlines():
-        if "主線映像" in line and "`" in line:
-            return "image: " + line.split("`")[1]
-    return "image: n/a"
-
-
 def _caption(what: str) -> str:
     """每張圖的 caption 必須有三樣東西。
 
     1. 實驗說明   —— 圖要能單獨看懂，不用回去翻 README
     2. 模擬聲明   —— 誠實準則第 5 條：限制寫在圖旁邊，不是只寫在 README 最後
     3. 版本       —— 誠實準則第 6 條：映像檔名 + repo commit
+
+    ⚠️ 第 3 行由 bench/provenance.py 產生，**六張圖共用同一份實作**。
+       以前這裡與 plot_fig6.py 各有一份，結果 Fig 1 有 commit、Fig 6 沒有 ——
+       同一條誠實準則，兩張圖兩個標準。
     """
-    commit = subprocess.getoutput("git rev-parse --short HEAD")
     return (
         f"{what}\n"
         f"[Simulation on my own thermal plant - see docs/plant-model.md. "
         f"Not measured on server hardware.]\n"
-        f"{_image_name()}  |  repo commit: {commit}"
+        f"{provenance.version_line()}"
     )
 
 
