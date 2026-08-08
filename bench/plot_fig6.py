@@ -168,8 +168,10 @@ def main() -> int:
         f'Sensor "{doc["sensor"]}" = the tmp421 at i2c {doc["i2c_device"]}. '
         f'{doc["injected_temp_c"]} C was injected into the emulated chip over QMP; '
         f"every box below is real output from that machine.\n"
-        f'Device tree obtained by: {doc["how_dts_obtained"]}  (the blob the kernel actually loaded, not the one in the image).\n'
-        "Two things change on the way up: the UNIT (millidegree -> degree -> Redfish 'Cel') and the NAME "
+        f'Device tree obtained by: {doc["how_dts_obtained"]}  '
+        "(the blob the kernel actually loaded, not the one in the image).\n"
+        "Two things change on the way up: the UNIT (millidegree -> degree -> "
+        "Redfish 'Cel') and the NAME "
         "(tmp421@4f -> 0-004f -> hwmon0 -> die0 -> temperature_die0).\n"
         "Raw evidence for every string: bench/data/exp03_trace/raw/"
     )
