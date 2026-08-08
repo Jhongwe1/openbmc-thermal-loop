@@ -340,8 +340,12 @@ def write_meta(qmp, hwmon_path: str) -> None:
 
 def write_csv(name: str, rows: list[dict]) -> None:
     path = OUT / name
+    # ⚠️ lineterminator 一定要顯式指定。csv 模組**預設是 CRLF**（RFC 4180），
+    #    而這個 repo 的 .gitattributes 是 `* text=auto eol=lf` ——
+    #    兩者打架的結果是工作目錄與 index 永遠差一個換行符，
+    #    `git status` 乾淨但 `git diff` 一片紅。C++ 那側產的 CSV 本來就是 LF。
     with path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     print(f"寫出 {path}（{len(rows)} 列）")
