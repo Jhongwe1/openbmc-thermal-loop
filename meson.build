@@ -54,8 +54,49 @@ plant_dep = declare_dependency(
     include_directories: inc,
 )
 
-# controller/ 在 W5 加入
-# controller_lib = static_library('controller', ['controller/pi.cpp'], ...)
+controller_lib = static_library(
+    'controller',
+    ['controller/pi.cpp'],
+    include_directories: inc,
+)
+controller_dep = declare_dependency(
+    link_with: controller_lib,
+    include_directories: inc,
+)
+
+# ── 上游 ec::pid()：只為 parity 測試而編 ──────────────────────────────
+#
+# 只取 pid/ec/pid.cpp 這一個編譯單元，不是整包 phosphor-pid-control ——
+# 整包會把 sdbusplus、systemd、boost 全部拖進來，而我要比對的只有一個函式。
+#
+# 為什麼不用 subproject()：上游的 meson.build 沒有 export 我需要的變數，
+# 而且它自己的 dependency 一長串。直接把那個 .cpp 當成一份 source 加進測試的
+# target，是本計畫建議的、也是實測可行的做法。
+#
+# ⚠️ pid.cpp 會 #include "logging.hpp"，那支又需要 nlohmann/json。
+#    實際試出來的相依請見 test/meson.build 的註解。
+# subprojects/phosphor-pid-control.wrap 釘住這台 BMC 上跑的那個 commit，
+# 並用 patch_directory 換上一份只編 ec::pid() 所需三個編譯單元的 meson.build。
+#
+# ⚠️ 不要改成「直接把 subprojects/.../pid/ec/pid.cpp 加進我的 target」——
+#    meson 會擋下來（Sandbox violation: Tried to grab file from a nested
+#    subproject）。那是刻意的規則，不是 bug。
+#
+# disabler 的效果：沒抓 subproject 的人，parity 那個 target 自動被跳過，
+# 其他測試照常建置。value=auto 時不會讓 configure 失敗。
+#
+# allow_fallback: true 是必要的。沒有它，required 為 false（也就是 auto）時
+# meson 只會去找 pkg-config 與 cmake，**根本不會去看 wrap**，於是 parity 測試
+# 會在沒有任何錯誤訊息的情況下靜靜消失。實測輸出是：
+#     Run-time dependency upstream-ec-pid found: NO (tried pkgconfig and cmake)
+# 「安靜地少建一個測試」比建置失敗危險得多 —— meson test 全綠，但綠的裡面
+# 沒有它。
+upstream_pid_dep = dependency(
+    'upstream-ec-pid',
+    required: get_option('upstream-parity'),
+    allow_fallback: true,
+    disabler: true,
+)
 
 # ── 手動驗收工具（W3 D6）──────────────────────────────────────────────
 # 不是測試，是「用眼睛看曲線合不合物理直覺」用的。測試在 test/。
