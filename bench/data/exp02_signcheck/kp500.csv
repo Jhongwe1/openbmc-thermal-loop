@@ -1,0 +1,3 @@
+temp_set_c,input_c,setpoint_c,error_c,proportionalTerm,output_unclamped,output_clamped
+55,54.938,65,10.062,5031,5031,5031
+75,74.938,65,-9.938,-4969,-4969,3000
