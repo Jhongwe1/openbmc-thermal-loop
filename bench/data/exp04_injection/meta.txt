@@ -1,0 +1,18 @@
+# exp04 — 注入路徑的傳遞特性。欄位定義見 docs/measurement.md。
+captured_at=2026-08-09
+repo_commit=9061763
+repo_dirty=yes
+image=obmc-phosphor-image-bletchley-20260728025045.static.mtd
+qemu_version=11.0.1
+bmc_os_version_id=3.1.0-dev-739-gba9070d60b
+bmc_build_id=20260728025045
+bmc_kernel=6.18.40-c2b9fc3
+swampd_service=active
+chip=i2c-0 0x4f channel 0
+hwmon_path=/sys/bus/i2c/devices/0-004f/hwmon/hwmon0/temp1_input
+driver=/sys/bus/i2c/drivers/tmp421
+ext_range_assumed=False
+grid_repeats=5
+sweep=42000..42320 step 10
+latency_sample_interval_s=0.025
+latency_transitions=6
