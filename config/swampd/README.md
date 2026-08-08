@@ -94,6 +94,50 @@ D-Bus 的 `/xyz/openbmc_project/sensors/` 底下**一顆 `fan_tach` 都沒有**�
 
 ---
 
+### ⚠️⚠️ W6/W7 開工前必讀:`integralLimit` 是 `[0, 0]`,設了 `integralCoeff` 也沒有積分
+
+現在兩個 PID 的 `integralLimit_min` / `integralLimit_max` **都是 `0.0`**。
+今天無所謂(`integralCoeff` 也是 0),但**這是一顆給 W6 的地雷**。
+
+上游 `pid/ec/pid.cpp` 對積分項做兩次箝位,而且**第二次是無條件的**:
+
+```cpp
+if (pidinfoptr->integralCoeff != 0) {
+    integralTerm  = pidinfoptr->integral;
+    integralTerm += error * pidinfoptr->integralCoeff * pidinfoptr->ts;
+    integralTerm  = clamp(integralTerm, integralLimit.min, integralLimit.max);
+}
+...
+integralTerm = clamp(integralTerm, integralLimit.min, integralLimit.max);  // ← 無條件
+```
+
+`clamp(任何值, 0, 0)` **恆等於 0**。所以:
+
+> **W6 把 `integralCoeff` 設成非零之後,積分項仍然永遠是 0,
+> 而且不會有任何錯誤訊息、log 也不會抱怨。**
+> 症狀是「我加了 I 項但穩態誤差沒有消失」,而你會去懷疑係數大小、
+> 懷疑取樣週期、懷疑感測器 —— 唯獨不會懷疑一個你根本沒動過的欄位。
+
+**對 W7 更致命:** anti-windup 的整個前提是「積分會累積到飽和」。
+積分恆為 0 的話,**Fig 3 的 A/B 兩條線會長得一模一樣**,
+而那正是 `docs/plant-model.md` 花一整節在防的失敗模式。
+
+**W6 要做的事(照順序):**
+
+1. 把 `integralLimit_min` / `integralLimit_max` 設成有意義的範圍。
+   量綱是**輸出的量綱** —— die0 PID 的輸出是 RPM,所以那是 RPM;
+   合理的起點是涵蓋 `outLim` 的寬度(3000 ~ 15000 → 例如 `-12000` ~ `12000`)。
+2. **設完要驗**:在 `/tmp/pidlog/pidcore.die0` 看 `integralTerm` 欄真的會動。
+   看不到它動,就不要往下做任何事。
+3. 這一條也適用於 `bench/` 那一側:`controller/pi.hpp` 的
+   `integralMin` / `integralMax` 預設是 `±1e9`(等於不箝),
+   **兩邊的預設不一樣** —— 對照實驗要自己對齊。
+
+> **這一條是 2026-08-09 稽核找到的,不在原本的修復清單裡。**
+> 它的特徵值得記住:**一個「今天沒作用」的設定,會在你改另一個欄位的那天生效。**
+
+---
+
 ## 2. `zones[]`
 
 依據 `pid/buildjson.cpp`。必填:`id`、`minThermalOutput`、`failsafePercent`、`pids`。

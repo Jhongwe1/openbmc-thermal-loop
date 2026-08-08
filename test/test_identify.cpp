@@ -29,6 +29,7 @@ struct Trace
     double stepAtS = 0.0;
 };
 
+
 /**
  * 產生一條開環 PWM 階躍響應：先在 pwmA 穩定，再階躍到 pwmB。
  *
@@ -204,6 +205,60 @@ TEST(Identify, RejectsUnusableInput)
     const Trace tr = makeStepTrace(p, 40.0, 60.0, 150.0);
     const Fopdt zeroDu = thermal::identifyTwoPoint(tr.t, tr.y, tr.stepAtS, 0.0);
     EXPECT_EQ(zeroDu.k, 0.0) << "  du = 0 會讓 K 變成除以零";
+}
+
+/**
+ * ★★ 取平均的視窗是用**時間**框的，不是用列數框的。
+ *
+ * 2026-08-09 稽核補。原本的兩個視窗都是用列數算的：
+ *   · 基準值 y0：`n = baselineS / dt`，而 `dt` 從序列的**前兩點**推
+ *   · 穩態值 y∞：`最後 y.size() / 10` **列**
+ *
+ * 等間隔資料上兩種寫法逐點相同，所以這個缺陷**不會在 exp01 上顯現**。
+ * 但 **W9 的 L1 vs L2 對照會把從 BMC 收回來的軌跡餵進同一個函式**，
+ * 而那一側的取樣間隔本來就會抖 —— 到時候它會**安靜地**給出錯的 y0 與 y∞，
+ * 沒有任何錯誤訊息，只有一組看起來很正常但是錯的 K/tau/theta。
+ *
+ * 做法：同一條軌跡，只把**前 100 秒抽稀**成每 10 秒一點，其餘完全不動。
+ *   · 基準區間（階躍前 10 s）與尾段都沒有被動到 → 用時間框，結果必須相同
+ *   · 用列數框的話：前兩點的間隔從 0.1 s 變成 10 s，
+ *     `n = 10 / 10 = 1` → 基準值退化成單點；
+ *     而且總列數變少 → 「最後 10 % 的列」涵蓋的時間也跟著變
+ *
+ * ⚠️ 這一條與 bench/metrics.py 的
+ *    `test_fan_power_rel_window_is_defined_by_time_not_by_row_count`
+ *    是**同一個缺陷在 C++ 與 Python 兩側的兩個實例**。同一天一起修的。
+ */
+TEST(Identify, AveragingWindowsAreDefinedByTimeNotSampleCount)
+{
+    const PlantParams p;
+    const Trace dense = makeStepTrace(p, 40.0, 60.0, 150.0, /*seed=*/3);
+
+    Trace sparseHead;
+    for (std::size_t i = 0; i < dense.t.size(); ++i)
+    {
+        // 只抽稀前 100 秒；階躍在 200 s，基準區間是 190~200 s，都不受影響。
+        if (dense.t[i] < 100.0 &&
+            std::fabs(std::fmod(dense.t[i] + 1e-9, 10.0)) > 1e-6)
+        {
+            continue;
+        }
+        sparseHead.t.push_back(dense.t[i]);
+        sparseHead.y.push_back(dense.y[i]);
+    }
+    sparseHead.stepAtS = dense.stepAtS;
+
+    ASSERT_LT(sparseHead.t.size(), dense.t.size()) << "資料沒有真的被抽稀";
+
+    const Fopdt a =
+        thermal::identifyTwoPoint(dense.t, dense.y, dense.stepAtS, 20.0);
+    const Fopdt b = thermal::identifyTwoPoint(sparseHead.t, sparseHead.y,
+                                              sparseHead.stepAtS, 20.0);
+
+    EXPECT_NEAR(a.k, b.k, 1e-12)
+        << "  前段抽稀改變了 K —— 平均視窗是用列數框的，不是時間";
+    EXPECT_NEAR(a.tau, b.tau, 1e-9);
+    EXPECT_NEAR(a.theta, b.theta, 1e-9);
 }
 
 } // namespace

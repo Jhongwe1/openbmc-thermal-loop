@@ -205,13 +205,25 @@ run_case "I2 28.3% 改成 40%" "$IDN" \
 run_case "I3 crossingTime 方向判斷反向" "$IDN" \
     'const bool rising = target > y0;' 'const bool rising = target < y0;'
 
-# ⚠️ I4 刻意寫成「把平均的點數改成 1」而不是「整行換成 y[iStep]」。
-#    後者會讓 nBase 變成未使用變數，被 -Werror 擋在編譯期 ——
+# ⚠️ I4 刻意寫成「把視窗縮到零」而不是「整段換成 y[iStep]」。
+#    後者會讓變數變成未使用，被 -Werror 擋在編譯期 ——
 #    腳本會回報「✅ 編不過」，看起來過關，但**斷言根本沒被執行到**。
 #    「編不過」是比「測試變紅」弱的證據，設計 mutation 時要避開它。
+#
+#    視窗歸零之後，迴圈第一輪就 break、n = 0，走到「退回單一點」那條路 ——
+#    也就是計畫原本的寫法。
+#
+#    ⚠️ 寫成 `const double start = t[from];` 會讓 windowS 變成未使用參數，
+#       -Werror 擋在編譯期 —— 又變成那個「✅ 編不過」的弱證據。
+#       用 std::min(windowS, 0.0) 讓參數仍然被讀到，效果一樣是視窗歸零。
 run_case "I4 基準值改回單點（計畫原本的寫法）" "$IDN" \
-    'static_cast<std::size_t>(std::max(1.0, baselineS' \
-    'static_cast<std::size_t>(std::min(1.0, baselineS'
+    'const double start = t[from] - windowS;' \
+    'const double start = t[from] - std::min(windowS, 0.0);'
+
+# I5 是配合 2026-08-09 把視窗從「列數」改成「時間」而加的：
+# 把時間比較改成「大於」，視窗會變成階躍**之後**的那一段 —— 完全錯的基準值。
+run_case "I5 基準視窗取到階躍之後" "$IDN" \
+    'if (t[i] < start)' 'if (t[i] > start)'
 
 # ── 控制器（controller/pi.cpp，W5）────────────────────────────────────
 #

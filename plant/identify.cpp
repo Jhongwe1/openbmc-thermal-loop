@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <numeric>
+// <numeric> 在 2026-08-09 把兩個平均改成用時間框之後就用不到了
+// （std::accumulate 沒了）。用不到的 include 要拿掉 —— 它會讓下一個人
+// 以為這裡還在用標準演算法，而且 -Werror 不會提醒。
 
 namespace thermal
 {
@@ -12,17 +14,39 @@ namespace thermal
 namespace
 {
 
-/** 取序列尾端 n 點的平均，當作階躍後的穩態值 y∞。 */
-double tailMean(const std::vector<double>& y, std::size_t n)
+/**
+ * 取序列**最後 fraction 比例的時間**的平均，當作階躍後的穩態值 y∞。
+ *
+ * ★ 與 baselineMean 同一個理由：用時間框，不是用列數框。
+ *   原本寫的是 `tailMean(y, y.size() / 10)`（最後 10 % 的**列**）——
+ *   非等間隔的軌跡上，「最後 10 % 的列」與「最後 10 % 的時間」是兩件事。
+ *   等間隔時兩者逐點相同，所以這個改動**不會動到 exp01 已經量到的數字**
+ *   （已驗證：重跑五個 seed，K/tau/theta 逐位元相同）。
+ */
+double tailMean(const std::vector<double>& t, const std::vector<double>& y,
+                double fraction)
 {
-    n = std::clamp<std::size_t>(n, 1, y.size());
-    return std::accumulate(y.end() - static_cast<std::ptrdiff_t>(n), y.end(),
-                           0.0) /
-           static_cast<double>(n);
+    if (y.empty())
+    {
+        return 0.0;
+    }
+    const double tEnd = t.back();
+    const double start = tEnd - fraction * (tEnd - t.front());
+    double sum = 0.0;
+    std::size_t n = 0;
+    for (std::size_t i = 0; i < y.size(); ++i)
+    {
+        if (t[i] >= start)
+        {
+            sum += y[i];
+            ++n;
+        }
+    }
+    return (n > 0) ? sum / static_cast<double>(n) : y.back();
 }
 
 /**
- * 取 [from - n, from) 這段的平均，當作階躍前的基準值 y0。
+ * 取階躍前 windowS 秒的平均，當作基準值 y0。
  *
  * ⚠️ 計畫範本是 `y0 = y[iStep]` —— **單一個點**。
  *    那個點含雜訊（σ = 0.05）又被量化（LSB = 0.0625），單點誤差可到 0.19 °C。
@@ -30,18 +54,40 @@ double tailMean(const std::vector<double>& y, std::size_t n)
  *    而 bench/claims.json 對 tau 的容差只有 10%。
  *    **基準值錯了，K、t₁、t₂ 三個東西會一起錯**，因為門檻是從 y0 算的。
  *    取平均是免費的：雜訊按 1/√n 縮小，100 點就把 σ 砍到十分之一。
+ *
+ * ★★ 視窗用**時間**框，不是用列數框（2026-08-09 改）。
+ *    原本的寫法是 `n = baselineS / dt`，而 `dt` 是從序列的**前兩點**推出來的。
+ *    對 `bench/sim` 產生的等間隔資料那沒問題，但 W9 的 L1 vs L2 對照要把
+ *    **從 BMC 收回來的軌跡**餵進同一個函式 —— 那一側的取樣間隔本來就會抖。
+ *    列數框在非等間隔資料上會**安靜地**涵蓋錯誤的時間長度：
+ *    不會報錯，只會給你一個看起來很正常、但基準值不對的 K。
+ *    （`bench/metrics.py` 的 `fan_power_rel` 有一模一樣的問題，同一天一起修。）
  */
-double baselineMean(const std::vector<double>& y, std::size_t from,
-                    std::size_t n)
+double baselineMean(const std::vector<double>& t, const std::vector<double>& y,
+                    std::size_t from, double windowS)
 {
     if (from == 0)
     {
         return y.empty() ? 0.0 : y.front();
     }
-    n = std::clamp<std::size_t>(n, 1, from);
-    const auto first = y.begin() + static_cast<std::ptrdiff_t>(from - n);
-    const auto last = y.begin() + static_cast<std::ptrdiff_t>(from);
-    return std::accumulate(first, last, 0.0) / static_cast<double>(n);
+    const double start = t[from] - windowS;
+    double sum = 0.0;
+    std::size_t n = 0;
+    for (std::size_t i = from; i-- > 0;)
+    {
+        if (t[i] < start)
+        {
+            break;
+        }
+        sum += y[i];
+        ++n;
+    }
+    if (n == 0)
+    {
+        // 視窗比一個取樣間隔還短：退回最靠近階躍的那一點，並且**只有這一點**。
+        return y[from - 1];
+    }
+    return sum / static_cast<double>(n);
 }
 
 /**
@@ -87,12 +133,8 @@ Fopdt identifyTwoPoint(const std::vector<double>& t,
         return f;
     }
 
-    const double dt = t[1] - t[0];
-    const auto nBase =
-        static_cast<std::size_t>(std::max(1.0, baselineS / std::max(dt, 1e-9)));
-
-    const double y0 = baselineMean(y, iStep, nBase);
-    const double yInf = tailMean(y, y.size() / 10);
+    const double y0 = baselineMean(t, y, iStep, baselineS);
+    const double yInf = tailMean(t, y, 0.1);
 
     f.k = (yInf - y0) / du;
 
