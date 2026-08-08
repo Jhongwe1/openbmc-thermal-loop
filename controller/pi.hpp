@@ -34,8 +34,17 @@ enum class AntiWindup
     ///    不需要調參，但「方向」的判斷要小心。
     Conditional,
 
-    /// ③ 回算：用飽和後的實際輸出反推積分。
-    ///    這裡實作的是**標準版**：把前饋與微分那兩份也扣掉。
+    /// ③ 回算（back-calculation / tracking anti-windup）：
+    ///    用飽和後的**實際**輸出反推積分，把積分往「不會造成飽和」的方向拉回。
+    ///
+    ///    標準式（Åström & Hägglund）：
+    ///        I += ki·e·ts + (sat(u) − u)·ts/Tt
+    ///
+    ///    `Tt` 是**追蹤時間常數**（`PiParams::trackingTimeS`）：
+    ///    它決定積分被拉回來的**速度**。Tt 小 = 拉得快 = 幾乎不 windup，
+    ///    但飽和邊緣的行為會比較躁；Tt 大 = 拉得慢 = 比較平順但恢復慢。
+    ///
+    ///    這裡也把前饋與微分那兩份扣掉 —— 與上游不同，見 UpstreamParity。
     BackCalculation,
 
     /// ★ 逐行複製上游 pid/ec/pid.cpp 的行為，只為了 parity 測試。
@@ -75,6 +84,27 @@ struct PiParams
 
     double feedFwdOffset = 0.0;
     double feedFwdGain = 0.0;
+
+    /// 回算的**追蹤時間常數 Tt (s)**，只在 AntiWindup::BackCalculation 生效。
+    ///
+    /// `0`（預設）= 「Tt 等於 ts」的極限情形，也就是**一步就把積分拉回來**。
+    /// 那正是這個專案 W5 實作的行為 —— 所以預設值不改變任何既有結果。
+    ///
+    /// ★ 為什麼把它補回來（2026-08-09）
+    ///   計畫的 `PiParams` 本來有一個 `backCalcGain`，W5 實作時**默默刪掉了**，
+    ///   而且沒有記進偏離紀錄。刪掉之後 `BackCalculation` 這個名字就名不副實：
+    ///   它不是可調的標準回算，是 Tt = ts 的那一個特例。
+    ///   面試被問「你的 tracking time constant 設多少」時，
+    ///   「我沒有那個參數」與「我設 Tt = ts，理由是……」是兩種完全不同的答案。
+    ///
+    /// ★ 為什麼是「時間常數 Tt」而不是計畫寫的「增益 backCalcGain」
+    ///   Tt 有單位（秒），是控制文獻的標準寫法，而且**與 ts 無關** ——
+    ///   換取樣週期時行為不會跟著變。增益版本得寫成 1/Tt，
+    ///   改 ts 時還要重算，而那正是 W5 的 ts 盲區教會我的事。
+    ///
+    /// ⚠️ `Tt < ts` 會**過度修正**（一步拉過頭），慣例是取 `Tt ≥ ts`，
+    ///    經驗值 `Tt ≈ Ti` 或 `Tt = √(Ti·Td)`。這裡不強制，但會在下面註明。
+    double trackingTimeS = 0.0;
 
     AntiWindup antiWindup = AntiWindup::Clamp;
 };

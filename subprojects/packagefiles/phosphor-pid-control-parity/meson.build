@@ -1,3 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# ─────────────────────────────────────────────────────────────────────────
+#  這份檔案建置的是**上游的原始碼**，不是本專案的：
+#
+#    專案：  openbmc/phosphor-pid-control
+#    commit：c5e59550d37a5be079f724a6e2633d4aae3ee238（釘在 ../../*.wrap）
+#    授權：  Apache License 2.0
+#    編到的編譯單元：pid/ec/pid.cpp、pid/ec/logging.cpp、pid/tuning.cpp
+#
+#  **這份 meson.build 本身是我寫的**（也是 Apache-2.0），它的唯一作用是
+#  取代上游那份建置檔，好讓我只編上面那三個編譯單元。
+#  上游的原始碼**不在這個 repo 裡** —— meson 依 .wrap 去抓，
+#  所以「我的測試真的在編上游的程式碼」這句話是可以查證的。
+# ─────────────────────────────────────────────────────────────────────────
+#
 # 這份 meson.build 會蓋掉上游 phosphor-pid-control 自己的那一份
 # （meson wrap 的 patch_directory 機制）。
 #

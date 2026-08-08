@@ -150,8 +150,34 @@ association 讓 bmcweb 掛進 Chassis。
 ### Gate 3 起步:我自己的 PI,以及與上游的逐步比對
 
 [`controller/pi.cpp`](controller/pi.cpp) 是一版 C++ PI,含四種抗飽和策略
-(無處理 / 積分箝位 / 條件積分 / 標準回算),外加第五個模式
-`UpstreamParity` —— **逐行複製上游 `ec::pid()` 的行為**。
+(無處理 / 積分箝位 / 條件積分 / **標準回算,含可調的追蹤時間常數 Tt**),
+外加第五個模式 `UpstreamParity` —— **逐行複製上游 `ec::pid()` 的行為**。
+
+### ★ 它是「一個能收斂的控制器」嗎 —— 這是另一個問題
+
+parity 測試證明的是「**我的算術跟上游一樣**」。
+**那不等於「這是個能收斂的控制器」** —— 兩個實作可以逐位元一致地一起錯。
+
+[`test/test_closed_loop.cpp`](test/test_closed_loop.cpp) 把 `controller/`
+與 `plant/` 真的接起來跑,補的是那個缺口:
+
+| 測試 | 斷言 |
+|---|---|
+| `ConvergesToSetpointWithNegativeGain` | 穩態誤差 < **3 個雜訊底**(容差由 σ 與 LSB 推導,不是調出來的),而且輸出落在可調範圍內 —— 不是靠撞邊界停住的 |
+| `WrongSignLatchesAtALimitInsteadOfControlling` | **符號檢查(exp02)的程式碼版本** |
+| `AntiWindupRecoversFasterThanNone` | 製造飽和再解除,`None` 卡在上限的時間 > `Clamp` / `BackCalculation` |
+| `SameSeedGivesTheSameTrajectory` | 同 seed 逐點相同 —— 沒有它,上面三條的「差異」可能只是亂數 |
+
+> **★ 這支測試抓到的第一件事,是我自己講錯的一段話。**
+> 我原本以為「係數符號錯 = 風扇停掉 = 溫度飆高」。
+> 實測是**風扇衝到 100 % 並鎖死,溫度停在 43 °C —— 比目標低 22 度**。
+> 根因:符號反了等於把負回饋變成**正回饋**,而正回饋會往
+> **起始誤差的那一邊**鎖死 —— 落到哪一個極限**取決於初始條件**。
+> 而且這個版本的症狀更難發現:「風扇 100 %、溫度 43 °C」在監控畫面上
+> **看起來完全健康**,只是永遠全速在燒電。
+>
+> 這條測試在 mutation 表裡不是任何一個植入錯誤的唯一捕手 ——
+> 它抓到的是**敘事裡的錯**,而那種錯沒有任何單行 mutation 表達得出來。
 
 [`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp) 把上游
 `pid/ec/pid.cpp` **真的編進這個測試**(meson wrap 釘住 commit `c5e59550d3`,
@@ -182,8 +208,9 @@ slew rate limit 有設定、而且前饋增益不為零時,上游把積分回算
 ### 證據怎麼被守住
 
 ```bash
-meson test -C build          # 5 個測試（4 支 gtest 執行檔 + pytest）
-./tools/mutation_check.sh    # 故意植入 28 個錯誤，每一個都必須讓某個測試變紅
+meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
+                             # = 31 個 gtest case + 24 個 pytest case
+./tools/mutation_check.sh    # 故意植入 31 個錯誤，每一個都必須讓某個測試變紅
 ```
 
 **第二行才是重點。** 「測試是綠的」只證明目前沒有斷言被觸發,
@@ -192,7 +219,7 @@ meson test -C build          # 5 個測試（4 支 gtest 執行檔 + pytest）
 把 `rthMin` 調小讓飽和條件悄悄消失……),重編、重跑、記錄哪些測試變紅,
 **有任何一個活下來就離開碼 1**。
 
-實測 **28 個全被抓到**,其中數個**各自只有一個測試抓得到** ——
+實測 **31 個全被抓到**,其中數個**各自只有一個測試抓得到** ——
 那些測試是它們各自性質的唯一防線,而這份對照證明了它們守得住。
 
 > ★ **有一個植入的錯誤是「把 QEMU setter 的 `−128` 拿掉」,而抓到它的是

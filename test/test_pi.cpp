@@ -277,6 +277,52 @@ TEST(Pi, BackCalculationIsANoOpWhileUnsaturated)
     }
 }
 
+/// ★ 追蹤時間常數 Tt：它決定積分被拉回來的**速度**。
+///
+/// 這一條存在的理由是「`BackCalculation` 這個名字要名副其實」。
+/// W5 的實作只有 Tt = ts 那一個特例，而且是**隱含**的 —— 沒有參數、
+/// 沒有文件、面試被問「你的 tracking time constant 設多少」答不出來。
+///
+/// 兩個斷言各自釘住一件事：
+///   · `Tt = ts`（預設）要**完全等於** W5 的舊行為 `out − pTerm − dTerm − ffTerm`
+///   · `Tt` 變大，飽和時累積的積分要**明顯變多**（拉得慢）
+TEST(Pi, TrackingTimeConstantSetsHowFastTheIntegralIsPulledBack)
+{
+    auto integralAfterSaturating = [](double trackingTimeS) {
+        PiParams p = basic();
+        p.antiWindup = AntiWindup::BackCalculation;
+        p.trackingTimeS = trackingTimeS;
+        Pi pi(p);
+        // 100 輪：Tt = 10·ts 那一組是幾何收斂，公比 0.9，
+        // 100 輪之後殘差 0.9^100 ≈ 3e-5 —— 遠小於下面的容差。
+        for (int i = 0; i < 100; ++i)
+        {
+            pi.step(0.0, 10.0); // error = +10，輸出很快就頂到 outMax = 50
+        }
+        return pi.integral();
+    };
+
+    // Tt = ts：一步拉回。穩態積分 = outMax − kp·e = 50 − 1×10 = 40。
+    // ★ 這個 40 是手算的，不是跑出來抄的 —— 它同時證明預設值沒有改變舊行為。
+    const double fast = integralAfterSaturating(0.0);
+    EXPECT_DOUBLE_EQ(fast, 40.0);
+
+    // Tt = 10·ts：每一步只拉回十分之一，所以積分會爬到高得多的地方才平衡。
+    //
+    //   遞迴式（飽和之後）：I' = I + ki·e·ts + (outMax − (kp·e + I + ki·e·ts))·ts/Tt
+    //                          = I + 10 + (50 − (10 + I + 10))/10
+    //                          = 0.9·I + 13
+    //   不動點：I = 0.9·I + 13  ->  I* = **130**
+    //
+    // ⚠️ 我第一版把不動點寫成 140 —— 那是 I_cand（累加後、回算前）的值，
+    //    不是**存下來**的積分。測試紅了才發現，而且它紅得很有用：
+    //    如果我當時把容差放寬到 ±15 讓它過，這條測試就再也分不出
+    //    「Tt 有生效」與「Tt 差一步」。
+    const double slow = integralAfterSaturating(10.0);
+    EXPECT_NEAR(slow, 130.0, 0.01);
+    EXPECT_GT(slow, fast);
+}
+
 /// reset() 要真的把狀態清乾淨，包含「第一輪」旗標 —— 否則重置後的第一步
 /// 會被 slew 限制住，而它沒有可以參考的 lastOutput。
 TEST(Pi, ResetRestoresTheFirstStepSemantics)

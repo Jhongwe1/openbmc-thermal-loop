@@ -48,7 +48,7 @@ fi
 #   而 `meson test` 依然回報全綠。那種情況下這支腳本會把 C1~C11 全部判成
 #   survivor —— 訊息是「測試套件有漏洞」，但真正的原因是「那個測試根本沒建」。
 #   **診斷訊息指錯方向，比沒有訊息更浪費時間。**
-EXPECTED_TESTS="plant identify pi parity_upstream metrics"
+EXPECTED_TESTS="plant identify pi closed_loop parity_upstream metrics"
 AVAILABLE="$(meson test -C "$BUILD" --list 2>/dev/null)"
 MISSING=""
 for t in $EXPECTED_TESTS; do
@@ -238,9 +238,12 @@ run_case "C3 上游最後那次箝位拿掉" "$CTL" \
 run_case "C4 條件積分永不生效" "$CTL" \
     'if (worseHigh || worseLow)' 'if (worseHigh && worseLow)'
 
+# 「少扣前饋」在 Tt 版本裡等價於「回算時把 ffTerm 加回去」：
+#   I = I_cand + (out − unsat)·ts/Tt，unsat 裡含 ffTerm；
+#   多加一個 ffTerm 就等於回算時沒把它扣掉（= 上游的行為）。
 run_case "C5 標準回算少扣前饋" "$CTL" \
-    'candidate = clamp(out - pTerm - dTerm - ffTerm, p_.integralMin,' \
-    'candidate = clamp(out - pTerm - dTerm, p_.integralMin,'
+    'candidate = clamp(candidate + (out - unsat) * p_.ts / tt,' \
+    'candidate = clamp(candidate + (out - unsat + ffTerm) * p_.ts / tt,'
 
 # ── 取樣週期 ts（2026-08-09 稽核補的）────────────────────────────────
 #
@@ -281,6 +284,33 @@ run_case "C10 slew 不乘 ts（我的 step）" "$CTL" \
 run_case "C11 微分不除 ts（我的 step）" "$CTL" \
     '(p_.kd != 0.0) ? p_.kd * (error - lastError_) / p_.ts : 0.0;' \
     '(p_.kd != 0.0) ? p_.kd * (error - lastError_) : 0.0;'
+
+# ── 回算的追蹤時間常數 Tt（2026-08-09 補回 backCalcGain 時一起加的）──
+#
+# 計畫的 PiParams 本來有這個參數，W5 實作時默默刪掉了，於是 BackCalculation
+# 退化成「Tt = ts」的特例。補回來之後一定要有 mutation 守著，
+# 否則哪天有人把它「簡化」掉，測試不會有任何反應（預設值本來就是那個特例）。
+# ⚠️ C12 刻意寫成「忽略參數」而不是「把 * p_.ts / tt 整段刪掉」——
+#    後者會讓 tt 變成未使用變數，被 -Werror 擋在編譯期，
+#    腳本回報「✅ 編不過」看起來過關，但**斷言根本沒被執行到**。
+#    而且「忽略參數」才是真的會再發生一次的那種退化：W5 就是這樣弄丟它的。
+run_case "C12 回算忽略 trackingTimeS（退回 W5 的行為）" "$CTL" \
+    'const double tt = (p_.trackingTimeS > 0.0) ? p_.trackingTimeS : p_.ts;' \
+    'const double tt = p_.ts;'
+
+run_case "C13 Tt 與 ts 的比例寫反" "$CTL" \
+    'candidate = clamp(candidate + (out - unsat) * p_.ts / tt,' \
+    'candidate = clamp(candidate + (out - unsat) * tt / p_.ts,'
+
+# ── 誤差定義（閉環的方向由它決定）────────────────────────────────────
+#
+# ⚠️ `const double error = setpoint - input;` 在這個檔案裡出現**兩次**
+#    （我的 step() 一次、上游相容路徑一次），而 subst 只換第一個。
+#    所以這一條動到的是**我自己的 step()** —— 上游那條由 parity 顧。
+#    這是「同一行程式在兩個地方」的第三個例子（前兩個是 slew 與微分的 ts）。
+run_case "C14 誤差定義反向（我的 step）" "$CTL" \
+    'const double error = setpoint - input;' \
+    'const double error = input - setpoint;'
 
 # ── Python 這一側（bench/metrics.py、tools/set_die_temp.py）────────────
 #

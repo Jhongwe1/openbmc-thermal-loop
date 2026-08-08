@@ -81,14 +81,27 @@ double Pi::step(double input, double setpoint)
 
     // ── ③ 標準回算：用飽和後的實際輸出反推積分 ─────────────────────
     //
+    //    I += (sat(u) − u) · ts / Tt
+    //
+    //    `out - unsat` 就是 (sat(u) − u)：輸出被箝位或被 slew 削掉了多少。
+    //    沒有飽和時它是 0，整段變成空操作 —— 由
+    //    Pi.BackCalculationIsANoOpWhileUnsaturated 守著。
+    //
+    //    ★ Tt = ts（trackingTimeS 為 0）時，這一式**代數上等於**
+    //      `integral = out - pTerm - dTerm - ffTerm`（W5 的寫法）：
+    //          candidate + (out − (pTerm + candidate + dTerm + ffTerm))
+    //        = out − pTerm − dTerm − ffTerm
+    //      所以補回 Tt 不改變任何既有結果，只是把「那個特例」變成「可以調」。
+    //
     //    ⚠️ 這裡刻意與上游不同。上游是 integral = output - proportionalTerm，
     //       沒有扣掉 feedFwdTerm 與 derivativeTerm。ff != 0 時兩者會分歧。
     //       這個分歧是刻意保留的，見 test/test_parity_upstream.cpp 與
     //       docs/upstream.md 的候選 1。
     if (p_.antiWindup == AntiWindup::BackCalculation && p_.ki != 0.0)
     {
-        candidate = clamp(out - pTerm - dTerm - ffTerm, p_.integralMin,
-                          p_.integralMax);
+        const double tt = (p_.trackingTimeS > 0.0) ? p_.trackingTimeS : p_.ts;
+        candidate = clamp(candidate + (out - unsat) * p_.ts / tt,
+                          p_.integralMin, p_.integralMax);
     }
 
     integral_ = candidate;
@@ -99,7 +112,26 @@ double Pi::step(double input, double setpoint)
 }
 
 /**
- * 逐行對照上游 phosphor-pid-control 的 pid/ec/pid.cpp（commit c5e59550d3）。
+ * 逐行對照上游 phosphor-pid-control 的 pid/ec/pid.cpp。
+ *
+ * ─────────────────────────────────────────────────────────────────────
+ *  出處與授權（★ 這一段是必要的，不是禮貌）
+ *
+ *  行為複製自：openbmc/phosphor-pid-control，檔案 `pid/ec/pid.cpp`，
+ *              commit `c5e59550d37a5be079f724a6e2633d4aae3ee238`
+ *              （與這台 BMC 映像裡的 swampd 同一版，見 docs/env-baseline.md）
+ *  上游授權：  Apache License 2.0
+ *  本檔授權：  Apache License 2.0（同上，見檔案開頭的 SPDX 標記）
+ *
+ *  ⚠️ 這裡**沒有複製上游的原始碼**，複製的是**行為**：這個函式是我自己
+ *     照著上游那份實作重寫的，用途是讓 parity 測試有一個「應該一模一樣」
+ *     的對照組。上游真正的程式碼是由 meson wrap 抓下來、原封不動編進
+ *     test/test_parity_upstream.cpp 的（見 subprojects/phosphor-pid-control.wrap）。
+ *
+ *     即使如此，**衍生自 Apache-2.0 作品的行為描述仍應標明出處**，
+ *     而且對這個專案來說還有第二個理由：「我跟上游哪一版比對過」
+ *     這句話沒有 commit hash 就沒有可查證的對象。
+ * ─────────────────────────────────────────────────────────────────────
  *
  * 註解裡標的三個 ★ 是計畫給的虛擬碼寫錯、而我讀原始碼才發現的地方。
  * 它們每一個都會讓 parity 測試在特定參數組合下失敗，所以這三行本身就是

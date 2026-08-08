@@ -28,6 +28,19 @@ test(
     protocol: 'gtest',
 )
 
+# ★ 閉環：把 controller 與 plant 接起來。
+#   parity 測試證明的是「算術跟上游一樣」，那不等於「這是個能收斂的控制器」——
+#   兩個實作可以逐位元一致地一起錯。這一支補的是那個缺口。
+test(
+    'closed_loop',
+    executable(
+        'test_closed_loop',
+        'test_closed_loop.cpp',
+        dependencies: test_deps + [controller_dep],
+    ),
+    protocol: 'gtest',
+)
+
 # upstream_pid_dep 在沒有 subproject 時是 disabler()，整個 target 會被跳過，
 # 其他測試照常建置。這正是 disabler 的用途：缺一個可選相依不該讓 build 死掉。
 test(

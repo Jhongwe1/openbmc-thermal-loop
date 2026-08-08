@@ -276,12 +276,13 @@ meson compile -C build
 上面那張表是**用眼睛看**的。這一節是**CI 會檢查**的。
 
 ```bash
-meson test -C build          # 4 支執行檔、26 個 gtest case 全綠
+meson test -C build          # 6 個測試、31 個 gtest case + 24 個 pytest case 全綠
 ```
 
-> ⚠️ `meson test` 的摘要數的是**執行檔**（`Ok: 4`），不是 case。
+> ⚠️ `meson test` 的摘要數的是**測試項目**（`Ok: 6`），不是 case。
 > case 數要問執行檔自己：`./build/test/test_plant --gtest_list_tests`。
-> 目前是 plant 7 + identify 5 + pi 10 + parity_upstream 4 = **26**。
+> 目前是 plant 7 + identify 5 + pi 11 + closed_loop 4 + parity_upstream 4 = **31**，
+> 外加 `test/python/` 的 24 個 pytest case。
 > 下面這張表只列 plant 那 7 個。
 
 | 測試 | 斷言 | 抓什麼錯 |
@@ -334,11 +335,11 @@ meson test -C build          # 4 支執行檔、26 個 gtest case 全綠
 ### 3.3 負向驗證：這些測試真的抓得到錯嗎
 
 ```bash
-./tools/mutation_check.sh    # 28 個植入的錯誤，全部要被抓到，否則離開碼 1
+./tools/mutation_check.sh    # 31 個植入的錯誤，全部要被抓到，否則離開碼 1
 ```
 
 「測試是綠的」跟「測試有在保護我」是兩件事。這支腳本一次植入一個已知錯誤、
-重編、重跑，記錄哪些測試變紅。**2026-08-09 實測：28 個全被抓到**，其中
+重編、重跑，記錄哪些測試變紅。**2026-08-09 實測：31 個全被抓到**，其中
 
 | 植入的錯誤 | 唯一抓到它的測試 |
 |---|---|
