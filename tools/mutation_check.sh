@@ -35,6 +35,7 @@ IDN="plant/identify.cpp"
 CTL="controller/pi.cpp"
 MET="bench/metrics.py"
 STD="tools/set_die_temp.py"
+PRV="bench/provenance.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -68,7 +69,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV"
 # shellcheck disable=SC2086
 cp $ALL_SOURCES "$BACKUP/"
 
@@ -367,6 +368,13 @@ run_case "P7 C 的整數除法改成 Python 的 //" "$STD" \
     same_sign = (numerator >= 0) == (denominator > 0)
     return quotient if same_sign else -quotient' \
     '    return numerator // denominator'
+
+# ★ P8 植的是一個**真的發生過**的退化：caption 記 HEAD 而不是資料的 commit。
+#   那讓「clone 下來跑一次得到同一張圖」變成假話，而且**看不出來** ——
+#   每一張圖單獨看都很正常，要真的去 clone 一份才會發現。
+run_case "P8 caption 退回記 HEAD" "$PRV" \
+    'head = _git("log", "-1", "--format=%h", "--", *paths)' \
+    'head = _git("rev-parse", "--short", "HEAD")'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
