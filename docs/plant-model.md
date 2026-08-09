@@ -341,15 +341,40 @@ meson test -C build          # 6 個測試、32 個 gtest case + 24 個 pytest c
 「測試是綠的」跟「測試有在保護我」是兩件事。這支腳本一次植入一個已知錯誤、
 重編、重跑，記錄哪些測試變紅。**2026-08-09 實測：32 個全被抓到**，其中
 
+**大部分的植入錯誤只有一個測試抓得到** —— 那個測試就是那條性質的唯一防線：
+
 | 植入的錯誤 | 唯一抓到它的測試 |
 |---|---|
 | 死區佇列拿掉 | `Plant.DeadTimeDelaysResponse` |
-| rng 改成全域共用 | `Plant.DeterminismSameSeedSameTrace` |
-| `rthMin` 0.12 → 0.08 | `Plant.SaturationCaseHolds` |
 | 基準值改回單點 | `Identify.BaselineAveragingReducesSeedSpread` |
+| 兩點法係數 1.5 → 1.0 | `Identify.RecoversKnownTimeConstants` |
+| 條件積分永不生效 | `Pi.ConditionalIntegralReachesAPlateau` |
+| 積分不乘 `ts` | `Pi.IntegralScalesWithTheSamplePeriod` |
+| slew 不乘 `ts`（我的 `step()`） | `Pi.SlewRateIsPerSecondNotPerStep` |
+| 微分不除 `ts`（我的 `step()`） | `Pi.DerivativeIsARateSoTheSamplePeriodDivides` |
+| 回算忽略 `trackingTimeS` | `Pi.TrackingTimeConstantSetsHowFastTheIntegralIsPulledBack` |
+| 上游相容路徑的四種錯 | `UpstreamParity.MatchesAcrossStepBattery` |
 
-**這四條各自是唯一的防線。** 沒有這份對照，我只知道測試是綠的，
-不知道哪一條在守哪一件事。
+沒有這份對照，我只知道測試是綠的，**不知道哪一條在守哪一件事**。
+
+> ### ★ 2026-08-09 更新：有兩條從「唯一防線」變成「兩道防線」
+>
+> 加了 `test/test_closed_loop.cpp` 之後：
+>
+> | 植入的錯誤 | 稽核前 | 現在 |
+> |---|---|---|
+> | rng 改成全域共用 | 只有 `Plant.DeterminismSameSeedSameTrace` | ＋ `ClosedLoop.SameSeedGivesTheSameTrajectory` |
+> | `rthMin` 0.12 → 0.08 | 只有 `Plant.SaturationCaseHolds` | ＋ `ClosedLoop.AntiWindupRecoversFasterThanNone` |
+>
+> **這兩格變成兩道防線不是冗餘，是它們在兩個不同的層級上都重要：**
+> 可重現性與飽和條件，在**單元層**（plant 自己）與**系統層**
+> （plant ＋ controller 接起來）各有一次意義。
+>
+> ⚠️ **但也要誠實：閉環測試在這張表裡不是任何一條的唯一捕手。**
+> 單行錯誤本來就是單元測試的守備範圍。閉環測試守的是另一種東西 ——
+> **「這是一個能收斂的控制器」這個宣稱本身**，而那種錯沒有任何
+> 單行 mutation 表達得出來。它上線第一天抓到的就是**我對「符號錯會怎樣」
+> 的敘述是錯的**（見 `LOG.md` 稽核 6）。
 
 ---
 

@@ -50,6 +50,18 @@ bmcweb **兩套都實作**,用 meson build option 控制是否編入 ——
 
 ## 3. ★ 我的 external sensor 出現在 Redfish 了嗎
 
+> 📌 **這一節是 W2 的紀錄,講的是 route (a)。**
+> **W3 之後 `die0` 走的是 route (b′)**(真的 tmp421 → hwmon → `dbus-sensors`),
+> 而且**在 Redfish 上看得到了** —— 因為 `hwmontempsensor` 會建 association。
+> 這一節的結論(**bmcweb 靠 association 決定感測器屬於哪個 Chassis**)
+> 正是那次改動的依據,所以留著。現行路徑見
+> [`devicetree-to-dbus.md`](devicetree-to-dbus.md)。
+>
+> ⚠️ 底下那幾條 `busctl ... /xyz/openbmc_project/extsensors/...` 指令
+> **在現在的設定上會回 `Unknown object`** —— 那個物件只有走 route (a) 時才存在
+> (swampd 依設定檔自己建的)。現在要注入溫度用
+> `./tools/set_die_temp.py <溫度> --verify`。
+
 **沒有。而且比預期更徹底 —— 整個 `Sensors` collection 是空的。**
 
 我用 route (a) 建的 `die0`:

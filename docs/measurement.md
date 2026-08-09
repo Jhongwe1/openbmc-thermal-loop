@@ -49,7 +49,8 @@ README、履歷、圖上的標註、CI 斷言全部引用同一個來源。
 
 > ### ⚠️ 2026-08-09:這份「唯一定義來源」曾經**一個測試都沒有**
 >
-> 對照組是 C++ 那一側:26 個 gtest case、21 個被證明會咬人的 mutation。
+> 對照組是**當時**的 C++ 那一側:26 個 gtest case、21 個被證明會咬人的 mutation
+> (現在兩邊都長大了 —— 32 個 gtest case、24 個 pytest case、32 個 mutation)。
 > Python 這一側只有 `ruff` —— 而 ruff 只查風格,不查算得對不對。
 > **W7 的招牌宣稱 `recover_s_ratio` 就是這裡的函式算出來的**,
 > 等它寫完再補測試等於讓數字先進 README、測試後到。

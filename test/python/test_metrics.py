@@ -3,8 +3,9 @@
 ★ 為什麼這份檔案存在
     `metrics.py` 是**全專案每一個應變因的唯一定義來源**
     （docs/measurement.md §2 自己這樣寫），而在 2026-08-09 之前它**一個測試都沒有**。
-    對照組：C++ 那一側有 26 個 gtest case 加上 21 個被證明會咬人的 mutation；
-    Python 這一側只有 `ruff`，而 ruff 只查風格，不查算得對不對。
+    對照組（稽核當下的數字）：C++ 那一側有 26 個 gtest case
+    加上 21 個被證明會咬人的 mutation；Python 這一側只有 `ruff`，
+    而 ruff 只查風格，不查算得對不對。
 
     這很重要是因為 W7 的招牌宣稱 `recover_s_ratio` 就是這裡的函式算出來的。
     等它寫完再補測試，等於讓 Fig 3 的數字先進 README、測試後到 ——

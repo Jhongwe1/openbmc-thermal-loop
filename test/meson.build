@@ -3,9 +3,19 @@ if gmock_dep.found()
     test_deps += gmock_dep
 endif
 
-# protocol: 'gtest' 讓 meson 解析 gtest 的 XML 輸出，
-# 於是 meson test 的報告是「幾個 test case」而不是「幾個執行檔」。
-# 沒有它，兩個 case 全掛也只會顯示「1 個測試失敗」。
+# protocol: 'gtest' 讓 meson 用 --gtest_output=xml 跑，並解析那份 XML。
+#
+# ⚠️ **它不會改變主控台摘要的數字。** `Ok: 6` 數的仍然是 test() 項目
+#    （5 支 gtest 執行檔 + 1 個 pytest），不是 case。
+#    真正的差別在 `build/meson-logs/testlog.junit.xml`：
+#    有它的時候裡面是 **33 個 <testcase>**（每個 gtest case 一筆），
+#    沒有它就只有 6 筆「整支執行檔過/不過」。
+#
+#    要看 case 數就問執行檔自己：`./build/test/test_plant --gtest_list_tests`。
+#
+#    為什麼還是要開：CI（W10）吃的是那份 JUnit XML。
+#    「哪一個 case 紅了」與「哪一支執行檔紅了」在報告上差很多，
+#    而且 case 級的結果才看得出「同一支裡有幾條同時壞掉」。
 test(
     'plant',
     executable('test_plant', 'test_plant.cpp', dependencies: test_deps),
