@@ -276,13 +276,13 @@ meson compile -C build
 上面那張表是**用眼睛看**的。這一節是**CI 會檢查**的。
 
 ```bash
-meson test -C build          # 6 個測試、32 個 gtest case + 30 個 pytest case 全綠
+meson test -C build          # 6 個測試、32 個 gtest case + 32 個 pytest case 全綠
 ```
 
 > ⚠️ `meson test` 的摘要數的是**測試項目**（`Ok: 6`），不是 case。
 > case 數要問執行檔自己：`./build/test/test_plant --gtest_list_tests`。
 > 目前是 plant 7 + identify 6 + pi 11 + closed_loop 4 + parity_upstream 4 = **32**，
-> 外加 `test/python/` 的 30 個 pytest case。
+> 外加 `test/python/` 的 32 個 pytest case。
 > 下面這張表只列 plant 那 7 個。
 
 | 測試 | 斷言 | 抓什麼錯 |

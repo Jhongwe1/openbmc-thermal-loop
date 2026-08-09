@@ -209,7 +209,7 @@ slew rate limit 有設定、而且前饋增益不為零時,上游把積分回算
 
 ```bash
 meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
-                             # = 32 個 gtest case + 30 個 pytest case
+                             # = 32 個 gtest case + 32 個 pytest case
 ./tools/mutation_check.sh    # 故意植入 33 個錯誤，每一個都必須讓某個測試變紅
 ```
 

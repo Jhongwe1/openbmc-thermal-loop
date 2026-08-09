@@ -1432,7 +1432,7 @@
 | | 稽核前 | 修復後 |
 |---|---|---|
 | gtest case | 26 | **32**（closed_loop 4、pi 的 ts/Tt 4、identify 的非等間隔 1） |
-| pytest case | **0** | **30** |
+| pytest case | **0** | **32** |
 | mutation | 15 | **33**（含 8 個 Python） |
 | 有 meta 檔的實驗 | 1 / 3 | **4 / 4** |
 | 七欄登記 | exp01 | **exp01 ~ exp04** |
