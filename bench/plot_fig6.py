@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import sys
 
@@ -31,7 +32,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import provenance  # noqa: E402
 
 TRACE = pathlib.Path("bench/data/exp03_trace/layers.json")
-OUT = pathlib.Path("figures/fig6_dts_to_redfish.png")
+# 與 bench/plot.py 同一套：輸出目錄可覆寫，測試才畫得到暫存區。
+OUT = (pathlib.Path(os.environ.get("FIGURES_DIR", "figures"))
+       / "fig6_dts_to_redfish.png")
 
 # 每一層一個顏色。刻意用低飽和度：這張圖的主角是字串，不是配色。
 BOX_FACE = "#f7f7f9"
@@ -159,7 +162,8 @@ def main() -> int:
     #   而〈誠實準則〉第 6 條要求兩個都要有。同一條規則兩個標準，
     #   代表其中一張圖指不回產生它的那一版程式碼。
     caption = (
-        f'Platform: {doc["platform"]}    {provenance.version_line()}\n'
+        f'Platform: {doc["platform"]}    '
+        f'{provenance.version_line(provenance.FIG6_INPUTS)}\n'
         f'Captured: {doc["captured_at"]}    '
         f'Sensor "{doc["sensor"]}" = the tmp421 at i2c {doc["i2c_device"]}. '
         f'{doc["injected_temp_c"]} C was injected into the emulated chip over QMP; '

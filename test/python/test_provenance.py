@@ -36,9 +36,40 @@ def test_repo_commit_looks_like_a_short_hash():
 
 def test_version_line_has_both_halves():
     """兩樣都要有。少任何一樣，這張圖就指不回產生它的那一版。"""
-    line = provenance.version_line()
+    line = provenance.version_line(provenance.FIG1_INPUTS)
     assert "image: obmc-phosphor-image-" in line, line
-    assert "repo commit: " in line, line
+    assert "data commit: " in line, line
+
+
+def test_version_line_says_data_commit_not_repo_commit():
+    """★ 名字要說實話。
+
+    寫 `repo commit` 會讓讀者以為那是 HEAD —— 而它**不是**，
+    它是「這張圖的資料最後一次變動的 commit」。
+    這個區別正是「clone 下來得到同一張圖」能成立的唯一理由:
+    HEAD 每個 commit 都在動，資料的 commit 只在資料真的變動時才動。
+    """
+    line = provenance.version_line(provenance.FIG1_INPUTS)
+    assert "repo commit" not in line, line
+
+    head = provenance.repo_commit()
+    data = provenance.data_commit(provenance.FIG1_INPUTS)
+    assert data != "(uncommitted)", "Fig 1 的資料還沒進 git"
+    assert data != head, (
+        f"資料的 commit（{data}）等於 HEAD（{head}）。"
+        f"如果這一版真的動了 exp01 的資料，這是正常的；"
+        f"否則代表 provenance 又退回去記 HEAD 了。"
+    )
+
+
+def test_dirty_inputs_are_marked():
+    """輸入有未 commit 的改動時要標 `-dirty`。
+
+    沒有這個標記的話，一張用「還沒進 git 的資料」畫出來的圖，
+    caption 會指向一個**不含那些資料**的 commit —— 比沒有標記更糟。
+    """
+    # 拿一個一定乾淨的路徑當對照，確認乾淨時**不會**被標。
+    assert not provenance.data_commit(provenance.FIG1_INPUTS).endswith("-dirty")
 
 
 def test_every_figure_script_uses_the_shared_version_line():
@@ -49,7 +80,7 @@ def test_every_figure_script_uses_the_shared_version_line():
     """
     for name in FIGURE_SCRIPTS:
         source = (BENCH / name).read_text(encoding="utf-8")
-        assert "provenance.version_line()" in source, (
+        assert "provenance.version_line(" in source, (
             f"bench/{name} 沒有用共用的 version_line() —— "
             f"誠實準則第 6 條不可以有第二份實作"
         )

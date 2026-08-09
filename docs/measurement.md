@@ -82,23 +82,51 @@ README、履歷、圖上的標註、CI 斷言全部引用同一個來源。
 3. **不要把模擬講成實測。** 全文一致用「在我的熱模型上」,不要寫「在伺服器上」。
 4. **不要外推。** 這是單節點集總參數模型,不能宣稱對多區域熱耦合有效。
 5. **限制寫在圖旁邊**,不要只寫在 README 最後。**圖的 caption 就要寫「本圖為模擬結果」。**
-6. **記錄版本。** 每張圖的 caption 要有映像檔完整檔名與 repo commit。
+6. **記錄版本。** 每張圖的 caption 要有映像檔完整檔名與**產生它的那份資料的 commit**。
 7. **不要引用我沒查過的規格細節。**
 
 ### 3.1 圖的 caption 三要素
 
-每張圖的 caption 由 [`bench/plot.py`](../bench/plot.py) 的 `_caption()` 自動產生,
-一定含三樣東西:
+每張圖的 caption 一定含三樣東西:
 
 ```
 <實驗說明:改了什麼、固定了什麼、幾個 seed、用什麼方法算的>
 [Simulation on my own thermal plant - see docs/plant-model.md. Not measured on server hardware.]
-image: obmc-phosphor-image-bletchley-20260728025045.static.mtd  |  repo commit: <hash>
+image: obmc-phosphor-image-bletchley-20260728025045.static.mtd  |  data commit: <hash>
 ```
 
-> ⚠️ **caption 上的 commit 是「產圖當下的 HEAD」,也就是收錄這張圖那個 commit 的父節點。**
-> 這不是 bug,是無法避免的:圖在被 commit 之前就已經產生了。
-> 意思是「這張圖是從這個 commit 的程式碼與資料產生的」——正是我們要記錄的東西。
+第三行由 [`bench/provenance.py`](../bench/provenance.py) 產生,**每張圖共用同一份實作**
+(有測試守著:`test_every_figure_script_uses_the_shared_version_line`)。
+
+> ### ★★ 2026-08-09:那串 hash 從「HEAD」改成「資料的 commit」
+>
+> **原本記的是產圖當下的 HEAD。那讓一句宣稱變成假的。**
+>
+> `bench/plot.py` 的 docstring 寫著「任何人 clone 下來執行同一行指令,
+> 得到的是同一張圖」。實際上 **HEAD 每個 commit 都在變**,
+> 所以同一份資料在不同時間畫出來**逐 byte 不同** —— 差的就是那串 hash。
+> 而且 HEAD 常常與那張圖**無關**:修一個 typo 也會讓 caption 變。
+>
+> **這是真的去 clone 一份下來跑才發現的。**
+> 那是這個專案唯一一個「別人會怎麼看到它」的檢查,而我做得太晚。
+>
+> 改成記「**這張圖的資料**最後一次變動的 commit」之後:
+>
+> | | 記 HEAD | 記資料的 commit |
+> |---|---|---|
+> | 資料沒動、隔了 10 個 commit 再畫 | ❌ 不同的檔案 | ✅ **逐 byte 相同** |
+> | hash 指向什麼 | 一個可能無關的 commit | **產生這張圖的那一版資料** |
+>
+> 前置條件量過了:matplotlib 對同一份輸入是**決定性**的(連畫兩次逐 byte 相同)、
+> PNG 裡**沒有時間戳**。所以「逐 byte 相同」是一個公平的要求,而不是奢望。
+>
+> **產圖程式碼刻意不算進那個 hash**(會有自我參照:改 `plot.py` 的那個 commit
+> 在圖被畫出來的當下還不存在)。程式碼那一側由
+> `test/python/test_figures.py` 守 ——
+> **它會重畫一次,與 repo 裡那張逐 byte 比對**,
+> 所以「改了產圖程式卻忘了重畫」會讓測試變紅。
+>
+> ⚠️ 資料有未 commit 的改動時,hash 後面會加 `-dirty`。
 
 ### 3.2 ★ 圖上的文字一律英文
 

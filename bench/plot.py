@@ -2,7 +2,13 @@
 
 分離的理由：改樣式不用重跑實驗，重跑實驗不動樣式。
 這裡讀的全部是 bench/data/ 底下**已經進 git 的**檔案 ——
-所以任何人 clone 下來執行同一行指令，得到的是同一張圖。
+所以任何人 clone 下來執行同一行指令，得到的是**逐 byte 相同**的那一張圖。
+
+★ 「逐 byte 相同」是認真的，不是形容詞：
+  `test/python/test_figures.py` 會重畫一次並與 repo 裡那張比對。
+  能這樣要求，是因為量過三件事：matplotlib 對同一份輸入是決定性的、
+  PNG 裡沒有時間戳、而 caption 記的是**資料的 commit** 不是 HEAD
+  （記 HEAD 的話每個 commit 都會讓圖變 —— 見 bench/provenance.py）。
 
     python bench/plot.py --fig 1
     python bench/plot.py --all
@@ -14,6 +20,7 @@
 """
 
 import argparse
+import os
 import pathlib
 import sys
 
@@ -28,7 +35,10 @@ import pandas as pd  # noqa: E402
 import provenance  # noqa: E402
 
 DATA = pathlib.Path("bench/data")
-FIGS = pathlib.Path("figures")
+# 輸出目錄可以用環境變數覆寫 —— 給 test/python/test_figures.py 用：
+# 那個測試要「重畫一次並與 repo 裡那張逐 byte 比對」，
+# 不能為了測試就去覆蓋工作目錄裡的交付物（測試中途掛掉會留下爛攤子）。
+FIGS = pathlib.Path(os.environ.get("FIGURES_DIR", "figures"))
 
 # ── 顏色（見 dataviz 的色彩規則，已跑過驗證器）─────────────────────────
 #   量到的東西 -> 系列色；我下的命令與模型 -> ink；註解區塊 -> 淡底色。
@@ -54,22 +64,26 @@ def _read_kv(path: pathlib.Path) -> dict[str, str]:
     return out
 
 
-def _caption(what: str) -> str:
+def _caption(what: str, inputs: list[str]) -> str:
     """每張圖的 caption 必須有三樣東西。
 
     1. 實驗說明   —— 圖要能單獨看懂，不用回去翻 README
     2. 模擬聲明   —— 誠實準則第 5 條：限制寫在圖旁邊，不是只寫在 README 最後
-    3. 版本       —— 誠實準則第 6 條：映像檔名 + repo commit
+    3. 版本       —— 誠實準則第 6 條：映像檔名 + 資料的 commit
 
-    ⚠️ 第 3 行由 bench/provenance.py 產生，**六張圖共用同一份實作**。
+    ⚠️ 第 3 行由 bench/provenance.py 產生，**每張圖共用同一份實作**。
        以前這裡與 plot_fig6.py 各有一份，結果 Fig 1 有 commit、Fig 6 沒有 ——
        同一條誠實準則，兩張圖兩個標準。
+
+    ⚠️ 記的是**資料**的 commit，不是 HEAD。理由見 provenance.py：
+       記 HEAD 的話，同一份資料在不同時間畫出來會是不同的檔案，
+       「clone 下來跑一次得到同一張圖」就變成一句假話。
     """
     return (
         f"{what}\n"
         f"[Simulation on my own thermal plant - see docs/plant-model.md. "
         f"Not measured on server hardware.]\n"
-        f"{provenance.version_line()}"
+        f"{provenance.version_line(inputs)}"
     )
 
 
@@ -264,7 +278,8 @@ def fig1() -> None:
         f"settling to its operating point from cold and are not part of the "
         f"experiment. Full traces are in bench/data/exp01_sysid_seed*.csv."
     )
-    fig.text(0.012, 0.005, _caption(what), fontsize=7.5, va="bottom", color=C_MUTED)
+    fig.text(0.012, 0.005, _caption(what, provenance.FIG1_INPUTS), fontsize=7.5,
+             va="bottom", color=C_MUTED)
 
     fig.subplots_adjust(bottom=0.30)
     FIGS.mkdir(exist_ok=True)
