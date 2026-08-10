@@ -1,0 +1,271 @@
+{
+  "experiment": "exp07_antiwindup",
+  "gains": {
+    "kp": -1.4685241620576748,
+    "ki": -0.033396801647813945,
+    "source": "bench/data/exp05_tuning_meta.json 的 lambda_table[2.0tau]（W6 採用組），並用 exp01_fit 重算交叉驗證"
+  },
+  "setpoint_c": 65.0,
+  "power_w": {
+    "base": 150.0,
+    "step": 400.0,
+    "up_at_s": 300.0,
+    "down_at_s": 900.0
+  },
+  "controllable_power_limit_w": 333.33333333333337,
+  "ctrl_ts_s": 1.0,
+  "dt_s": 0.1,
+  "seconds": 1500.0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "out_lim": [
+    0.0,
+    100.0
+  ],
+  "anti_windup": "clamp",
+  "arms": {
+    "clamp": [
+      0.0,
+      100.0
+    ],
+    "open": [
+      -1000000.0,
+      1000000.0
+    ]
+  },
+  "metric_windows": {
+    "most_from_s": 300.0,
+    "recover_from_s": 900.0
+  },
+  "metric_settings": {
+    "recover_pwm_threshold": 90.0
+  },
+  "table": {
+    "clamp": {
+      "integral_limit": [
+        0.0,
+        100.0
+      ],
+      "metrics": {
+        "recover_s": {
+          "median": 14.299999999999955,
+          "min": 14.200000000000045,
+          "max": 15.299999999999955
+        },
+        "integral_max": {
+          "median": 100.0,
+          "min": 100.0,
+          "max": 100.0
+        },
+        "t_peak_c": {
+          "median": 90.125,
+          "min": 90.0625,
+          "max": 90.1875
+        },
+        "pwm_max": {
+          "median": 100.0,
+          "min": 100.0,
+          "max": 100.0
+        },
+        "sat_frac": {
+          "median": 0.8833333333333333,
+          "min": 0.8833333333333333,
+          "max": 0.885
+        }
+      },
+      "per_seed": {
+        "0": {
+          "recover_s": 14.299999999999955,
+          "integral_max": 100.0,
+          "t_peak_c": 90.0625,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "1": {
+          "recover_s": 15.299999999999955,
+          "integral_max": 100.0,
+          "t_peak_c": 90.1875,
+          "pwm_max": 100.0,
+          "sat_frac": 0.885
+        },
+        "2": {
+          "recover_s": 15.299999999999955,
+          "integral_max": 100.0,
+          "t_peak_c": 90.125,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "3": {
+          "recover_s": 14.299999999999955,
+          "integral_max": 100.0,
+          "t_peak_c": 90.125,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "4": {
+          "recover_s": 14.200000000000045,
+          "integral_max": 100.0,
+          "t_peak_c": 90.0625,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        }
+      }
+    },
+    "open": {
+      "integral_limit": [
+        -1000000.0,
+        1000000.0
+      ],
+      "metrics": {
+        "recover_s": {
+          "median": 197.20000000000005,
+          "min": 196.29999999999995,
+          "max": 197.29999999999995
+        },
+        "integral_max": {
+          "median": 233.600191,
+          "min": 233.539659,
+          "max": 233.60854
+        },
+        "t_peak_c": {
+          "median": 92.0,
+          "min": 91.9375,
+          "max": 92.0625
+        },
+        "pwm_max": {
+          "median": 100.0,
+          "min": 100.0,
+          "max": 100.0
+        },
+        "sat_frac": {
+          "median": 0.8833333333333333,
+          "min": 0.8816666666666667,
+          "max": 0.8833333333333333
+        }
+      },
+      "per_seed": {
+        "0": {
+          "recover_s": 196.29999999999995,
+          "integral_max": 233.60854,
+          "t_peak_c": 92.0,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8816666666666667
+        },
+        "1": {
+          "recover_s": 197.29999999999995,
+          "integral_max": 233.600191,
+          "t_peak_c": 92.0625,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "2": {
+          "recover_s": 196.29999999999995,
+          "integral_max": 233.60854,
+          "t_peak_c": 92.0,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "3": {
+          "recover_s": 197.29999999999995,
+          "integral_max": 233.539659,
+          "t_peak_c": 91.9375,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        },
+        "4": {
+          "recover_s": 197.20000000000005,
+          "integral_max": 233.593929,
+          "t_peak_c": 91.9375,
+          "pwm_max": 100.0,
+          "sat_frac": 0.8833333333333333
+        }
+      }
+    }
+  },
+  "repo_commit": "8b5468f",
+  "sim_params": {
+    "clamp": {
+      "dt": "0.1",
+      "seconds": "1500",
+      "seed": "0",
+      "power_base": "150",
+      "power_step": "400",
+      "power_at": "300",
+      "pwm_base": "40",
+      "pwm_step": "60",
+      "pwm_at": "-1",
+      "t_amb": "25",
+      "rth_max": "0.35",
+      "rth_min": "0.12",
+      "flow_exp": "0.8",
+      "tau_die": "45",
+      "tau_sense": "3",
+      "tau_fan": "1.5",
+      "dead_time": "3",
+      "rpm_max": "15000",
+      "pwm_min_spin": "12",
+      "lsb": "0.0625",
+      "noise_sigma": "0.05",
+      "power_down_at": "900",
+      "closed_loop": "1",
+      "setpoint": "65",
+      "ctrl_ts": "1",
+      "steps_per_ctrl": "10",
+      "kp": "-1.46852",
+      "ki": "-0.0333968",
+      "kd": "0",
+      "out_min": "0",
+      "out_max": "100",
+      "integral_min": "0",
+      "integral_max": "100",
+      "slew_neg": "0",
+      "slew_pos": "0",
+      "tracking_time_s": "0",
+      "anti_windup": "clamp"
+    },
+    "open": {
+      "dt": "0.1",
+      "seconds": "1500",
+      "seed": "0",
+      "power_base": "150",
+      "power_step": "400",
+      "power_at": "300",
+      "pwm_base": "40",
+      "pwm_step": "60",
+      "pwm_at": "-1",
+      "t_amb": "25",
+      "rth_max": "0.35",
+      "rth_min": "0.12",
+      "flow_exp": "0.8",
+      "tau_die": "45",
+      "tau_sense": "3",
+      "tau_fan": "1.5",
+      "dead_time": "3",
+      "rpm_max": "15000",
+      "pwm_min_spin": "12",
+      "lsb": "0.0625",
+      "noise_sigma": "0.05",
+      "power_down_at": "900",
+      "closed_loop": "1",
+      "setpoint": "65",
+      "ctrl_ts": "1",
+      "steps_per_ctrl": "10",
+      "kp": "-1.46852",
+      "ki": "-0.0333968",
+      "kd": "0",
+      "out_min": "0",
+      "out_max": "100",
+      "integral_min": "-1e+06",
+      "integral_max": "1e+06",
+      "slew_neg": "0",
+      "slew_pos": "0",
+      "tracking_time_s": "0",
+      "anti_windup": "clamp"
+    }
+  }
+}
