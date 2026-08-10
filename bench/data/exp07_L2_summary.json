@@ -1,0 +1,40 @@
+{
+  "setpoint_c": 65.0,
+  "arms": {
+    "clamp": {
+      "recover_s": 14.0,
+      "integral_max_pwm_equiv": 100.0,
+      "integral_max_rpm": 15000.0,
+      "t_peak_c": 97.375,
+      "pwm_max": 100.0,
+      "rpm_setpt_max": 15000.0,
+      "zone_rows": 14980,
+      "pidcore_rows": 1285,
+      "power_schedule": {
+        "up_at_s": 300.0,
+        "down_at_s": 900.0,
+        "base_w": 150.0,
+        "step_w": 400.0
+      }
+    },
+    "open": {
+      "recover_s": 181.0,
+      "integral_max_pwm_equiv": 222.0513333333333,
+      "integral_max_rpm": 33307.7,
+      "t_peak_c": 112.312,
+      "pwm_max": 100.0,
+      "rpm_setpt_max": 15000.0,
+      "zone_rows": 14980,
+      "pidcore_rows": 1498,
+      "power_schedule": {
+        "up_at_s": 300.0,
+        "down_at_s": 900.0,
+        "base_w": 150.0,
+        "step_w": 400.0
+      }
+    }
+  },
+  "swampd_sha256": "504e69e6219468d61cb756c52644cac47b9fcb46e933c5a394d582c07aad9724",
+  "repo_commit": "f7ba28b",
+  "swampd_rev": "c5e5955"
+}

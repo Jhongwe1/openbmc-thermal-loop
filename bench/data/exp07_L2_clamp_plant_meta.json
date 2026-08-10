@@ -1,0 +1,16 @@
+{
+  "epoch0_ms": 1786401771724.2312,
+  "args": {
+    "lib": "/tmp/l2lib/libplant_cabi.so",
+    "pwm_path": "/tmp/sys/pwm0",
+    "tach_path": "/tmp/sys/fan0_input",
+    "csv": "bench/data/exp07_L2_clamp_plant.csv",
+    "dt": 0.1,
+    "seconds": 1500.0,
+    "seed": 0,
+    "power_base": 150.0,
+    "power_step": 400.0,
+    "power_at": 300.0,
+    "power_down_at": 900.0
+  }
+}
