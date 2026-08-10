@@ -391,12 +391,105 @@ setpoint 階躍時高增益會衝過頭;**負載擾動時高增益壓得住偏�
 
 ---
 
+### exp07 —— anti-windup 單變因 A/B → Fig 3 ★招牌(W7)
+
+| 欄 | 內容 |
+|---|---|
+| **假設** | 放開積分箝位後,飽和期間積分持續累加;飽和解除後 PWM 要更久才降。預期 `recover_s(open) > recover_s(clamp)`,且**飽和期間兩組溫度幾乎重合**(輸出都頂在同一個上限,差異只存在於內部狀態)。 |
+| **自變因** | **integralLimit(唯一)**:clamp arm `[0, 100]` %PWM(鏡射 swampd 的 `[0, 15000]` RPM ÷ 150)vs open arm `[-1e6, 1e6]`(大到永遠夾不到) |
+| **控制變因** | plant 全預設、setpoint 65 °C、Kp/Ki = W6 採用的 λ=2τ 組(執行時由 exp01 擬合重算交叉驗證)、負載 150 → 400 W @ 300 s → 150 W @ 900 s、`--ctrl-ts` 1.0、`--dt` 0.1、`--anti-windup clamp`(兩組相同)、slew 0、seed {0..4} 共用 |
+| **應變因** | `recover_s`(主指標)、`integral_max`、`t_peak_c`、`pwm_max`、`sat_frac` |
+| **重複次數** | 5 個 seed,報中位數與 min~max;比值按 seed **配對**計算 |
+| **原始數據** | `bench/data/exp07_aw{clamp,open}_seed{0..4}.csv`(10 份) |
+| **中繼資料** | `bench/data/exp07_antiwindup_meta.json` |
+| **重跑** | `python bench/exp07_antiwindup.py --out bench/data && python bench/plot.py --fig 3` |
+
+#### 實測結果(2026-08-11,5 seeds)
+
+| 指標 | clamp `[0,100]` | open `±1e6` |
+|---|---|---|
+| `recover_s`(中位)| **14.3 s** [14.2, 15.3] | **197.2 s** [196.3, 197.3] |
+| 比值(seed 配對)| \multicolumn — | **13.73×** [12.83, 13.89] |
+| `integral_max` | 100.0(貼上限) | 233.6 |
+| `t_peak_c` | 90.1 °C | 92.0 °C |
+| `sat_frac`(400 W 窗)| 0.883 | 0.883 |
+
+#### ★ 這個實驗的五個設計決定
+
+**① 兩組都走 `--anti-windup clamp`,自變因只有箝位範圍(偏離計畫)。**
+計畫的做法是 `none` vs `clamp` —— 那會**同時改兩個旗標**,而且 `none`
+與「夾不到的 clamp」語意不完全等價。改成只動 `--integral-min/max` 之後,
+L1 的 A/B 與 L2 的設定檔 diff(也只差 integralLimit 兩行)**完全同構**。
+
+**② 負載 400 W 是刻意超過可控上限 333.3 W(與 exp05 的 300 W 成對)。**
+「Fig 2 要不飽和、Fig 3 要飽和」是實驗設計。實測兩組 PWM 在 400 W 窗內
+貼頂(≥99.99%)的時間比例都是 0.883 —— 飽和真的發生了,而且兩組一樣。
+
+**③ 沒有第二段階躍就沒有這個實驗。**
+飽和期間兩組輸出被同一個 `out_max` 箝住,plant 看到的輸入相同 ——
+差異只存在於積分這個內部狀態。900 s 降回 150 W 讓飽和解除,
+「溫度已回落、風扇還在全速」才有機會發生,`recover_s` 才有定義。
+(`bench/sim` 的 `--power-down-at` 就是為此加的,守門員 mutation B1。)
+
+**④ `recover_s` 只吃「飽和解除後」的視窗,而且實作必須用位置不用標籤。**
+軌跡從冷機開始,整段餵進去會命中暖機段。計畫給的實作拿 pandas 的
+index **標籤**去餵 `iloc`(**位置**)—— 裁切過的 DataFrame 上輕則
+IndexError、重則默默回錯的秒數。守門員:
+`test_recover_s_uses_positions_not_index_labels` + mutation **P17**
+(P17 植入的就是計畫那版,與 W6 的 P11/P15 同一家族)。
+
+**⑤ ★ 計畫沒預告的現象:open arm 在冷開機段就分家了(反向 windup)。**
+下界 −1e6 讓積分在「溫度低於 setpoint」的暖機段往**負向**挖坑,
+風扇比 clamp 組晚開、暖機超調更高,於是兩組帶著略不同的狀態進入階躍
+(`t_peak` 92.0 vs 90.1 °C)。這不是污染 —— 是**同一個機制的下界版展品**,
+`config/swampd/README.md` 在 W6 就預言過(「下界為什麼是 0 不是負值」)。
+Fig 3 刻意從 t=0 畫整段、把它標在圖上,參數區塊誠實寫明
+「兩組進入飽和時狀態略有不同」。
+
+#### L2:同一個 A/B,被測物換成未修改的上游 swampd(2026-08-11)
+
+| 欄 | 內容 |
+|---|---|
+| **被測物** | 上游 `phosphor-pid-control` 在 **`c5e5955`**(與 BMC 映像同版)建出的 swampd 二進位;sha256 記在 summary |
+| **架構** | swampd ↔ 私有 D-Bus(`harness/obmcbus.conf`)↔ `harness/dbus_bridge.py`(mock ObjectMapper + Sensor.Value)↔ **同一份** C++ plant(`libplant_cabi.so`,同一份目的碼) |
+| **自變因** | 設定檔:`config.tuned.json` vs `config.nowindup.json` —— diff 只差 die0 的 `integralLimit` 兩行,由 `test_swampd_config.py` 機器強制 |
+| **重複次數** | 每 arm 1 趟 × 1500 s **即時**(swampd 的兩個迴路掛牆上時鐘,快轉不了)。統計由 L1 的 5 seeds 提供;L2 驗的是「趨勢在真 daemon 上重現」 |
+| **原始數據** | `bench/data/exp07_L2_{clamp,open}_*`(zone0.log / pidcore / bridge CSV) |
+| **中繼資料** | `bench/data/exp07_L2_summary.json`(含 swampd rev + sha256);對時錨點在 `*_plant_meta.json` 的 `epoch0_ms` |
+| **重跑** | `bash harness/l2_ab.sh clamp && bash harness/l2_ab.sh open && python bench/parse_l2.py --swampd-rev <rev>` |
+
+**結果(單趟):**
+
+| 指標 | clamp(tuned)| open(nowindup)|
+|---|---|---|
+| `recover_s` | **14.0 s** | **181.0 s** |
+| 比值 | — | **12.9×,落在 L1 的 per-seed 範圍 [12.8, 13.9] 內** |
+| 積分峰值 | **15000 RPM(貼死上限)** | **33308 RPM**(= 222.1 %PWM 等效) |
+| `t_peak` | 97.4 °C | 112.3 °C |
+
+**量測誠實聲明(與 Fig 3 的 LIMIT 行同步):**
+
+- 積分軌跡取自 swampd 自己的 `-g` 輸出(`pidcore.die0` 的最終
+  `integralTerm` 欄 —— 箝位後、真正帶進下一輪的那個)。
+  **節流不影響峰值**:極值出現在「值有變」的那一筆,而變了必寫。
+- 時間類指標(`recover_s`)一律取自 `zone_0.log`(每輪都寫、無節流);
+  時間軸用 bridge 落檔的 `epoch0_ms` 對齊。
+- **L2 的 PWM 下限是 30%**(zone `minThermalOutput` 3000 RPM ÷ 150),
+  與 L1 的 0% 不同 → 冷開機段軌跡不同:反向 windup 坑更深、
+  進飽和更熱(`t_peak` 112.3 vs L1 open 的 92.0)。
+  **A/B 的主張活在飽和解除之後,離兩個下限都很遠。**
+- ObjectMapper 是 mock 的(只實作 `GetObject`;上游單元測試同款手法,
+  規格讀自 `dbushelper.cpp`)。bridge 的絕對節拍在 1500 s 後
+  累積誤差約 1 ms。
+
+---
+
 ### exp06 ~ exp09(待做)
 
 | 實驗 | 內容 | 週次 |
 |---|---|---|
 | **exp06** | **串級時間常數實測(swampd 的內圈/外圈週期)** | **W6** |
-| **exp07** | **anti-windup A/B(單變因)** → Fig 3 ★招牌 | W7 |
+| **exp07** | ✅ **anti-windup A/B(單變因,L1 + L2)** → Fig 3 ★招牌 | **W7 完成** |
 | exp08 | slew rate λ 掃描 → Fig 5 | W8 |
 | exp09 | L1 vs L2 對照(模擬 vs QEMU 實機) | W9 |
 
