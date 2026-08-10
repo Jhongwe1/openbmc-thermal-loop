@@ -376,6 +376,70 @@ run_case "P8 caption 退回記 HEAD" "$PRV" \
     'head = _git("log", "-1", "--format=%h", "--", *paths)' \
     'head = _git("rev-parse", "--short", "HEAD")'
 
+# ── W6 的四個新指標（2026-08-11）──────────────────────────────────────
+#
+# ★ P11 與 P15 特別重要：它們植入的**就是計畫給的那份實作**。
+#   也就是說，這兩條同時回答了「我為什麼不照抄計畫」——
+#   如果照抄的版本能通過我的測試，那我的偏離就只是個人品味；
+#   它們會變紅，才證明那兩處偏離真的有守到東西。
+
+run_case "P9  overshoot 忘了下限 0" "$MET" \
+    'return max(0.0, t_peak_c(df) - setpoint)' \
+    'return t_peak_c(df) - setpoint'
+
+run_case "P10 overshoot 相減方向反" "$MET" \
+    'return max(0.0, t_peak_c(df) - setpoint)' \
+    'return max(0.0, setpoint - t_peak_c(df))'
+
+# ★ P11 = 計畫 W6 §2 給的 settle_s 實作（用列數框 hold_s）。
+#   守門員是 test_settle_window_is_defined_by_time_not_by_row_count。
+run_case "P11 settle_s 改回列數框（計畫的寫法）" "$MET" \
+    '    entered = None
+    for i in range(t.size):
+        if not inside[i]:
+            entered = None
+            continue
+        if entered is None:
+            entered = t[i]
+        if t[i] - entered >= hold_s:
+            return float(entered)
+    return float("nan")' \
+    '    dt = float(t[1] - t[0]) if t.size > 1 else 1.0
+    n_hold = max(1, int(hold_s / dt))
+    run = 0
+    for i in range(t.size):
+        run = run + 1 if inside[i] else 0
+        if run >= n_hold:
+            return float(t[i - n_hold + 1])
+    return float("nan")'
+
+run_case "P12 settle_s 回確認時刻而非進入時刻" "$MET" \
+    '            return float(entered)' \
+    '            return float(t[i])'
+
+run_case "P13 settle_s 離開帶內不重新計時" "$MET" \
+    '        if not inside[i]:
+            entered = None
+            continue' \
+    '        if not inside[i]:
+            continue'
+
+run_case "P14 pwm_pp 取全程而不是尾段" "$MET" \
+    '    w = tail_window(df, tail_s)
+    return float(w["pwm"].max() - w["pwm"].min())' \
+    '    w = df
+    return float(w["pwm"].max() - w["pwm"].min())'
+
+# ★ P15 = 計畫 W6 §2 給的 reversals 分母（用 tail_s 而不是實際跨度）。
+#   守門員是 test_reversals_denominator_is_the_actual_span_not_the_requested_window。
+run_case "P15 reversals 分母改回 tail_s（計畫的寫法）" "$MET" \
+    'return reversals * 60.0 / span_s' \
+    'return reversals * 60.0 / tail_s'
+
+run_case "P16 reversals 的 deadband 失效" "$MET" \
+    'd = d[np.abs(d) > deadband]' \
+    'd = d[np.abs(d) > 0.0]'
+
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
 

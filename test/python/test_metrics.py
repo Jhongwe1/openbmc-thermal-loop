@@ -117,6 +117,249 @@ def test_fan_power_rel_window_is_defined_by_time_not_by_row_count():
 
 
 # ═══════════════════════════════════════════════════════════════════════
+#  overshoot_c（W6）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_overshoot_is_zero_when_the_temperature_never_reaches_setpoint():
+    """防：忘了下限 0，回一個負的「超調」。
+
+    負的超調不是超調，是沒到 —— 而 −8 °C 這種數字進了指標表，
+    讀圖的人會以為那是「比目標低 8 度的裕度」。
+    """
+    df = trace([0.0, 1.0, 2.0], t_sense_c=[50.0, 57.0, 55.0])
+    assert metrics.overshoot_c(df, setpoint=65.0) == pytest.approx(0.0)
+
+
+def test_overshoot_subtracts_in_the_right_direction():
+    """防：寫成 `setpoint − max`。
+
+    刻意讓峰值與 setpoint 差一個**不對稱**的量：71.5 − 65 = 6.5，
+    反過來是 −6.5。用對稱的數字（例如剛好差 5 和 −5）分不出來。
+    """
+    df = trace([0.0, 1.0, 2.0], t_sense_c=[60.0, 71.5, 66.0])
+    assert metrics.overshoot_c(df, setpoint=65.0) == pytest.approx(6.5)
+
+
+def test_overshoot_reads_the_sensed_column_not_the_die_column():
+    """★ 防：`overshoot_c` 自己寫一次 `.max()` 卻抓 `t_die_c`。
+
+    這一條與 `test_t_peak_c_reads_the_sensed_column_not_the_die_column`
+    看起來重複，但**它防的是不同的事**：那一條守 `t_peak_c`，
+    這一條守「`overshoot_c` 有沒有真的複用 `t_peak_c`」。
+    哪天有人把它改成獨立實作、順手抓錯欄位，只有這一條會紅。
+    """
+    df = trace([0.0, 1.0],
+               t_sense_c=[60.0, 66.0],
+               t_die_c=[90.0, 95.0])
+    assert metrics.overshoot_c(df, setpoint=65.0) == pytest.approx(1.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  settle_s（W6）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_settle_requires_a_sustained_hold_not_a_moment_inside():
+    """★ 進去一下下又跑掉，不算穩定。
+
+    震盪的系統會反覆穿越那條帶。少了「維持」這個條件的話，
+    **震盪越厲害的系統反而拿到越漂亮的 settle_s** —— 剛好相反。
+    """
+    t = [i * 0.1 for i in range(3000)]              # 0 ~ 299.9 s
+    temp = [80.0] * 3000
+    for i in range(1000, 1050):                     # 100.0 ~ 104.9 s 在帶內
+        temp[i] = 65.0
+    df = trace(t, t_sense_c=temp)
+    assert pd.isna(metrics.settle_s(df, setpoint=65.0))
+
+
+def test_settle_returns_the_moment_of_entry_not_the_moment_of_confirmation():
+    """回傳「進入的時刻」，不是「維持滿 hold_s 的時刻」。
+
+    兩者差一個常數 hold_s，所以寫錯的話**趨勢完全正確、只是整組偏移** ——
+    是那種對照圖上看不出來、但每個數字都錯的錯誤。
+    """
+    t = [i * 0.1 for i in range(3000)]              # 0 ~ 299.9 s
+    temp = [80.0 if i < 500 else 65.0 for i in range(3000)]   # 50.0 s 起在帶內
+    df = trace(t, t_sense_c=temp)
+    assert metrics.settle_s(df, setpoint=65.0) == pytest.approx(50.0)
+
+
+def test_settle_restarts_the_clock_after_leaving_the_band():
+    """離開帶內之後要重新計時，不可以把前後兩段加起來。
+
+    前段待 40 s、離開、後段待 100 s，hold = 60 s。
+    正確答案是後段的起點；把兩段加總的寫法會回前段的起點。
+    """
+    t = [i * 0.1 for i in range(3000)]
+    temp = []
+    for i in range(3000):
+        ts = i * 0.1
+        if 10.0 <= ts < 50.0 or ts >= 100.0:
+            temp.append(65.0)
+        else:
+            temp.append(80.0)
+    df = trace(t, t_sense_c=temp)
+    assert metrics.settle_s(df, setpoint=65.0) == pytest.approx(100.0)
+
+
+def test_settle_window_is_defined_by_time_not_by_row_count():
+    """★★ 防：用「列數」框 hold_s（計畫給的實作就是這樣寫的）。
+
+    這份軌跡刻意**不是等間隔**的：
+      · 稀疏段 t = 0, 10, 20, 30（每 10 s），溫度 80 —— 帶外
+      · 密集段 t = 30.5 ~ 40.0（每 0.5 s，20 筆），溫度 65 —— 帶內，只有 9.5 s
+      · 帶外一段
+      · 最後 t = 100.0 起（每 0.5 s）長時間 65 —— 帶內
+
+    · **用時間框（正確）**：第一段只維持 9.5 s < 60 s，不算 → 回 **100.0**
+    · **用列數框（計畫的寫法）**：dt 從前兩列推成 10 s，
+      `n_hold = int(60 / 10) = 6`，第一段有 20 筆 ≥ 6 → 回 **30.5**
+
+    兩個答案差 70 秒，而且用列數框的那個**不會報錯**。
+    這與 2026-08-09 在 `tail_window` 修掉的是同一個念頭寫出來的錯 ——
+    ★ **找到一個 bug 要去找它的兄弟。**
+    """
+    sparse_t = [0.0, 10.0, 20.0, 30.0]
+    dense_in = [30.5 + 0.5 * i for i in range(20)]          # 30.5 ~ 40.0
+    gap_t = [40.5 + 0.5 * i for i in range(100)]            # 40.5 ~ 90.0
+    tail_t = [100.0 + 0.5 * i for i in range(200)]          # 100.0 ~ 199.5
+
+    t = sparse_t + dense_in + gap_t + tail_t
+    temp = ([80.0] * len(sparse_t) + [65.0] * len(dense_in)
+            + [80.0] * len(gap_t) + [65.0] * len(tail_t))
+
+    df = trace(t, t_sense_c=temp)
+    assert metrics.settle_s(df, setpoint=65.0) == pytest.approx(100.0)
+    # 而且它明顯不是 30.5 —— 那是用列數框會給的答案。
+    assert metrics.settle_s(df, setpoint=65.0) != pytest.approx(30.5)
+
+
+def test_settle_never_settling_is_nan_not_a_number():
+    """從未穩定要回 NaN。
+
+    回 0、回 −1、回軌跡長度都是「一個看起來像答案的數字」，
+    它們會一路流進指標表與 claims.json，而**沒有人會發現**。
+    """
+    t = [i * 0.1 for i in range(1000)]
+    df = trace(t, t_sense_c=[90.0] * 1000)
+    assert pd.isna(metrics.settle_s(df, setpoint=65.0))
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  pwm_pp（W6）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_pwm_pp_is_peak_to_peak_of_the_tail_not_of_the_whole_run():
+    """★ 防：忘了取尾段。
+
+    前 300 s 從 0 掃到 100（那是暫態），最後 120 s 固定 70。
+    · 只看尾段（正確）→ **0**
+    · 看全程 → **100**
+    暫態的擺幅本來就大，混進「穩態震盪幅度」會讓三組 λ 全部看起來一樣糟。
+    """
+    dt = 0.1
+    n_head, n_tail = 3000, 1201
+    t = [i * dt for i in range(n_head + n_tail)]
+    pwm = [i / 30.0 for i in range(n_head)] + [70.0] * n_tail
+    df = trace(t, pwm=pwm)
+    assert metrics.pwm_pp(df, tail_s=120.0) == pytest.approx(0.0)
+
+
+def test_pwm_pp_is_max_minus_min_not_a_standard_deviation():
+    """防：寫成 `.std()` 或 `.mean()`。
+
+    這一段的 max−min = 8.0，而它的標準差、平均值都不是 8.0。
+    """
+    t = [i * 1.0 for i in range(5)]
+    df = trace(t, pwm=[60.0, 68.0, 62.0, 66.0, 64.0])
+    assert metrics.pwm_pp(df, tail_s=1e6) == pytest.approx(8.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  reversals_per_min（W6）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_reversals_ignores_jitter_below_the_deadband():
+    """量化／數值精度造成的正負跳動不該算成方向反轉。
+
+    恆定 50 上面疊 ±0.01 的交替抖動，deadband 預設 0.05 → 全部濾掉。
+    沒有 deadband 的話這條軌跡會回一個非常大的數字，
+    而 W8 的 slew 掃描結論就是錯的。
+    """
+    t = [i * 0.1 for i in range(2000)]
+    pwm = [50.0 + 0.01 * (1 if i % 2 else -1) for i in range(2000)]
+    df = trace(t, pwm=pwm)
+    assert metrics.reversals_per_min(df) == pytest.approx(0.0)
+
+
+def test_reversals_counts_direction_changes_above_the_deadband():
+    """基本正確性：真的來回擺動要被算到。
+
+    每秒 ±2 交替 31 筆 → 30 個差分、29 次符號改變，跨度 30 s
+    → 29 × 60 / 30 = 58 次／分鐘。
+    """
+    t = [float(i) for i in range(31)]
+    pwm = [50.0 + 2.0 * (i % 2) for i in range(31)]
+    df = trace(t, pwm=pwm)
+    assert metrics.reversals_per_min(df, tail_s=1e6) == pytest.approx(58.0)
+
+
+def test_reversals_denominator_is_the_actual_span_not_the_requested_window():
+    """★★ 防：分母寫成 `tail_s`（計畫給的實作就是這樣寫的）。
+
+    軌跡只有 30 秒，但要求的視窗是 120 秒。
+    · **用實際跨度 30 s（正確）** → 29 × 60 / 30 = **58**／分鐘
+    · **用 tail_s = 120 s（計畫的寫法）** → 29 × 60 / 120 = **14.5**／分鐘
+
+    差 4 倍，而且錯的方向是**低估** —— 一份太短的資料會讓風扇看起來
+    比實際安靜四倍，不會有任何警告。與 `tail_window` 同一個原則：
+    ★ **視窗的真實長度要問資料，不要問參數。**
+    """
+    t = [float(i) for i in range(31)]
+    pwm = [50.0 + 2.0 * (i % 2) for i in range(31)]
+    df = trace(t, pwm=pwm)
+    assert metrics.reversals_per_min(df, tail_s=120.0) == pytest.approx(58.0)
+    assert metrics.reversals_per_min(df, tail_s=120.0) != pytest.approx(14.5)
+
+
+def test_reversals_on_a_monotonic_ramp_is_zero():
+    """單調上升沒有方向反轉。
+
+    防的是「把差分不為零就當成一次反轉」—— 那種寫法在斜坡上會
+    回一個等於取樣率的數字，看起來像極了嚴重震盪。
+    """
+    t = [float(i) for i in range(61)]
+    df = trace(t, pwm=[float(i) for i in range(61)])
+    assert metrics.reversals_per_min(df, tail_s=1e6) == pytest.approx(0.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  summarise
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_summarise_returns_every_metric_the_figure_table_needs():
+    """Fig 2 的指標表直接吃這個 dict —— 少一個鍵圖就少一欄。
+
+    ⚠️ 這裡寫死那六個鍵是刻意的。用 `set(metrics.summarise(...))` 去比對
+       自己的輸出等於什麼都沒驗。
+    """
+    t = [i * 0.1 for i in range(3000)]
+    df = trace(t,
+               t_sense_c=[65.0] * 3000,
+               pwm=[50.0] * 3000,
+               fan_power_rel=[0.3] * 3000)
+    got = metrics.summarise(df, setpoint=65.0)
+    assert list(got) == ["overshoot_c", "settle_s", "pwm_pp",
+                         "reversals_per_min", "fan_power_rel", "t_peak_c"]
+    assert all(isinstance(v, float) for v in got.values())
+
+
+# ═══════════════════════════════════════════════════════════════════════
 #  邊界與錯誤訊息
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -158,20 +401,40 @@ def test_unimplemented_metrics_are_explicit_about_which_week():
     而 NaN 一路流進 claims.json 與圖上是最難查的一種錯。
     """
     df = trace([0.0, 1.0], t_sense_c=[1.0, 2.0])
-    for fn in (metrics.overshoot_c, metrics.settle_s, metrics.recover_s):
-        with pytest.raises(NotImplementedError):
-            fn(df, 65.0)
-    for fn in (metrics.pwm_pp, metrics.reversals_per_min):
-        with pytest.raises(NotImplementedError):
-            fn(df)
+    with pytest.raises(NotImplementedError):
+        metrics.recover_s(df, 65.0)
 
 
 def test_implemented_registry_matches_what_actually_works():
-    """`IMPLEMENTED` 那張表要與現況一致。
+    """兩張 registry 要與現況一致。
 
-    它是 `python bench/metrics.py <csv>` 印出來的東西，也是「哪些指標可以用」
-    的單一事實來源。表裡列了但其實會爆的話，CLI 會在使用者面前炸開。
+    它們是 `python bench/metrics.py <csv>` 印出來的東西，也是「哪些指標
+    可以用」的單一事實來源。表裡列了但其實會爆的話，CLI 會在使用者面前炸開。
     """
-    df = trace([0.0, 1.0], t_sense_c=[10.0, 20.0], fan_power_rel=[0.1, 0.3])
+    df = trace([0.0, 1.0],
+               t_sense_c=[10.0, 20.0],
+               pwm=[30.0, 40.0],
+               fan_power_rel=[0.1, 0.3])
     for name, fn in metrics.IMPLEMENTED.items():
         assert isinstance(fn(df), float), f"{name} 沒有回傳 float"
+    for name, fn in metrics.IMPLEMENTED_WITH_SETPOINT.items():
+        assert isinstance(fn(df, 65.0), float), f"{name} 沒有回傳 float"
+
+
+def test_every_implemented_metric_is_registered_somewhere():
+    """★ 防：實作了指標卻忘了註冊。
+
+    忘了註冊的症狀是 `python bench/metrics.py <csv>` **少印一行** ——
+    沒有錯誤、沒有警告，而且那支 CLI 正是「我手上有哪些數字」的入口。
+    W6 一次加了四個指標，這正是最容易漏掉一個的時候。
+
+    ⚠️ 這裡寫死清單是刻意的：拿 registry 去比對 registry 等於沒驗。
+       W7 加 recover_s / integral_max 時，這一行要跟著改 —— 那也是刻意的。
+    """
+    expected = {"t_peak_c", "fan_power_rel", "pwm_pp", "reversals_per_min",
+                "overshoot_c", "settle_s"}
+    registered = set(metrics.IMPLEMENTED) | set(metrics.IMPLEMENTED_WITH_SETPOINT)
+    assert registered == expected
+
+    overlap = set(metrics.IMPLEMENTED) & set(metrics.IMPLEMENTED_WITH_SETPOINT)
+    assert not overlap, f"同一個指標出現在兩張表：{overlap}"
