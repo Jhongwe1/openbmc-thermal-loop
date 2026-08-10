@@ -1,4 +1,16 @@
 {
+  "_comment": [
+    "W6 的整定設定。與 config.baseline.json 的差別只有外圈 die0 PID 的兩個係數。",
+    "係數不是試出來的，也不是手打的：",
+    "  proportionalCoeff = -(tau / (|K|(lambda+theta))) * 150 RPM/%PWM",
+    "  integralCoeff     = -(Kc / Ti) * 150 RPM/%PWM",
+    "K/tau/theta 來自 bench/data/exp01_fit.txt（Fig 1 的量測），lambda = 2*tau。",
+    "那個 150 是 plant 的 PWM->RPM 斜率（rpmMax/100），因為 L1 控制器輸出的是",
+    "PWM 百分比、swampd 外圈輸出的是 RPM —— 兩邊量綱差 150 倍。",
+    "重算：python bench/tune.py --lambda-mult 2.0",
+    "守門員：test/python/test_swampd_config.py 會重算一次並比對這個檔案。",
+    "內圈 fan0 的係數刻意留 0，理由見 config/swampd/README.md。"
+  ],
   "sensors": [
     {
       "name": "die0",
@@ -32,8 +44,8 @@
           "setpoint": 65.0,
           "pid": {
             "samplePeriod": 1.0,
-            "proportionalCoeff": 0.0,
-            "integralCoeff": 0.0,
+            "proportionalCoeff": -220.27862430865122,
+            "integralCoeff": -5.009520247172092,
             "feedFwdOffsetCoeff": 0.0,
             "feedFwdGainCoeff": 0.0,
             "integralLimit_min": 0.0,
