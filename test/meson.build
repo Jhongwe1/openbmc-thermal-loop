@@ -108,6 +108,11 @@ if python_tests_ok
         #    整包剛好超過 30 秒（實測 31.25s 被 SIGTERM）——症狀是 TIMEOUT，
         #    看起來像測試壞了，其實只是圖變多了。
         timeout: 300,
+        # ★ test_sim_cli 用子行程跑 build/sim —— 要在這裡宣告，
+        #   `meson test` 才會先把它建出來。本機看不出少了這行
+        #   （build/ 裡總是有跑過 meson compile 的殘留），
+        #   只有乾淨 clone 會倒：那正是乾淨 clone 檢查存在的理由。
+        depends: sim_exe,
     )
 else
     warning(

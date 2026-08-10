@@ -114,7 +114,12 @@ executable('plant_probe', 'bench/plant_probe.cpp', dependencies: [plant_dep])
 
 # ── L1 模擬執行檔（吐 CSV 給 bench/ 用）────────────────────────────────
 # stdout = CSV，stderr = 這次執行生效的完整參數。bench/exp01_sysid.py 兩個都收。
-executable('sim', 'bench/sim.cpp', dependencies: [plant_dep, controller_dep])
+# ⚠️ 要留住回傳值：test/meson.build 的 pytest 目標把它宣告成依賴 ——
+#    `meson test` 只建測試宣告過的東西，沒宣告的話 build/sim 在
+#    「乾淨 clone + meson test」的路徑上**根本不會被建出來**，
+#    test_sim_cli 六個 case 全倒（2026-08-11 乾淨 clone 檢查抓到的）。
+sim_exe = executable('sim', 'bench/sim.cpp',
+                     dependencies: [plant_dep, controller_dep])
 
 # ── 分析工具：吃 CSV、吐 FOPDT 參數 ────────────────────────────────────
 # 刻意與 sim 分開：sim 只產生資料，這支只消費資料。
