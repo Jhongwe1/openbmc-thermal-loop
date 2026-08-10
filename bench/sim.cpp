@@ -39,6 +39,7 @@ struct Args
     double powerBase = 150.0;///< 基準功耗 (W)
     double powerStep = 400.0;///< 階躍後功耗 (W)
     double powerAtS = -1.0;  ///< 功耗階躍時刻 (s)，負數 = 不階躍
+    double powerDownAtS = -1.0; ///< 功耗降回 base 的時刻 (s)，負數 = 不降（W7）
     double pwmBase = 40.0;   ///< 基準 PWM (%)
     double pwmStep = 60.0;   ///< 階躍後 PWM (%)
     double pwmAtS = -1.0;    ///< PWM 階躍時刻 (s)，負數 = 不階躍（開環系統識別用）
@@ -96,6 +97,8 @@ void usage()
                  "  --power-base <W>    基準功耗，預設 150\n"
                  "  --power-step <W>    階躍後功耗，預設 400\n"
                  "  --power-at <s>      功耗階躍時刻，負數=不階躍\n"
+                 "  --power-down-at <s> 功耗降回 base 的時刻，負數=不降（W7，"
+                 "要配合 --power-at）\n"
                  "  --pwm-base <%%>      基準 PWM，預設 40\n"
                  "  --pwm-step <%%>      階躍後 PWM，預設 60\n"
                  "  --pwm-at <s>        PWM 階躍時刻，負數=不階躍\n"
@@ -163,6 +166,7 @@ int main(int argc, char** argv)
         else if (k == "--power-base")  a.powerBase = parseD(v);
         else if (k == "--power-step")  a.powerStep = parseD(v);
         else if (k == "--power-at")    a.powerAtS = parseD(v);
+        else if (k == "--power-down-at") a.powerDownAtS = parseD(v);
         else if (k == "--pwm-base")    a.pwmBase = parseD(v);
         else if (k == "--pwm-step")    a.pwmStep = parseD(v);
         else if (k == "--pwm-at")      a.pwmAtS = parseD(v);
@@ -193,6 +197,19 @@ int main(int argc, char** argv)
     if (a.dt <= 0.0 || a.seconds <= 0.0)
     {
         std::fprintf(stderr, "--dt 與 --seconds 必須為正\n");
+        return 2;
+    }
+
+    // ★ W7：第二段階躍（降回 base）。時序顛倒或沒有第一段就直接報錯 ——
+    //   安靜接受一個不可能的負載曲線，產出的 CSV 看起來完全正常，
+    //   而它會被拿去畫 Fig 3。
+    if (a.powerDownAtS >= 0.0 &&
+        (a.powerAtS < 0.0 || a.powerDownAtS <= a.powerAtS))
+    {
+        std::fprintf(stderr,
+                     "--power-down-at (%g) 需要一個更早的 --power-at (%g)："
+                     "沒有先上去，就沒有「降回來」可言。\n",
+                     a.powerDownAtS, a.powerAtS);
         return 2;
     }
 
@@ -272,6 +289,13 @@ int main(int argc, char** argv)
                  p.flowExp, p.tauDie, p.tauSense, p.tauFan, p.deadTime,
                  p.rpmMax, p.pwmMinSpin, p.lsb, p.noiseSigma);
 
+    // ★ W7 的新參數**只在有用到時**追加一行 —— 開環 stderr 的既有排列
+    //   一個 byte 都不能動（exp01 的 meta 已進 git，理由見下一段註解）。
+    if (a.powerDownAtS >= 0.0)
+    {
+        std::fprintf(stderr, "power_down_at=%g\n", a.powerDownAtS);
+    }
+
     // ★ 閉環的參數**追加**在後面，不插進上面那一段。
     //
     //   理由：bench/exp01_sysid.py 把整份 stderr 存成 meta 檔，而那些 meta
@@ -322,8 +346,18 @@ int main(int argc, char** argv)
     for (int i = 0; i < n; ++i)
     {
         const double t = i * a.dt;
-        const double pw =
-            (a.powerAtS >= 0.0 && t >= a.powerAtS) ? a.powerStep : a.powerBase;
+
+        // 負載曲線：base →（power-at）step →（power-down-at）base。
+        // 上去製造飽和、降回來讓飽和解除 —— recover_s 量的就是解除後那段。
+        double pw = a.powerBase;
+        if (a.powerAtS >= 0.0 && t >= a.powerAtS)
+        {
+            pw = a.powerStep;
+        }
+        if (a.powerDownAtS >= 0.0 && t >= a.powerDownAtS)
+        {
+            pw = a.powerBase;
+        }
 
         if (a.closedLoop)
         {
