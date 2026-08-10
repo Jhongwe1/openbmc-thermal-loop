@@ -1,0 +1,2 @@
+epoch_ms,ts,integral,lastOutput,proportionalCoeff,integralCoeff,derivativeCoeff,feedFwdOffset,feedFwdGain,integralLimit.min,integralLimit.max,outLim.min,outLim.max,slewNeg,slewPos,positiveHysteresis,negativeHysteresis
+1786386117744,1,0,0,-220.279,-5.00952,0,0,0,0,15000,3000,15000,0,0,0,0

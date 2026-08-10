@@ -1,0 +1,14 @@
+{
+  "experiment": "exp06_cascade",
+  "inject_c": 85.0,
+  "collect_s": 90,
+  "config": "config/swampd/config.tuned.json",
+  "swampd_version": "unknown",
+  "upstream_constants": {
+    "cycleIntervalTimeMS": 100,
+    "updateThermalsTimeMS": 1000,
+    "logThrottle_ms": 60000,
+    "source": "phosphor-pid-control @ f6d4cb9, pid/conf.hpp 與 pid/ec/logging.cpp"
+  },
+  "repo_commit": "a935648"
+}
