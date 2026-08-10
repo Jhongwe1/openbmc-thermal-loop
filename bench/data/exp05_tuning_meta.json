@@ -1,0 +1,519 @@
+{
+  "experiment": "exp05_tuning",
+  "fopdt": {
+    "k": -0.314708,
+    "tau": 43.972,
+    "theta": 7.2013,
+    "source": "bench/data/exp01_fit.txt"
+  },
+  "setpoint_c": 65.0,
+  "power_w": {
+    "base": 150.0,
+    "step": 300.0,
+    "at_s": 300.0
+  },
+  "controllable_power_limit_w": 333.33333333333337,
+  "ctrl_ts_s": 1.0,
+  "dt_s": 0.1,
+  "seconds": 1200.0,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "out_lim": [
+    0.0,
+    100.0
+  ],
+  "integral_limit": [
+    0.0,
+    100.0
+  ],
+  "anti_windup": "clamp",
+  "metrics_computed_from_s": 300.0,
+  "metric_settings": {
+    "reversals_deadband": 0.05,
+    "reversals_tail_s": 120.0,
+    "pwm_pp_tail_s": 120.0,
+    "settle_band_c": 1.0,
+    "settle_hold_s": 60.0
+  },
+  "lambda_table": {
+    "0.5tau": {
+      "lambda_s": 21.986,
+      "Kc": 4.787122205761619,
+      "Ti": 43.972,
+      "Ki": 0.1088675112744842,
+      "kp_used": -4.787122205761619,
+      "ki_used": -0.1088675112744842,
+      "swampd_equivalent": {
+        "lambda_s": 21.986,
+        "Kc_rpm_per_c": 718.0683308642429,
+        "Ti": 43.972,
+        "Ki_rpm_per_c_s": 16.33012669117263,
+        "rpm_per_pct": 150.0
+      },
+      "metrics": {
+        "overshoot_c": {
+          "median": 9.9375,
+          "min": 9.9375,
+          "max": 10.0
+        },
+        "settle_s": {
+          "median": 430.1,
+          "min": 428.5,
+          "max": 434.7
+        },
+        "pwm_pp": {
+          "median": 1.2445000000000022,
+          "min": 1.230799999999988,
+          "max": 1.2580999999999989
+        },
+        "reversals_per_min": {
+          "median": 31.5,
+          "min": 28.5,
+          "max": 36.0
+        },
+        "fan_power_rel": {
+          "median": 0.7994377785179018,
+          "min": 0.7991562814321399,
+          "max": 0.7995700441298917
+        },
+        "t_peak_c": {
+          "median": 74.9375,
+          "min": 74.9375,
+          "max": 75.0
+        },
+        "settle_after_step_s": {
+          "median": 130.10000000000002,
+          "min": 128.5,
+          "max": 134.7
+        },
+        "integral_max": {
+          "median": 92.857183,
+          "min": 92.850379,
+          "max": 92.863987
+        },
+        "pwm_max": {
+          "median": 95.9964,
+          "min": 95.7374,
+          "max": 96.0366
+        }
+      },
+      "per_seed": {
+        "0": {
+          "overshoot_c": 9.9375,
+          "settle_s": 430.1,
+          "pwm_pp": 1.230799999999988,
+          "reversals_per_min": 28.5,
+          "fan_power_rel": 0.7994377785179018,
+          "t_peak_c": 74.9375,
+          "settle_after_step_s": 130.10000000000002,
+          "integral_max": 92.863987,
+          "pwm_max": 95.7374
+        },
+        "1": {
+          "overshoot_c": 9.9375,
+          "settle_s": 428.5,
+          "pwm_pp": 1.2511999999999972,
+          "reversals_per_min": 31.5,
+          "fan_power_rel": 0.7995280557868443,
+          "t_peak_c": 74.9375,
+          "settle_after_step_s": 128.5,
+          "integral_max": 92.857183,
+          "pwm_max": 95.9805
+        },
+        "2": {
+          "overshoot_c": 9.9375,
+          "settle_s": 430.1,
+          "pwm_pp": 1.2445000000000022,
+          "reversals_per_min": 30.0,
+          "fan_power_rel": 0.7993108442964197,
+          "t_peak_c": 74.9375,
+          "settle_after_step_s": 130.10000000000002,
+          "integral_max": 92.850379,
+          "pwm_max": 96.0355
+        },
+        "3": {
+          "overshoot_c": 9.9375,
+          "settle_s": 434.7,
+          "pwm_pp": 1.2580999999999989,
+          "reversals_per_min": 36.0,
+          "fan_power_rel": 0.7991562814321399,
+          "t_peak_c": 74.9375,
+          "settle_after_step_s": 134.7,
+          "integral_max": 92.850379,
+          "pwm_max": 95.9964
+        },
+        "4": {
+          "overshoot_c": 10.0,
+          "settle_s": 430.6,
+          "pwm_pp": 1.2443999999999988,
+          "reversals_per_min": 32.0,
+          "fan_power_rel": 0.7995700441298917,
+          "t_peak_c": 75.0,
+          "settle_after_step_s": 130.60000000000002,
+          "integral_max": 92.857183,
+          "pwm_max": 96.0366
+        }
+      }
+    },
+    "1.0tau": {
+      "lambda_s": 43.972,
+      "Kc": 2.7303920590664683,
+      "Ti": 43.972,
+      "Ki": 0.06209387926558874,
+      "kp_used": -2.7303920590664683,
+      "ki_used": -0.06209387926558874,
+      "swampd_equivalent": {
+        "lambda_s": 43.972,
+        "Kc_rpm_per_c": 409.55880885997027,
+        "Ti": 43.972,
+        "Ki_rpm_per_c_s": 9.314081889838311,
+        "rpm_per_pct": 150.0
+      },
+      "metrics": {
+        "overshoot_c": {
+          "median": 12.75,
+          "min": 12.75,
+          "max": 12.75
+        },
+        "settle_s": {
+          "median": 471.9,
+          "min": 471.2,
+          "max": 475.2
+        },
+        "pwm_pp": {
+          "median": 0.709699999999998,
+          "min": 0.7019999999999982,
+          "max": 0.7136999999999887
+        },
+        "reversals_per_min": {
+          "median": 31.0,
+          "min": 26.5,
+          "max": 34.0
+        },
+        "fan_power_rel": {
+          "median": 0.7993618834304748,
+          "min": 0.799126162364696,
+          "max": 0.7995089633638633
+        },
+        "t_peak_c": {
+          "median": 77.75,
+          "min": 77.75,
+          "max": 77.75
+        },
+        "settle_after_step_s": {
+          "median": 171.89999999999998,
+          "min": 171.2,
+          "max": 175.2
+        },
+        "integral_max": {
+          "median": 92.83423,
+          "min": 92.826469,
+          "max": 92.838111
+        },
+        "pwm_max": {
+          "median": 93.3113,
+          "min": 93.1678,
+          "max": 93.3423
+        }
+      },
+      "per_seed": {
+        "0": {
+          "overshoot_c": 12.75,
+          "settle_s": 471.6,
+          "pwm_pp": 0.709699999999998,
+          "reversals_per_min": 26.5,
+          "fan_power_rel": 0.7994583963363863,
+          "t_peak_c": 77.75,
+          "settle_after_step_s": 171.60000000000002,
+          "integral_max": 92.838111,
+          "pwm_max": 93.3344
+        },
+        "1": {
+          "overshoot_c": 12.75,
+          "settle_s": 475.2,
+          "pwm_pp": 0.7136999999999887,
+          "reversals_per_min": 32.5,
+          "fan_power_rel": 0.7993618834304748,
+          "t_peak_c": 77.75,
+          "settle_after_step_s": 175.2,
+          "integral_max": 92.838111,
+          "pwm_max": 93.3113
+        },
+        "2": {
+          "overshoot_c": 12.75,
+          "settle_s": 472.6,
+          "pwm_pp": 0.709699999999998,
+          "reversals_per_min": 28.0,
+          "fan_power_rel": 0.799126162364696,
+          "t_peak_c": 77.75,
+          "settle_after_step_s": 172.60000000000002,
+          "integral_max": 92.826469,
+          "pwm_max": 93.1678
+        },
+        "3": {
+          "overshoot_c": 12.75,
+          "settle_s": 471.2,
+          "pwm_pp": 0.7019999999999982,
+          "reversals_per_min": 34.0,
+          "fan_power_rel": 0.7992189933388844,
+          "t_peak_c": 77.75,
+          "settle_after_step_s": 171.2,
+          "integral_max": 92.83423,
+          "pwm_max": 93.3423
+        },
+        "4": {
+          "overshoot_c": 12.75,
+          "settle_s": 471.9,
+          "pwm_pp": 0.7098000000000013,
+          "reversals_per_min": 31.0,
+          "fan_power_rel": 0.7995089633638633,
+          "t_peak_c": 77.75,
+          "settle_after_step_s": 171.89999999999998,
+          "integral_max": 92.83423,
+          "pwm_max": 93.2024
+        }
+      }
+    },
+    "2.0tau": {
+      "lambda_s": 87.944,
+      "Kc": 1.4685241620576748,
+      "Ti": 43.972,
+      "Ki": 0.033396801647813945,
+      "kp_used": -1.4685241620576748,
+      "ki_used": -0.033396801647813945,
+      "swampd_equivalent": {
+        "lambda_s": 87.944,
+        "Kc_rpm_per_c": 220.27862430865122,
+        "Ti": 43.972,
+        "Ki_rpm_per_c_s": 5.009520247172092,
+        "rpm_per_pct": 150.0
+      },
+      "metrics": {
+        "overshoot_c": {
+          "median": 17.0,
+          "min": 17.0,
+          "max": 17.0625
+        },
+        "settle_s": {
+          "median": 549.7,
+          "min": 547.4,
+          "max": 551.7
+        },
+        "pwm_pp": {
+          "median": 0.3818000000000126,
+          "min": 0.3795999999999964,
+          "max": 0.38589999999999236
+        },
+        "reversals_per_min": {
+          "median": 31.0,
+          "min": 26.5,
+          "max": 35.0
+        },
+        "fan_power_rel": {
+          "median": 0.7993115745212324,
+          "min": 0.7991835303913406,
+          "max": 0.7995263830141549
+        },
+        "t_peak_c": {
+          "median": 82.0,
+          "min": 82.0,
+          "max": 82.0625
+        },
+        "settle_after_step_s": {
+          "median": 249.70000000000005,
+          "min": 247.39999999999998,
+          "max": 251.70000000000005
+        },
+        "integral_max": {
+          "median": 92.822236,
+          "min": 92.815974,
+          "max": 92.82641
+        },
+        "pwm_max": {
+          "median": 93.0408,
+          "min": 92.9995,
+          "max": 93.0788
+        }
+      },
+      "per_seed": {
+        "0": {
+          "overshoot_c": 17.0,
+          "settle_s": 549.5,
+          "pwm_pp": 0.3838000000000079,
+          "reversals_per_min": 26.5,
+          "fan_power_rel": 0.7995263830141549,
+          "t_peak_c": 82.0,
+          "settle_after_step_s": 249.5,
+          "integral_max": 92.82641,
+          "pwm_max": 93.0408
+        },
+        "1": {
+          "overshoot_c": 17.0,
+          "settle_s": 547.4,
+          "pwm_pp": 0.38169999999999504,
+          "reversals_per_min": 32.5,
+          "fan_power_rel": 0.7992828934221481,
+          "t_peak_c": 82.0,
+          "settle_after_step_s": 247.39999999999998,
+          "integral_max": 92.822236,
+          "pwm_max": 93.0558
+        },
+        "2": {
+          "overshoot_c": 17.0,
+          "settle_s": 550.2,
+          "pwm_pp": 0.3818000000000126,
+          "reversals_per_min": 28.0,
+          "fan_power_rel": 0.7991835303913406,
+          "t_peak_c": 82.0,
+          "settle_after_step_s": 250.20000000000005,
+          "integral_max": 92.815974,
+          "pwm_max": 92.9995
+        },
+        "3": {
+          "overshoot_c": 17.0625,
+          "settle_s": 551.7,
+          "pwm_pp": 0.3795999999999964,
+          "reversals_per_min": 35.0,
+          "fan_power_rel": 0.7993115745212324,
+          "t_peak_c": 82.0625,
+          "settle_after_step_s": 251.70000000000005,
+          "integral_max": 92.82641,
+          "pwm_max": 93.0788
+        },
+        "4": {
+          "overshoot_c": 17.0625,
+          "settle_s": 549.7,
+          "pwm_pp": 0.38589999999999236,
+          "reversals_per_min": 31.0,
+          "fan_power_rel": 0.799489745212323,
+          "t_peak_c": 82.0625,
+          "settle_after_step_s": 249.70000000000005,
+          "integral_max": 92.820148,
+          "pwm_max": 93.0099
+        }
+      }
+    }
+  },
+  "repo_commit": "a935648",
+  "sim_params": {
+    "0.5tau": {
+      "dt": "0.1",
+      "seconds": "1200",
+      "seed": "0",
+      "power_base": "150",
+      "power_step": "300",
+      "power_at": "300",
+      "pwm_base": "40",
+      "pwm_step": "60",
+      "pwm_at": "-1",
+      "t_amb": "25",
+      "rth_max": "0.35",
+      "rth_min": "0.12",
+      "flow_exp": "0.8",
+      "tau_die": "45",
+      "tau_sense": "3",
+      "tau_fan": "1.5",
+      "dead_time": "3",
+      "rpm_max": "15000",
+      "pwm_min_spin": "12",
+      "lsb": "0.0625",
+      "noise_sigma": "0.05",
+      "closed_loop": "1",
+      "setpoint": "65",
+      "ctrl_ts": "1",
+      "steps_per_ctrl": "10",
+      "kp": "-4.78712",
+      "ki": "-0.108868",
+      "kd": "0",
+      "out_min": "0",
+      "out_max": "100",
+      "integral_min": "0",
+      "integral_max": "100",
+      "slew_neg": "0",
+      "slew_pos": "0",
+      "tracking_time_s": "0",
+      "anti_windup": "clamp"
+    },
+    "1.0tau": {
+      "dt": "0.1",
+      "seconds": "1200",
+      "seed": "0",
+      "power_base": "150",
+      "power_step": "300",
+      "power_at": "300",
+      "pwm_base": "40",
+      "pwm_step": "60",
+      "pwm_at": "-1",
+      "t_amb": "25",
+      "rth_max": "0.35",
+      "rth_min": "0.12",
+      "flow_exp": "0.8",
+      "tau_die": "45",
+      "tau_sense": "3",
+      "tau_fan": "1.5",
+      "dead_time": "3",
+      "rpm_max": "15000",
+      "pwm_min_spin": "12",
+      "lsb": "0.0625",
+      "noise_sigma": "0.05",
+      "closed_loop": "1",
+      "setpoint": "65",
+      "ctrl_ts": "1",
+      "steps_per_ctrl": "10",
+      "kp": "-2.73039",
+      "ki": "-0.0620939",
+      "kd": "0",
+      "out_min": "0",
+      "out_max": "100",
+      "integral_min": "0",
+      "integral_max": "100",
+      "slew_neg": "0",
+      "slew_pos": "0",
+      "tracking_time_s": "0",
+      "anti_windup": "clamp"
+    },
+    "2.0tau": {
+      "dt": "0.1",
+      "seconds": "1200",
+      "seed": "0",
+      "power_base": "150",
+      "power_step": "300",
+      "power_at": "300",
+      "pwm_base": "40",
+      "pwm_step": "60",
+      "pwm_at": "-1",
+      "t_amb": "25",
+      "rth_max": "0.35",
+      "rth_min": "0.12",
+      "flow_exp": "0.8",
+      "tau_die": "45",
+      "tau_sense": "3",
+      "tau_fan": "1.5",
+      "dead_time": "3",
+      "rpm_max": "15000",
+      "pwm_min_spin": "12",
+      "lsb": "0.0625",
+      "noise_sigma": "0.05",
+      "closed_loop": "1",
+      "setpoint": "65",
+      "ctrl_ts": "1",
+      "steps_per_ctrl": "10",
+      "kp": "-1.46852",
+      "ki": "-0.0333968",
+      "kd": "0",
+      "out_min": "0",
+      "out_max": "100",
+      "integral_min": "0",
+      "integral_max": "100",
+      "slew_neg": "0",
+      "slew_pos": "0",
+      "tracking_time_s": "0",
+      "anti_windup": "clamp"
+    }
+  }
+}
