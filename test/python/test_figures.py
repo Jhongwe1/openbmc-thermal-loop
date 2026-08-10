@@ -37,6 +37,7 @@ FIGURES = ROOT / "figures"
 # (檔名, 產圖指令, 它的資料輸入)
 CASES = [
     ("fig1_sysid.png", ["bench/plot.py", "--fig", "1"], provenance.FIG1_INPUTS),
+    ("fig2_tuning.png", ["bench/plot.py", "--fig", "2"], provenance.FIG2_INPUTS),
     ("fig6_dts_to_redfish.png", ["bench/plot_fig6.py"], provenance.FIG6_INPUTS),
 ]
 

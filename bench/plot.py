@@ -20,6 +20,7 @@
 """
 
 import argparse
+import json
 import os
 import pathlib
 import sys
@@ -289,7 +290,242 @@ def fig1() -> None:
     print(f"wrote {out}")
 
 
-FIGURES = {1: fig1}
+#: 三組 λ 的顏色。**刻意用同一色相的三個明度，不是三個不同的顏色。**
+#:
+#: λ 是**有序**變數（0.5 < 1.0 < 2.0），不是三個並列的類別。
+#: 用紅/橘/藍會暗示它們是三種不同的東西；用由淺到深的同一色相，
+#: 圖上的順序本身就帶著「λ 變大」這個資訊，灰階印出來也還在。
+#: 最深的那個給 2.0τ —— 本專案採用的那一組。
+LAMBDA_COLOURS = {
+    "0.5tau": "#8ab8e6",
+    "1.0tau": "#2a78d6",
+    "2.0tau": "#123f6d",
+}
+LAMBDA_LABELS = {
+    "0.5tau": r"$\lambda$ = 0.5$\tau$",
+    "1.0tau": r"$\lambda$ = 1.0$\tau$",
+    "2.0tau": r"$\lambda$ = 2.0$\tau$  (adopted)",
+}
+
+
+def _med(entry: dict, key: str) -> str:
+    """meta 裡某個指標的 `median [min, max]`。NaN 組別誠實印 NaN。"""
+    stat = entry["metrics"][key]
+    if stat["median"] is None:
+        return "NaN"
+    return f"{stat['median']:.3g} [{stat['min']:.3g}, {stat['max']:.3g}]"
+
+
+def fig2() -> None:
+    """Fig 2 — 三組 λ 的閉環負載擾動響應：溫度/PWM 雙面板 + 5 seed 帶狀範圍。
+
+    ★ 版面上的四個決定：
+
+    1. **x 軸從階躍前 60 s 開始**（與 Fig 1 同一個理由）。0~240 s 是 plant
+       從冷機收斂到工作點，不是實驗的一部分，卻會把 y 軸拉大一倍。
+       原始 CSV 仍然是完整的 0~1200 s。
+    2. **帶狀範圍是 5 個 seed 的 min~max，中位數才是線。**
+       畫一條「最好看的那次」是這張圖最容易造假的地方。
+    3. **★ PWM 面板多一個穩態放大鏡。** 這張圖真正的發現是
+       `pwm_pp` 三組差 3.3 倍 —— 但那是 0.4~1.2% 的尺度，
+       在 0~100% 的面板上是一條線的厚度。不放大等於沒畫。
+       （與 Fig 1 的死區放大鏡同一個道理：**發現在小尺度上就得放大**）
+    4. **指標表的數字直接讀 meta.json，不在這裡重算。**
+       重算一次就等於有第二份定義 —— 圖上的數字與 exp05 報的數字
+       有機會不一致，而且不會有人發現。
+    """
+    meta = json.loads((DATA / "exp05_tuning_meta.json").read_text())
+    setpoint = meta["setpoint_c"]
+    power = meta["power_w"]
+    step_at = power["at_s"]
+    table = meta["lambda_table"]
+    keys = list(LAMBDA_COLOURS)
+
+    frames = {}
+    for key in keys:
+        mult = key.replace("tau", "")
+        paths = sorted(DATA.glob(f"exp05_tuning_lam{mult}tau_seed*.csv"))
+        if not paths:
+            raise SystemExit(
+                f"bench/data/ 裡沒有 λ={key} 的 CSV，先跑 bench/exp05_tuning.py")
+        frames[key] = [pd.read_csv(p) for p in paths]
+
+    t = frames[keys[0]][0]["t_s"].to_numpy()
+    view_lo, view_hi = step_at - 60.0, float(t[-1])
+    # 穩態放大鏡：與 pwm_pp / reversals 用的是**同一個尾段視窗**，
+    # 這樣圖上看到的抖動就是表格裡那個數字量的東西。
+    tail_s = meta["metric_settings"]["pwm_pp_tail_s"]
+    zoom_lo, zoom_hi = view_hi - tail_s, view_hi
+
+    fig, (ax_t, ax_p) = plt.subplots(
+        2, 1, sharex=True, figsize=(11, 8.6),
+        gridspec_kw={"height_ratios": [1.15, 1.0], "hspace": 0.12},
+    )
+    fig.patch.set_facecolor(C_SURFACE)
+
+    for key in keys:
+        colour = LAMBDA_COLOURS[key]
+        temps = np.vstack([f["t_sense_c"].to_numpy() for f in frames[key]])
+        pwms = np.vstack([f["pwm"].to_numpy() for f in frames[key]])
+
+        ax_t.fill_between(t, temps.min(0), temps.max(0), color=colour,
+                          alpha=0.22, lw=0, zorder=2)
+        ax_t.plot(t, np.median(temps, 0), color=colour, lw=1.7, zorder=3,
+                  label=LAMBDA_LABELS[key])
+        ax_p.fill_between(t, pwms.min(0), pwms.max(0), color=colour,
+                          alpha=0.22, lw=0, zorder=2)
+        ax_p.plot(t, np.median(pwms, 0), color=colour, lw=1.7, zorder=3)
+
+    # ── 上：溫度 ────────────────────────────────────────────────────────
+    ax_t.axhline(setpoint, ls="--", lw=1.0, color=C_MODEL, zorder=4)
+    ax_t.axvline(step_at, ls="--", lw=1.0, color=C_MUTED, zorder=4)
+    ax_t.text(view_lo + 12, setpoint + 1.0, f"setpoint {setpoint:g} °C",
+              fontsize=9, color=C_MODEL, va="bottom", zorder=5,
+              bbox=dict(boxstyle="square,pad=0.25", fc=C_SURFACE, ec="none"))
+    ax_t.annotate(
+        f"load step {power['base']:g} W -> {power['step']:g} W",
+        xy=(step_at, setpoint + 12), xytext=(step_at + 55, setpoint + 15),
+        fontsize=9, color=C_MUTED,
+        arrowprops=dict(arrowstyle="->", color=C_MUTED, lw=0.8),
+    )
+    ax_t.set_ylabel("sensed temperature (°C)", fontsize=10, color=C_MUTED)
+    ax_t.set_title(
+        "Fig 2 - Closed-loop load-disturbance response vs IMC lambda",
+        fontsize=14, color="#0b0b0b", loc="left", pad=10)
+    _style(ax_t)
+    ax_t.set_xlim(view_lo, view_hi)
+    win = t >= view_lo
+    lo = min(float(np.min(np.vstack([f["t_sense_c"].to_numpy()[win]
+                                     for f in frames[k]]))) for k in keys)
+    hi = max(float(np.max(np.vstack([f["t_sense_c"].to_numpy()[win]
+                                     for f in frames[k]]))) for k in keys)
+    pad = 0.12 * (hi - lo)
+    ax_t.set_ylim(lo - pad, hi + pad)
+
+    # ── 下：PWM + 穩態放大鏡 ────────────────────────────────────────────
+    ax_p.axvline(step_at, ls="--", lw=1.0, color=C_MUTED, zorder=4)
+    ax_p.set_ylabel("PWM command (%)", fontsize=10, color=C_MUTED)
+    ax_p.set_xlabel("time (s)", fontsize=10, color=C_MUTED)
+    _style(ax_p)
+    ax_p.set_ylim(0, 105)
+
+    axin = ax_p.inset_axes([0.50, 0.13, 0.47, 0.52])
+    zoom = (t >= zoom_lo) & (t <= zoom_hi)
+    for key in keys:
+        colour = LAMBDA_COLOURS[key]
+        pwms = np.vstack([f["pwm"].to_numpy() for f in frames[key]])
+        axin.fill_between(t[zoom], pwms.min(0)[zoom], pwms.max(0)[zoom],
+                          color=colour, alpha=0.22, lw=0, zorder=2)
+        axin.plot(t[zoom], np.median(pwms, 0)[zoom], color=colour, lw=1.0,
+                  zorder=3)
+    axin.set_xlim(zoom_lo, zoom_hi)
+    _style(axin)
+    axin.tick_params(labelsize=8)
+    axin.set_title(
+        f"zoom on the last {tail_s:g} s - this is the scale pwm p-p measures",
+        fontsize=8.5, color=C_MUTED, loc="left", pad=4)
+    ax_p.indicate_inset_zoom(axin, edgecolor=C_MUTED, alpha=0.6, lw=0.8)
+
+    # 圖例放在溫度面板的右上角 —— 那一塊在 t > 600 s 之後是空的（三組都已
+    # 收斂到 setpoint），不會壓到任何一條線，也不會像放在圖外那樣去擠表格。
+    leg = ax_t.legend(loc="upper right", fontsize=9, framealpha=1.0,
+                      facecolor=C_SURFACE, edgecolor=C_GRID)
+    for text in leg.get_texts():
+        text.set_color("#52514e")
+
+    # ── 指標表：中位數 [min, max]，五個 seed ────────────────────────────
+    rows = []
+    for key in keys:
+        e = table[key]
+        adopted = " *" if key == "2.0tau" else ""
+        rows.append([
+            f"{key.replace('tau', ' tau')}{adopted}",
+            f"{e['Kc']:.3f}",
+            _med(e, "overshoot_c"),
+            _med(e, "settle_after_step_s"),
+            _med(e, "pwm_pp"),
+            _med(e, "reversals_per_min"),
+            _med(e, "fan_power_rel"),
+            _med(e, "t_peak_c"),
+        ])
+    tbl = ax_p.table(
+        cellText=rows,
+        colLabels=["lambda", "Kc", "peak dev (°C)", "settle (s)",
+                   "pwm p-p (%)", "reversals/min", "fan power (rel)",
+                   "T peak (°C)"],
+        loc="bottom", bbox=[0.0, -0.80, 1.0, 0.52],
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(7.5)
+    for (row, _), cell in tbl.get_celld().items():
+        cell.set_edgecolor(C_GRID)
+        cell.set_facecolor(C_SURFACE)
+        if row == 0:
+            cell.get_text().set_color("#0b0b0b")
+        else:
+            cell.get_text().set_color("#52514e")
+
+    # ── 參數區塊：包含這張圖最重要的那個限制 ────────────────────────────
+    fopdt = meta["fopdt"]
+    ms = meta["metric_settings"]
+    ratio_pp = (table["0.5tau"]["metrics"]["pwm_pp"]["median"]
+                / table["2.0tau"]["metrics"]["pwm_pp"]["median"])
+    params = (
+        f"IMC-PI from Fig 1: K = {fopdt['k']:+.4f} °C/%PWM, "
+        f"tau = {fopdt['tau']:.2f} s, theta = {fopdt['theta']:.2f} s"
+        f"   ->   Kc = tau / (|K|(lambda+theta)),  Ti = tau"
+        f"       (* = the group this project adopts)\n"
+        f"Only lambda changes between the three groups. Verified by the "
+        f"experiment script, not by hand: same seed set, and every other sim "
+        f"parameter compared field by field.\n"
+        f"Load step {power['step']:g} W is below the controllable limit "
+        f"(setpoint - t_amb) / rth_min = "
+        f"{meta['controllable_power_limit_w']:.1f} W, so none of the three "
+        f"groups saturates (peak PWM "
+        f"{min(table[k]['metrics']['pwm_max']['median'] for k in keys):.0f}"
+        f"-{max(table[k]['metrics']['pwm_max']['median'] for k in keys):.0f}%). "
+        f"Saturation is Fig 3's experiment, not this one.\n"
+        f"Metrics are computed from t = {meta['metrics_computed_from_s']:g} s "
+        f"(the step) onward; the cold-start transient before it is not part of "
+        f"this experiment. Band = min~max over "
+        f"{len(meta['seeds'])} seeds, line = median.\n"
+        f"LIMIT - larger lambda cuts the amplitude of the steady-state PWM "
+        f"jitter by {ratio_pp:.1f}x, but NOT its rate: reversals/min are "
+        f"within 2% of each other. At this noise level that metric is "
+        f"dominated by sensor noise, not by the control law.\n"
+        f"reversals deadband = {ms['reversals_deadband']:g} %PWM, tail = "
+        f"{ms['reversals_tail_s']:g} s; settle band = +/-{ms['settle_band_c']:g} "
+        f"°C held for {ms['settle_hold_s']:g} s. A larger deadband would "
+        f"separate the three groups - it was not tuned to do so."
+    )
+    fig.text(0.012, 0.005, params, fontsize=8, va="bottom", color="#0b0b0b",
+             family="monospace",
+             bbox=dict(boxstyle="round,pad=0.55", fc=C_SURFACE, ec=C_GRID))
+
+    what = (
+        f"Fig 2 - Closed-loop response to a load step "
+        f"{power['base']:g} W -> {power['step']:g} W at t = {step_at:g} s, "
+        f"setpoint {setpoint:g} °C, controller sample period "
+        f"{meta['ctrl_ts_s']:g} s (outer thermal loop rate), plant dt "
+        f"{meta['dt_s']:g} s, anti-windup {meta['anti_windup']}, "
+        f"integral limit {meta['integral_limit']}.\n"
+        f"This is disturbance rejection, not setpoint tracking: peak deviation "
+        f"grows with lambda here, which is the opposite of the familiar "
+        f"setpoint-step behaviour. View starts at t = {view_lo:g} s. "
+        f"Raw traces: bench/data/exp05_tuning_lam*.csv."
+    )
+    fig.text(0.012, -0.075, _caption(what, provenance.FIG2_INPUTS),
+             fontsize=7.5, va="bottom", color=C_MUTED)
+
+    fig.subplots_adjust(bottom=0.32)
+    FIGS.mkdir(exist_ok=True)
+    out = FIGS / "fig2_tuning.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=C_SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
+
+
+FIGURES = {1: fig1, 2: fig2}
 
 
 def main() -> int:

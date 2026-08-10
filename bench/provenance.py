@@ -54,6 +54,18 @@ FIG1_INPUTS = [
     "docs/env-baseline.md",
 ]
 
+#: Fig 2 的輸入（W6 的 λ 整定掃描）。
+#:
+#: ⚠️ `exp01_fit.txt` 也在裡面 —— 三組 λ 的 Kc/Ki 是從那份擬合算出來的，
+#:    它變了圖上的係數就變了。**輸入清單要包含「決定這張圖的每一份資料」，
+#:    不只是被畫出來的那幾條線。**
+FIG2_INPUTS = [
+    "bench/data/exp05_tuning_lam*.csv",
+    "bench/data/exp05_tuning_meta.json",
+    "bench/data/exp01_fit.txt",
+    "docs/env-baseline.md",
+]
+
 #: Fig 6 的輸入。
 FIG6_INPUTS = [
     "bench/data/exp03_trace/layers.json",
