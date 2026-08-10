@@ -221,6 +221,34 @@ zone 取 `max(3000, minThermalOutput)` = 3000;風扇 PID 輸出被箝到
 `outLim_min = 30`(%),寫出 `255 × 0.30 = 76`。
 **PWM 不會隨溫度變化 —— 這正是本週要的:先證明路是通的,再來談控制行為。**
 
+> **✅ W7(2026-08-11)更新:內圈改為「純前饋」,上面那段成為歷史。**
+> `fan0` 的 `feedFwdGainCoeff` 從 0 改為 **1/150**;回授係數(P/I)仍為 0。
+> 依據上游 `pid/ec/pid.cpp:101`:`feedFwdTerm = (setpoint + feedFwdOffset) × feedFwdGain`,
+> 而 fan PID 的 setpoint 就是外圈的 RPM 輸出(`fancontroller.cpp` 的
+> `setptProc()` → `getMaxSetPointRequest()`)。所以 **PWM% = RPM ÷ 150** ——
+> 150 = rpmMax/100,與 `bench/tune.py` 的 `to_swampd_rpm()` 是同一個常數,
+> **是量綱換算不是整定增益**(「沒有量測就不整定回授」的 W6 決定不變)。
+> 沒有這一步,PWM 釘死 30%,swampd 對 plant 的迴路根本沒有閉起來
+> (runbook §4.8 記過);W7 的 L2 A/B 兩組**同改**,不碰自變因。
+
+---
+
+## 3.5 W7:anti-windup A/B 的兩份設定檔
+
+| 檔案 | die0 的 `integralLimit` | 角色 |
+|---|---|---|
+| `config.tuned.json` | `[0, 15000]` | **clamp arm** —— 上游預設風格的箝位(絕對值涵蓋 `outLim_max`,推導見上一節) |
+| `config.nowindup.json` | `[-1e6, +1e6]` | **open arm** —— 大到永遠夾不到,等同關閉 |
+
+**兩檔唯一允許的差異就是那兩行**(連 `_comment` 都逐字相同,`diff` 才乾淨),
+由 `test_swampd_config.py::test_nowindup_differs_from_tuned_only_in_the_outer_integral_limit`
+守著。這個 diff 會貼進 README —— 它就是「Fig 3 的差異只可能來自
+`integralLimit`」的證明。
+
+⚠️ **命名刻意偏離計畫**(計畫寫 `config.baseline.json` vs `config.nowindup.json`):
+`baseline` 這個名字已經被 W2 的未整定版佔用,重用它會讓 W2~W6 的文件
+全部指錯檔案。A/B 的 clamp arm 是 `config.tuned.json`。
+
 ---
 
 ## 4. 部署方式(唯讀 rootfs 的正解)

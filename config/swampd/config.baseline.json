@@ -56,7 +56,7 @@
             "proportionalCoeff": 0.0,
             "integralCoeff": 0.0,
             "feedFwdOffsetCoeff": 0.0,
-            "feedFwdGainCoeff": 0.0,
+            "feedFwdGainCoeff": 0.006666666666666667,
             "integralLimit_min": 0.0,
             "integralLimit_max": 100.0,
             "outLim_min": 30.0,

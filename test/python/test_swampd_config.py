@@ -27,6 +27,7 @@ import tune
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BASELINE = ROOT / "config/swampd/config.baseline.json"
 TUNED = ROOT / "config/swampd/config.tuned.json"
+NOWINDUP = ROOT / "config/swampd/config.nowindup.json"
 FIT = ROOT / "bench/data/exp01_fit.txt"
 
 #: config.tuned.json 採用的 λ。改這裡就要改那個檔案，反之亦然。
@@ -88,7 +89,8 @@ def test_temp_pid_gains_are_negative():
 # ═══════════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.parametrize("path", [BASELINE, TUNED], ids=["baseline", "tuned"])
+@pytest.mark.parametrize("path", [BASELINE, TUNED, NOWINDUP],
+                         ids=["baseline", "tuned", "nowindup"])
 def test_integral_limit_is_not_a_zero_width_clamp(path):
     """★★ `integralLimit = [0, 0]` 會讓積分項**恆為 0**，而且完全不報錯。
 
@@ -113,7 +115,8 @@ def test_integral_limit_is_not_a_zero_width_clamp(path):
             "積分項會恆為 0 而且不會有任何錯誤訊息")
 
 
-@pytest.mark.parametrize("path", [BASELINE, TUNED], ids=["baseline", "tuned"])
+@pytest.mark.parametrize("path", [BASELINE, TUNED, NOWINDUP],
+                         ids=["baseline", "tuned", "nowindup"])
 def test_integral_limit_covers_the_absolute_output_range(path):
     """★★ 積分上限要涵蓋 `outLim_max` 的**絕對值**，不是輸出區間的**寬度**。
 
@@ -171,18 +174,68 @@ def test_tuned_differs_from_baseline_only_in_the_outer_pid_gains():
         assert base["zones"][0][key] == tuned["zones"][0][key]
 
 
-def test_inner_fan_pid_is_left_untuned_on_purpose():
-    """內圈風扇 PID 的係數刻意留 0 —— 這是決定，不是忘了填。
+def test_inner_fan_pid_is_feedforward_only_by_design():
+    """內圈 fan0：回授係數留 0（W6 的決定）＋ 唯一的前饋增益 1/150（W7）。
 
-    理由（也寫在 config/swampd/README.md）：內圈的整定目標與外圈不同，
-    它要準確追 RPM setpoint，而**我的 plant 沒有建模個別風扇的轉速誤差**，
-    所以我沒有可以拿來整定它的量測。沒有量測就不要填數字。
+    W6 的理由不變：plant 沒有建模個別風扇的轉速誤差，**沒有量測就不整定
+    回授**。W7 加的 `feedFwdGainCoeff` 不是整定出來的增益，是量綱換算：
+    上游 `pid/ec/pid.cpp:101` 是 `feedFwdTerm = (setpoint + off) × gain`，
+    而 fan PID 的 setpoint 就是外圈的 RPM 輸出（`fancontroller.cpp` 的
+    `setptProc()` → `getMaxSetPointRequest()`）。gain = 1/150 = 100%/15000 RPM，
+    與 `bench/tune.py` 的 `to_swampd_rpm()` 是同一個常數 ——
+    PWM 純前饋地追隨外圈輸出，不引入任何內圈動態。
 
-    ⚠️ 後果要知道：內圈係數為 0 時，PWM 被箝在 `outLim_min = 30%` 不動。
-       所以 L1/L2 疊圖要比對**外圈的輸出（RPM setpoint）**，不是 PWM。
-       這一條測試存在，是為了讓「PWM 不會動」是預期而不是意外。
+    ⚠️ W6 時內圈全 0，PWM 箝死在 `outLim_min = 30%` —— 那時 L2 的迴路
+       其實沒有閉起來（runbook §4.8 記過這件事）。W7 要讓真 swampd 對
+       plant 閉環，「把外圈輸出傳遞出去」是達成它的最小改動。
+       三份設定檔一致：**這不是 A/B 的變因。**
     """
-    for path in (BASELINE, TUNED):
+    for path in (BASELINE, TUNED, NOWINDUP):
         fan0 = pid_of(load(path), "fan0")
         assert fan0["proportionalCoeff"] == 0.0
         assert fan0["integralCoeff"] == 0.0
+        assert fan0["feedFwdGainCoeff"] == pytest.approx(1.0 / 150.0)
+        assert fan0["feedFwdOffsetCoeff"] == 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  W7 的 A/B 配對 —— Fig 3 的單變因宣言，機器版
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_nowindup_differs_from_tuned_only_in_the_outer_integral_limit():
+    """★★ README 貼的 diff 說「只差兩行」—— 這裡讓它不是修辭。
+
+    A/B 的可信度整個掛在這上面：如果 nowindup 順手動了別的欄位
+    （哪怕是 fan0 的一個小數點），Fig 3 的差異就再也不能歸因給
+    integralLimit 這一個機制。守到欄位級；連 `_comment` 都要逐字相同 ——
+    兩檔共用同一段說明，`diff` 的輸出才乾淨到只剩那兩行。
+    """
+    tuned, nw = load(TUNED), load(NOWINDUP)
+    assert tuned["_comment"] == nw["_comment"], "_comment 必須逐字相同"
+    assert tuned["sensors"] == nw["sensors"], "感測器區塊不准有差異"
+
+    for key in ("id", "minThermalOutput", "failsafePercent"):
+        assert tuned["zones"][0][key] == nw["zones"][0][key]
+
+    fan_t, fan_n = pid_of(tuned, "fan0"), pid_of(nw, "fan0")
+    assert fan_t == fan_n, "內圈 fan0 不准有任何差異"
+
+    die_t, die_n = pid_of(tuned, "die0"), pid_of(nw, "die0")
+    assert set(die_t) == set(die_n)
+    differing = {key for key in die_t if die_t[key] != die_n[key]}
+    assert differing == {"integralLimit_min", "integralLimit_max"}, (
+        f"die0 的差異是 {differing}，"
+        "但 A/B 的自變因只允許 integralLimit 兩行")
+
+
+def test_nowindup_limit_is_wide_enough_to_never_bind():
+    """「等同關閉」要是真的 —— 上下界都要離可能的積分值夠遠。
+
+    ±1e6 對 outLim_max = 15000 有 66 倍餘裕。這一條防的是哪天有人把它
+    「改合理一點」改到會夾到的量級：那樣 open arm 就不再是對照組，
+    A/B 變成「兩種箝位強度」的比較 —— 一個完全不同的實驗。
+    """
+    die0 = pid_of(load(NOWINDUP), "die0")
+    assert die0["integralLimit_max"] >= 10 * die0["outLim_max"]
+    assert die0["integralLimit_min"] <= -10 * die0["outLim_max"]
