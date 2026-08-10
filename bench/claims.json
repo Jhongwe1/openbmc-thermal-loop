@@ -56,6 +56,79 @@
     "expected_from_model": 51.0
   },
 
+  "pwm_jitter_reduction_ratio": {
+    "value": 3.25956,
+    "tolerance_pct": 0.05,
+    "unit": "ratio",
+    "meaning": "λ 從 0.5τ 放大到 2.0τ 之後，穩態 PWM 峰對峰值降低的倍數（5 seed 中位數之比）。★ 這是 λ 整定的**效益**那一半。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp05_tuning_lam*.csv",
+    "figure": "figures/fig2_tuning.png",
+    "seed_range": [1.2308, 1.2581],
+    "note": "seed_range 是 λ=0.5τ 組的 pwm_pp 本身（%PWM），不是比值的範圍。三組的 pwm_pp 在 seed 之間都只變動 ~2%，所以這個比值是穩健的。"
+  },
+
+  "peak_deviation_cost_c": {
+    "value": 7.0625,
+    "tolerance_pct": 0.05,
+    "unit": "°C",
+    "meaning": "同一次放大的**代價**：負載擾動下的峰值溫度偏差從 9.94 °C 增加到 17.00 °C。★ 與 pwm_jitter_reduction_ratio 是同一個取捨的兩面，講的時候必須一起講。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp05_tuning_lam*.csv",
+    "figure": "figures/fig2_tuning.png",
+    "seed_range": [7.0, 7.125],
+    "note": "★ 這是**擾動抑制**下的峰值偏差，不是 setpoint 追蹤的超調 —— 兩者對增益的反應方向相反。計畫 §4 的驗收標準寫的是後者。見 LOG.md 2026-08-11。"
+  },
+
+  "reversals_ratio_lambda": {
+    "value": 1.016129,
+    "tolerance_pct": 0.2,
+    "unit": "ratio",
+    "meaning": "λ=0.5τ 與 λ=2.0τ 的每分鐘 PWM 方向反轉次數之比。★ 這個數字接近 1，也就是**λ 整定沒有降低反轉率**。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp05_tuning_lam*.csv",
+    "figure": "figures/fig2_tuning.png",
+    "seed_range": [28.5, 36.0],
+    "note": "★★ 刻意登記一個「沒有效果」的結果。λ 放大把抖動的**幅度**降了 3.26 倍，但**頻率**沒動 —— 在這個雜訊水準下，reversals_per_min 量到的是感測雜訊的時間結構，不是控制律。seed_range 是 λ=0.5τ 組的原始次數（次/分），它本身就跨了 26%，所以「兩組沒有差異」比「差 1.6%」更誠實。把 deadband 調大可以讓三組分開 —— 沒有調。"
+  },
+
+  "fan_power_rel_lambda_spread_pct": {
+    "value": 0.0158,
+    "tolerance_pct": 1.0,
+    "unit": "%",
+    "meaning": "三組 λ 的穩態相對風扇功耗最大相對差異。★ 幾乎為零 —— λ 整定**不改變穩態工作點**，只改變到達它的路徑。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp05_tuning_lam*.csv",
+    "figure": "figures/fig2_tuning.png",
+    "note": "物理上必然：穩態溫度被 setpoint 釘住、功耗固定，所以熱阻唯一、轉速唯一，與控制器無關。計畫把 fan_power_rel 當成「λ 放大的代價」是錯的 —— 代價是峰值溫度（見 peak_deviation_cost_c）。容差給 1% 是因為這個量本身就接近 0，用相對容差沒有意義。"
+  },
+
+  "fan_cycle_ms": {
+    "value": 100.0,
+    "tolerance_pct": 0.05,
+    "unit": "ms",
+    "meaning": "swampd 內圈（風扇 PID）的實際迴路週期，從 zone_0.log 相鄰行的時間戳差量到（中位數，n=819）。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp06_cascade/zone_0.log",
+    "figure": "docs/cascade.md",
+    "seed_range": [95.0, 105.0],
+    "expected_from_upstream": 100,
+    "note": "★ seed_range 是 p05~p95，不是 min~max：min=74、max=7805 ms 的長尾來自 QEMU 排程抖動，不是 swampd 的行為。同一批資料的平均是 118.8 ms（比中位數高 19%）—— 這個量只能報中位數與分位數。上游常數見 pid/conf.hpp 的 cycleIntervalTimeMS。"
+  },
+
+  "thermal_update_ms": {
+    "value": 1000.0,
+    "tolerance_pct": 0.05,
+    "unit": "ms",
+    "meaning": "swampd 外圈（熱 PID）的實際迴路週期，從 zone_0.log 的 setpt 欄變化間隔量到（中位數，n=81）。★ 這個數字就是 bench/sim 的 --ctrl-ts 預設值 1.0 s 的來源。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp06_cascade/zone_0.log",
+    "figure": "docs/cascade.md",
+    "seed_range": [994.0, 1008.0],
+    "expected_from_upstream": 1000,
+    "note": "★★ 量法與計畫寫的不同。計畫說用 pidcore.* 的時間戳，但那份 log 是「內容變了 OR 距上次 60 s」才寫（pid/ec/logging.cpp 的 logThrottle = 60*1000），靜態時量到的是 60013~67569 ms，與迴路週期無關。zone_0.log 由 DbusPidZone::writeLog() 直接寫、沒有節流，所以週期要從它量。詳見 docs/cascade.md §2 與 LOG.md 2026-08-11。"
+  },
+
   "recover_s_ratio": {
     "value": null,
     "tolerance_pct": 0.15,
