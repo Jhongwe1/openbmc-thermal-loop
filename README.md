@@ -3,7 +3,7 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~2 完成、Gate 3 進度 5/7**。
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~2 完成、Gate 3 進度 6/7**。
 >
 > **端到端可觀測:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
 > 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
@@ -360,7 +360,71 @@ meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
 >
 > 這三個洞都**不是跑測試發現的**(跑幾次都綠),是「**我要植入哪一種錯**」逼出來的。
 
-- [ ] Gate 3　控制器與量測　　　　← **5/7**
+### ★★ Fig 3 —— anti-windup 單變因 A/B(核心證據)
+
+![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
+
+負載 150 → 400 W(t=300 s;**刻意超過可控上限 (65−25)/0.12 = 333.3 W**,
+飽和必然發生)→ 降回 150 W(t=900 s,飽和解除)。實線+帶狀 = L1,
+5 個共用 seed;**虛線 = L2:未修改的上游 swampd 二進位**(與 BMC 映像
+同版 `c5e5955`)透過私有 D-Bus 控制同一份 plant,單趟即時執行。
+
+| | L1(5 seed 配對中位)| L2(單趟,真 swampd)|
+|---|---|---|
+| 恢復時間 `recover_s`(無箝位)| 197.2 s | 181.0 s |
+| 恢復時間 `recover_s`(有箝位)| **14.3 s** | **14.0 s** |
+| **比值** | **13.7×** [12.8, 13.9] | **12.9×** —— 落在 L1 範圍內 |
+| 積分峰值 | 233.6 %PWM vs **100.0(貼上限)** | 33308 RPM vs **15000(貼上限)** |
+
+**第三面板的積分軌跡不是我算的** —— 是 swampd 用 `-g` 自己吐出來的
+內部狀態(`pidcore.die0`)。無箝位那條在輸出貼死 100% 的整段飽和期
+一路爬升 —— 這是 plant 從頭到尾看不到的狀態,飽和解除後要先「放完」,
+風扇才降得下來:溫度已經回到 setpoint 以下,風扇還多轟了約 3 分鐘,
+把 die 過冷到 43 °C。
+
+#### 這張圖的自變因只有一個 —— 兩個設定檔的完整 diff
+
+```diff
+--- config/swampd/config.tuned.json
++++ config/swampd/config.nowindup.json
+@@ -55,8 +55,8 @@
+             "integralCoeff": -5.009520247172092,
+             "feedFwdOffsetCoeff": 0.0,
+             "feedFwdGainCoeff": 0.0,
+-            "integralLimit_min": 0.0,
+-            "integralLimit_max": 15000.0,
++            "integralLimit_min": -1000000.0,
++            "integralLimit_max": 1000000.0,
+             "outLim_min": 3000.0,
+             "outLim_max": 15000.0,
+             "slewNeg": 0.0,
+```
+
+**程式碼完全沒有修改。** 兩檔其餘逐 byte 相同(連 `_comment` 都相同,
+由 `test_swampd_config.py` 逐欄強制);L1 那側同構 —— 兩個 arm 只差
+`--integral-min/--integral-max`,由 exp07 腳本逐欄比對每次執行的參數
+dump 強制。所以圖上的每一點差異,只可能來自 `integralLimit` 這一個機制。
+
+> 📌 **這不是我加的功能。** `integralLimit` 箝位、slew 生效時的積分
+> 回算,**上游 `pid/ec/pid.cpp` 本來就有**;我做的是量化它值多少 ——
+> 同一份設定只改兩行,飽和解除後的恢復時間差 **13.7 倍**。
+> 順帶的意外收穫:open arm 的 **−1e6 下界在冷開機段挖出反向 windup**
+> (積分負向挖坑,風扇晚開、暖機超調更高)—— 同一機制的下界版展品,
+> 刻意留在圖上而不是裁掉(見圖上的 LIMIT 行)。
+>
+> 📌 **模擬聲明:** plant 是我自己的熱模型(`docs/plant-model.md`),
+> **不是伺服器硬體**;L2 的「真」在 daemon 這一側 —— 二進位、串級
+> 結構、log 與節流行為都是上游的。協定與誠實聲明見
+> [`docs/measurement.md`](docs/measurement.md) 的 exp07。
+>
+> ```bash
+> python bench/exp07_antiwindup.py --out bench/data           # L1:2 arm × 5 seed
+> bash harness/l2_ab.sh clamp && bash harness/l2_ab.sh open   # L2(即時,~50 min)
+> python bench/parse_l2.py --swampd-rev c5e5955               # L2 指標 → summary
+> python bench/plot.py --fig 3                                # 從以上原始資料產圖
+> ```
+
+- [ ] Gate 3　控制器與量測　　　　← **6/7**
   - [x] 我自己的 PI(C++,四種抗飽和 + 一個上游相容模式)← [`controller/`](controller/)
   - [x] 與上游 `ec::pid()` 的 gtest parity 測試(六個參數 144 組,`1e-12`)
   - [x] **符號檢查實驗**(兩點法;`temp` 型別要用負係數)
@@ -369,15 +433,19 @@ meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
         ← [`bench/tune.py`](bench/tune.py)、`bench/data/exp05_tuning_*.csv`
   - [x] **量出 swampd 的兩個時間常數,驗證串級架構**(內圈 100 ms / 外圈 1000 ms)
         ← [`docs/cascade.md`](docs/cascade.md)、`bench/data/exp06_cascade/`
-  - [ ] **anti-windup A/B(L1 + L2)**　← 核心證據
+  - [x] **anti-windup A/B(L1 + L2)→ Fig 3,見上**(恢復時間 **13.7×**;
+        L2 用未修改的 swampd 二進位重現 **12.9×**)
+        ← `bench/exp07_antiwindup.py`、[`harness/l2_ab.sh`](harness/l2_ab.sh)、
+        `bench/data/exp07_*`
   - [ ] slew 掃描(含風扇功耗)
 
-  > **已知缺口(誠實標註):** L1(模擬)與 L2(真 swampd)的**疊圖還沒做**。
-  > 兩層的控制器輸出量綱不同(模擬是 PWM 百分比、swampd 外圈是 RPM),
-  > 而且內圈風扇 PID 的係數刻意留 0(沒有量測就不填數字),所以 PWM 被箝在
-  > `outLim_min` 不動 —— 疊 PWM 曲線疊不出東西。
-  > 時間尺度已經對齊(`bench/sim --ctrl-ts` 的預設值就是量到的 1000 ms),
-  > 完整疊圖要等熱模型接上 D-Bus 之後。
+  > **✅ W6 宣告的缺口在 W7 關閉:** 熱模型接上了私有 D-Bus
+  > ([`harness/dbus_bridge.py`](harness/dbus_bridge.py) + mock ObjectMapper
+  > —— swampd 找感測器**必經** mapper,`dbus/dbushelper.cpp:37`,上游單元
+  > 測試也是 mock 這一層),**Fig 3 就是 L1/L2 疊圖**。量綱靠
+  > 150 RPM/%PWM 換算(`bench/tune.py`);內圈改為純前饋
+  > `feedFwdGainCoeff = 1/150` —— 量綱換算不是整定,回授係數仍為 0,
+  > 「沒有量測就不整定」的原則不變(見 `config/swampd/README.md`)。
 - [ ] Gate 4　失效安全
 - [ ] Gate 5　官方測試套件
 - [ ] Gate 6　Upstream
