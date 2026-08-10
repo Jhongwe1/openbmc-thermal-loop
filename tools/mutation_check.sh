@@ -36,6 +36,8 @@ CTL="controller/pi.cpp"
 MET="bench/metrics.py"
 STD="tools/set_die_temp.py"
 PRV="bench/provenance.py"
+SIM="bench/sim.cpp"
+PRS="bench/parse_l2.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -69,7 +71,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS"
 # shellcheck disable=SC2086
 cp $ALL_SOURCES "$BACKUP/"
 
@@ -78,6 +80,13 @@ restore() {
     rm -rf "$BACKUP"
 }
 trap restore EXIT
+# ⚠️ 光有 EXIT 不夠(2026-08-11 用慘痛方式實測):bash 收到**未攔截的**
+#    SIGTERM/SIGINT 時直接死,EXIT trap 不會執行 —— 上面註解裡「Ctrl-C
+#    也會還原」在那之前是一句沒驗證過的話。被 pkill 的那一輪把 P4 突變體
+#    留在 bench/metrics.py 裡,九個測試從此恆紅,而下一輪 mutation 的
+#    每一個案例都被那九個紅「誤抓」—— 整張表變成假的。
+#    這裡把訊號轉成 exit,EXIT trap 才會接手還原。
+trap 'exit 143' INT TERM
 
 # ── 字面替換（用 python 而不是 sed，避開跳脫地獄）──────────────────────
 # 這些字串裡有 (、)、*、/、.，在 sed/perl 的正規表示式裡全都要跳脫，
@@ -439,6 +448,81 @@ run_case "P15 reversals 分母改回 tail_s（計畫的寫法）" "$MET" \
 run_case "P16 reversals 的 deadband 失效" "$MET" \
     'd = d[np.abs(d) > deadband]' \
     'd = d[np.abs(d) > 0.0]'
+
+# ── W7 的兩個新指標 ＋ sim 的第二段階躍（2026-08-11）───────────────────
+#
+# ★ P17 與 W6 的 P11/P15 同一個家族：植入的**就是計畫給的那份實作**。
+#   計畫的 recover_s 偽碼拿 index 的**標籤**去餵 iloc（**位置**）——
+#   exp07 永遠傳「從 power_down_at 起裁切」的 DataFrame 進來，
+#   標籤不從 0 開始，兩者就對不上。
+#   守門員是 test_recover_s_uses_positions_not_index_labels。
+
+run_case "P17 recover_s 改回計畫的寫法（標籤當位置）" "$MET" \
+    '    below = np.nonzero(sensed <= setpoint)[0]
+    if below.size == 0:
+        return float("nan")
+    i0 = int(below[0])
+
+    released = np.nonzero(pwm[i0:] < pwm_threshold)[0]
+    if released.size == 0:
+        return float("nan")
+    return float(t[i0 + int(released[0])] - t[i0])' \
+    '    below = df.index[df["t_sense_c"] <= setpoint]
+    if len(below) == 0:
+        return float("nan")
+    i0 = int(below[0])
+    after = df.iloc[i0:]
+    low = after.index[after["pwm"] < pwm_threshold]
+    if len(low) == 0:
+        return float("nan")
+    return float(df["t_s"].iloc[int(low[0])] - df["t_s"].iloc[i0])'
+
+run_case "P18 recover_s 門檻方向反" "$MET" \
+    'released = np.nonzero(pwm[i0:] < pwm_threshold)[0]' \
+    'released = np.nonzero(pwm[i0:] > pwm_threshold)[0]'
+
+run_case "P19 recover_s 從整段開頭找 PWM" "$MET" \
+    'released = np.nonzero(pwm[i0:] < pwm_threshold)[0]' \
+    'released = np.nonzero(pwm < pwm_threshold)[0]'
+
+run_case "P20 integral_max 忘了絕對值" "$MET" \
+    'return float(df[col].abs().max())' \
+    'return float(df[col].max())'
+
+run_case "P21 integral_max 缺欄回 0 而不是 NaN" "$MET" \
+    '    if col not in df.columns:
+        return float("nan")' \
+    '    if col not in df.columns:
+        return 0.0'
+
+# B1 動的是 bench/sim.cpp —— 降回條件不生效的話，Fig 3 的負載曲線就沒有
+# 第二段階躍：A/B 只看得到 windup 發生、看不到它的代價（地雷 #10 的近親）。
+run_case "B1 sim 的 power-down-at 不生效" "$SIM" \
+    '        if (a.powerDownAtS >= 0.0 && t >= a.powerDownAtS)
+        {
+            pw = a.powerBase;
+        }' \
+    '        if (a.powerDownAtS >= 0.0 && t >= a.powerDownAtS)
+        {
+            pw = a.powerStep;
+        }'
+
+# ── L2 載入器（bench/parse_l2.py，W7）────────────────────────────────
+#
+# 這兩條的守門員都在 test_parse_l2.py，樣本行取自真實 log。
+# P22 的後果是「假好看」：0~1 的值永遠低於 90% 門檻，recover_s 秒回 0，
+# windup 最嚴重的那組反而拿到最漂亮的數字 —— 方向剛好偏袒造假。
+run_case "P22 zone 的 pwm 少乘 100" "$PRS" \
+    '"pwm": df["fan0_pwm"] * 100.0,' \
+    '"pwm": df["fan0_pwm"],'
+
+# P23 抓成箝位**前**的欄位：clamp arm 的第三面板會畫出一條「穿過
+# 箝位線」的曲線 —— 機制圖直接說謊，而兩個欄位在多數樣本上相等。
+run_case "P23 pidcore 抓箝位前的 integralTerm1" "$PRS" \
+    '"integral_rpm": df["integralTerm"],
+        "integral": df["integralTerm"] / RPM_PER_PCT,' \
+    '"integral_rpm": df["integralTerm1"],
+        "integral": df["integralTerm1"] / RPM_PER_PCT,'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
