@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+import parse_l2  # noqa: E402
 import provenance  # noqa: E402
 
 DATA = pathlib.Path("bench/data")
@@ -525,7 +526,292 @@ def fig2() -> None:
     print(f"wrote {out}")
 
 
-FIGURES = {1: fig1, 2: fig2}
+#: A/B 兩個 arm 的顏色。這是兩個**類別**（不是像 λ 那樣的有序量），
+#: 所以用兩個色相：藍 = clamp（本專案採用的設定，與 Fig 1/2 的量測藍一致）、
+#: 橘 = open（等同關閉的對照組）。橘在這張圖不兼任註解色 ——
+#: 飽和區間的底色用灰，兩者不會撞。
+AW_COLOURS = {"clamp": "#2a78d6", "open": "#eb6834"}
+AW_LABELS = {
+    "clamp": "integralLimit [0, 100] %PWM  (mirrors config.tuned.json)",
+    "open": "integralLimit ±1e6  (equivalent to off - config.nowindup.json)",
+}
+#: L2 疊線：各 arm 的深色變體（同色相，更深 = 真的 daemon，虛線）。
+AW_L2_COLOURS = {"clamp": "#123f6d", "open": "#a03d12"}
+
+
+def fig3() -> None:
+    """Fig 3 — anti-windup 單變因 A/B：溫度/PWM/積分項三面板 + 5 seed 帶狀。
+
+    ★ 版面上的五個決定：
+
+    1. **x 軸從 t = 0 畫整段**（Fig 1/2 都裁掉暖機段，這張刻意不裁）：
+       open arm 在冷開機段就有故事 —— 下界 −1e6 讓積分往負向挖坑
+       （**反向 windup**），風扇比 clamp 組晚開、暖機超調更高，
+       兩組帶著略不同的狀態進入 400 W 階躍。裁掉暖機等於把
+       「同一機制的下界版展品」裁掉。指標視窗仍從階躍起算（meta 記了）。
+    2. **第三面板（積分項）是招牌**：windup 從名詞變成一條爬升的曲線。
+       clamp 的上限畫成參考線 —— 藍線「頂」在它上面、橘線穿過它，
+       機制一眼可見，不用讀任何文字。
+    3. 飽和區間灰底，與 exp07 的 sat_frac 用同一個視窗定義。
+    4. **recover_s 的兩個數字直接標在 PWM 面板** —— 履歷會引用的就是它們，
+       順便把 90% 門檻畫成參考線，數字與圖形互相指認。
+    5. 指標表直接讀 exp07 的 meta，不重算（與 Fig 2 同一條理由）。
+    """
+    meta = json.loads((DATA / "exp07_antiwindup_meta.json").read_text())
+    setpoint = meta["setpoint_c"]
+    power = meta["power_w"]
+    up_at, down_at = power["up_at_s"], power["down_at_s"]
+    table = meta["table"]
+    arms = list(AW_COLOURS)
+
+    frames = {}
+    for arm in arms:
+        paths = sorted(DATA.glob(f"exp07_aw{arm}_seed*.csv"))
+        if not paths:
+            raise SystemExit(
+                f"bench/data/ 裡沒有 {arm} arm 的 CSV，"
+                "先跑 bench/exp07_antiwindup.py")
+        frames[arm] = [pd.read_csv(p) for p in paths]
+
+    t = frames[arms[0]][0]["t_s"].to_numpy()
+
+    fig, (ax_t, ax_p, ax_i) = plt.subplots(
+        3, 1, sharex=True, figsize=(11, 10.8),
+        gridspec_kw={"height_ratios": [1.2, 0.95, 1.0], "hspace": 0.10},
+    )
+    fig.patch.set_facecolor(C_SURFACE)
+
+    for arm in arms:
+        colour = AW_COLOURS[arm]
+        for ax, col in ((ax_t, "t_sense_c"), (ax_p, "pwm"), (ax_i, "integral")):
+            m = np.vstack([f[col].to_numpy() for f in frames[arm]])
+            ax.fill_between(t, m.min(0), m.max(0), color=colour,
+                            alpha=0.22, lw=0, zorder=2)
+            ax.plot(t, np.median(m, 0), color=colour, lw=1.7, zorder=3,
+                    label=AW_LABELS[arm] if ax is ax_t else None)
+
+    # ── L2：未修改的上游 swampd 單趟即時執行，疊在 L1 帶狀上 ────────────
+    #   溫度/PWM 來自 zone_0.log（每輪都寫）；積分來自 swampd 自己的 -g
+    #   輸出（pidcore，有節流：內容變了 OR 60 s 才寫）。節流曲線**必須
+    #   對時間軸畫** —— 兩筆之間值沒變，直線段就是事實；對 index 畫會把
+    #   稀疏段壓扁而且看不出來。欄位對應與理由見 bench/parse_l2.py。
+    l2_summary = json.loads((DATA / "exp07_L2_summary.json").read_text())
+    l2 = {}
+    for arm in arms:
+        bridge_csv = DATA / f"exp07_L2_{arm}_plant.csv"
+        if not bridge_csv.exists():
+            raise SystemExit(
+                f"L2 的 {arm} arm 資料不在 —— 先跑 bash harness/l2_ab.sh {arm}")
+        epoch0 = parse_l2.bridge_epoch0_ms(bridge_csv)
+        l2[arm] = {
+            "zone": parse_l2.zone_frame(
+                DATA / f"exp07_L2_{arm}_zone0.log", epoch0),
+            "core": parse_l2.pidcore_frame(
+                DATA / f"exp07_L2_{arm}_pidcore.die0", epoch0),
+        }
+
+    for arm in arms:
+        zone, core = l2[arm]["zone"], l2[arm]["core"]
+        style = {"color": AW_L2_COLOURS[arm], "lw": 1.25, "ls": (0, (5, 2)),
+                 "zorder": 4}
+        ax_t.plot(zone["t_s"], zone["t_sense_c"],
+                  label=f"L2 {arm}: unmodified swampd, one real-time run",
+                  **style)
+        ax_p.plot(zone["t_s"], zone["pwm"], **style)
+        ax_i.plot(core["t_s"], core["integral"], **style)
+
+    # ── 飽和區間灰底 + 兩次階躍：三個面板同一份 ─────────────────────────
+    for ax in (ax_t, ax_p, ax_i):
+        ax.axvspan(up_at, down_at, color="#6b6a64", alpha=0.10, zorder=1)
+        ax.axvline(up_at, ls="--", lw=0.9, color=C_MUTED, zorder=4)
+        ax.axvline(down_at, ls="--", lw=0.9, color=C_MUTED, zorder=4)
+
+    # ── 上：溫度 ────────────────────────────────────────────────────────
+    ax_t.axhline(setpoint, ls="--", lw=1.0, color=C_MODEL, zorder=4)
+    ax_t.text(10, setpoint + 1.5, f"setpoint {setpoint:g} °C", fontsize=9,
+              color=C_MODEL, va="bottom", zorder=5,
+              bbox=dict(boxstyle="square,pad=0.25", fc=C_SURFACE, ec="none"))
+    ax_t.annotate(
+        f"load {power['base']:g} -> {power['step']:g} W\n"
+        f"(above the controllable limit: forces saturation)",
+        xy=(up_at, 88.0), xytext=(up_at - 272, 86.0), fontsize=9, color=C_MUTED,
+        arrowprops=dict(arrowstyle="->", color=C_MUTED, lw=0.8), zorder=5)
+    ax_t.annotate(
+        f"back to {power['base']:g} W\n(saturation releases - the arms diverge here)",
+        xy=(down_at, 80.0), xytext=(down_at + 55, 84.5), fontsize=9,
+        color=C_MUTED,
+        arrowprops=dict(arrowstyle="->", color=C_MUTED, lw=0.8), zorder=5)
+    ax_t.set_ylabel("sensed temperature (°C)", fontsize=10, color=C_MUTED)
+    ax_t.set_title("Fig 3 - Anti-windup A/B (single variable: integralLimit)",
+                   fontsize=14, color="#0b0b0b", loc="left", pad=10)
+    _style(ax_t)
+    ax_t.set_xlim(0.0, float(t[-1]))
+    all_temps = np.vstack([f["t_sense_c"].to_numpy()
+                           for arm in arms for f in frames[arm]])
+    # ⚠️ y 軸範圍要把 L2 也算進去:L2 open 的暖機坑更深、進飽和更熱,
+    #    尖峰(~112 °C)比 L1 高 —— 只用 L1 定範圍會把它裁掉。
+    lo = min(float(all_temps.min()),
+             *(float(l2[a]["zone"]["t_sense_c"].min()) for a in arms))
+    hi = max(float(all_temps.max()),
+             *(float(l2[a]["zone"]["t_sense_c"].max()) for a in arms))
+    pad = 0.10 * (hi - lo)
+    ax_t.set_ylim(lo - pad, hi + 1.6 * pad)
+
+    leg = ax_t.legend(loc="lower right", fontsize=9, framealpha=1.0,
+                      facecolor=C_SURFACE, edgecolor=C_GRID)
+    for text in leg.get_texts():
+        text.set_color("#52514e")
+
+    # ── 中：PWM + recover_s 的兩個數字 ──────────────────────────────────
+    threshold = meta["metric_settings"]["recover_pwm_threshold"]
+    ax_p.axhline(threshold, ls=":", lw=0.9, color=C_MUTED, zorder=4)
+    ax_p.text(float(t[-1]) - 10, threshold - 3.0,
+              f"recover_s threshold ({threshold:g}%)", fontsize=8, ha="right",
+              va="top", color=C_MUTED, zorder=5)
+    ax_p.set_ylabel("PWM command (%)", fontsize=10, color=C_MUTED)
+    _style(ax_p)
+    ax_p.set_ylim(-4, 106)
+
+    ro = table["open"]["metrics"]["recover_s"]
+    rc = table["clamp"]["metrics"]["recover_s"]
+    ratio = ro["median"] / rc["median"]
+    l2m = l2_summary["arms"]
+    l2_ratio = l2m["open"]["recover_s"] / l2m["clamp"]["recover_s"]
+    box = (f"recover_s (open)  = {_med(table['open'], 'recover_s')} s\n"
+           f"recover_s (clamp) = {_med(table['clamp'], 'recover_s')} s\n"
+           f"ratio = {ratio:.1f}x        median [min, max], 5 seeds\n"
+           f"L2, single runs:  {l2m['open']['recover_s']:.0f} s / "
+           f"{l2m['clamp']['recover_s']:.1f} s = {l2_ratio:.1f}x")
+    ax_p.text(0.015, 0.42, box, transform=ax_p.transAxes, va="bottom",
+              fontsize=9, family="monospace", color="#0b0b0b", zorder=6,
+              bbox=dict(boxstyle="round,pad=0.5", fc=C_SURFACE, ec=C_GRID))
+
+    # ── 下：積分項（招牌面板）───────────────────────────────────────────
+    clamp_hi = table["clamp"]["integral_limit"][1]
+    ax_i.axhline(clamp_hi, ls="--", lw=1.0, color=C_MODEL, zorder=4)
+    ax_i.text(float(t[-1]) - 10, clamp_hi + 10,
+              f"clamp arm's integralLimit_max = {clamp_hi:g}", fontsize=8.5,
+              ha="right", color=C_MODEL, zorder=5)
+    ax_i.axhline(0.0, lw=0.8, color=C_AXIS, zorder=1)
+
+    med_open = np.median(
+        np.vstack([f["integral"].to_numpy() for f in frames["open"]]), 0)
+    dt_step = float(t[1] - t[0])
+    i_pit = int(np.argmin(med_open[: int(up_at / dt_step)]))
+    ax_i.annotate(
+        "reverse windup at cold start: the -1e6 lower limit\n"
+        "lets the integral dig a pit while T < setpoint",
+        xy=(float(t[i_pit]), float(med_open[i_pit])),
+        xytext=(float(t[i_pit]) + 130, float(med_open[i_pit]) + 30),
+        fontsize=8.5, color=C_MUTED,
+        arrowprops=dict(arrowstyle="->", color=C_MUTED, lw=0.8), zorder=5)
+
+    ax_i.set_ylabel("integral term (%PWM)", fontsize=10, color=C_MUTED)
+    ax_i.set_xlabel("time (s)", fontsize=10, color=C_MUTED)
+    _style(ax_i)
+
+    # ── 指標表：中位數 [min, max]，直接讀 meta ──────────────────────────
+    rows = []
+    for arm in arms:
+        e = table[arm]
+        lim = e["integral_limit"]
+        lim_txt = (f"[{lim[0]:g}, {lim[1]:g}]"
+                   if abs(lim[1]) <= 1000 else "±1e6")
+        rows.append([
+            arm, lim_txt,
+            _med(e, "recover_s"), _med(e, "integral_max"),
+            _med(e, "t_peak_c"), _med(e, "pwm_max"), _med(e, "sat_frac"),
+        ])
+    tbl = ax_i.table(
+        cellText=rows,
+        colLabels=["arm", "integralLimit (%PWM)", "recover_s (s)",
+                   "integral max (%PWM)", "T peak (°C)", "PWM max (%)",
+                   "saturated fraction"],
+        loc="bottom", bbox=[0.0, -0.95, 1.0, 0.42],
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(7.5)
+    for (row, _), cell in tbl.get_celld().items():
+        cell.set_edgecolor(C_GRID)
+        cell.set_facecolor(C_SURFACE)
+        if row == 0:
+            cell.get_text().set_color("#0b0b0b")
+        else:
+            cell.get_text().set_color("#52514e")
+
+    # ── 參數區塊：單變因宣言 + 這張圖的誠實限制 ─────────────────────────
+    sat_pct = 100.0 * table["open"]["metrics"]["sat_frac"]["median"]
+    params = (
+        f"Single variable, machine-checked: both arms share every sim "
+        f"parameter and the same {len(meta['seeds'])} seeds; only "
+        f"--integral-min/--integral-max differ. exp07_antiwindup.py compares\n"
+        f"the full parameter dump of every run field by field and refuses to "
+        f"write data otherwise. Both arms run --anti-windup clamp: the open "
+        f"arm's limits are simply too wide\n"
+        f"to ever bind - exactly how the swampd config pair differs "
+        f"(config.tuned.json vs config.nowindup.json, a 2-line diff).\n"
+        f"Gains: the lambda = 2 tau pair adopted in Fig 2, re-derived from "
+        f"exp01's fit at run time (the script aborts on mismatch).\n"
+        f"Load step {power['step']:g} W exceeds the controllable limit "
+        f"(setpoint - t_amb) / rth_min = "
+        f"{meta['controllable_power_limit_w']:.1f} W -> saturation is "
+        f"guaranteed; PWM sits >= 99.99% for {sat_pct:.0f}% of the 400 W "
+        f"window (both arms).\n"
+        f"recover_s = first time the temperature falls back below the "
+        f"setpoint -> first time PWM drops below {threshold:g}%. This is "
+        f"windup's cost in one number: the open arm's fans keep\n"
+        f"blowing at full speed for another ~{ro['median']:.0f} s (median) "
+        f"after the temperature has already recovered - {ratio:.1f}x the "
+        f"clamped arm - and overcool the die below the setpoint.\n"
+        f"LIMIT - the arms already differ before the step: the open arm's "
+        f"lower limit lets the integral go negative during cold start "
+        f"(reverse windup), so they enter saturation with\n"
+        f"slightly different states - T peak "
+        f"{table['open']['metrics']['t_peak_c']['median']:.1f} vs "
+        f"{table['clamp']['metrics']['t_peak_c']['median']:.1f} °C. Same "
+        f"mechanism, other bound; kept in view on purpose.\n"
+        f"L2 (dashed) - one 1500 s real-time run per arm against the "
+        f"unmodified upstream swampd binary, rev "
+        f"{l2_summary.get('swampd_rev', 'see exp07_L2_summary.json')}: "
+        f"temperature/PWM from zone_0.log (written every cycle), integral "
+        f"from swampd's own -g output (pidcore) / 150 RPM per %PWM.\n"
+        f"Known differences, not tuned away: L2's effective PWM floor is "
+        f"30% (zone minThermalOutput / fan outLim_min) vs L1's 0%, so its "
+        f"cold start differs - the A/B claim lives after the release, far "
+        f"from both floors."
+    )
+    fig.text(0.012, 0.005, params, fontsize=8, va="bottom", color="#0b0b0b",
+             family="monospace",
+             bbox=dict(boxstyle="round,pad=0.55", fc=C_SURFACE, ec=C_GRID))
+
+    what = (
+        f"Fig 3 - Anti-windup A/B on the L1 closed loop: load "
+        f"{power['base']:g} -> {power['step']:g} W at t = {up_at:g} s, back "
+        f"to {power['base']:g} W at t = {down_at:g} s; setpoint "
+        f"{setpoint:g} °C, controller period {meta['ctrl_ts_s']:g} s, dt "
+        f"{meta['dt_s']:g} s, {len(meta['seeds'])} seeds per arm (band = "
+        f"min~max, line = median).\n"
+        f"The integral panel is the point: while the output is pinned at "
+        f"100%, the open arm's integral keeps climbing - state the plant "
+        f"never sees - and must unwind after the release before the fans "
+        f"can slow. Metric windows: t >= {up_at:g} s; recover_s from t >= "
+        f"{down_at:g} s. Raw traces: bench/data/exp07_aw*_seed*.csv plus "
+        f"exp07_L2_* (zone_0.log / pidcore from the real daemon)."
+    )
+    fig.text(0.012, -0.125, _caption(what, provenance.FIG3_INPUTS),
+             fontsize=7.5, va="bottom", color=C_MUTED)
+
+    # 0.36 而不是 Fig 2 的 0.32:這張的 params 區塊多了 L2 的三行,
+    # 不加高的話它會蓋掉指標表的第二列(open 那列)。
+    fig.subplots_adjust(bottom=0.36)
+    FIGS.mkdir(exist_ok=True)
+    out = FIGS / "fig3_antiwindup.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=C_SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
+
+
+FIGURES = {1: fig1, 2: fig2, 3: fig3}
 
 
 def main() -> int:

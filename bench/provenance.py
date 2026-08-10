@@ -66,6 +66,23 @@ FIG2_INPUTS = [
     "docs/env-baseline.md",
 ]
 
+#: Fig 3 的輸入（W7 的 anti-windup A/B）。
+#:
+#: ⚠️ exp05 的 meta 與 exp01 的擬合也算 —— A/B 用的 Kp/Ki 是
+#:    「Fig 2 採用的 λ=2τ 那組」，上游資料變了，這張圖的一切都跟著變。
+FIG3_INPUTS = [
+    "bench/data/exp07_aw*_seed*.csv",
+    "bench/data/exp07_antiwindup_meta.json",
+    "bench/data/exp07_L2_*_plant.csv",
+    "bench/data/exp07_L2_*_plant_meta.json",
+    "bench/data/exp07_L2_*_zone0.log",
+    "bench/data/exp07_L2_*_pidcore.die0",
+    "bench/data/exp07_L2_summary.json",
+    "bench/data/exp05_tuning_meta.json",
+    "bench/data/exp01_fit.txt",
+    "docs/env-baseline.md",
+]
+
 #: Fig 6 的輸入。
 FIG6_INPUTS = [
     "bench/data/exp03_trace/layers.json",

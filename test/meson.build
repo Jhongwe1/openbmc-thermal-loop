@@ -103,6 +103,11 @@ if python_tests_ok
         ],
         # metrics.py 與 exp04 的 CSV 都是相對 repo 根目錄引用的。
         workdir: meson.project_source_root(),
+        # ⚠️ meson 預設每個測試 30 秒。figures 的迴歸測試對**每張圖**都要
+        #    重畫三次（與 repo 比對一次 + 決定性檢查兩次），W7 加入 Fig 3 後
+        #    整包剛好超過 30 秒（實測 31.25s 被 SIGTERM）——症狀是 TIMEOUT，
+        #    看起來像測試壞了，其實只是圖變多了。
+        timeout: 300,
     )
 else
     warning(

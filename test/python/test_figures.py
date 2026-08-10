@@ -38,6 +38,8 @@ FIGURES = ROOT / "figures"
 CASES = [
     ("fig1_sysid.png", ["bench/plot.py", "--fig", "1"], provenance.FIG1_INPUTS),
     ("fig2_tuning.png", ["bench/plot.py", "--fig", "2"], provenance.FIG2_INPUTS),
+    ("fig3_antiwindup.png", ["bench/plot.py", "--fig", "3"],
+     provenance.FIG3_INPUTS),
     ("fig6_dts_to_redfish.png", ["bench/plot_fig6.py"], provenance.FIG6_INPUTS),
 ]
 
