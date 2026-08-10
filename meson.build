@@ -98,6 +98,16 @@ upstream_pid_dep = dependency(
     disabler: true,
 )
 
+# ── plant 的 C ABI 共享庫（W7，給 L2 的 Python 橋接用）────────────────
+# ctypes 只認 C 符號，所以多一層 extern "C" 薄封裝（plant/plant_cabi.cpp）。
+# 刻意 link plant_lib 而不是重編原始碼：L0/L1/L2 必須是同一份目的碼。
+shared_library(
+    'plant_cabi',
+    'plant/plant_cabi.cpp',
+    include_directories: inc,
+    link_with: plant_lib,
+)
+
 # ── 手動驗收工具（W3 D6）──────────────────────────────────────────────
 # 不是測試，是「用眼睛看曲線合不合物理直覺」用的。測試在 test/。
 executable('plant_probe', 'bench/plant_probe.cpp', dependencies: [plant_dep])
