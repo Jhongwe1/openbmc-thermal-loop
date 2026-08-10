@@ -338,6 +338,99 @@ def test_reversals_on_a_monotonic_ramp_is_zero():
 
 
 # ═══════════════════════════════════════════════════════════════════════
+#  recover_s（W7）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_recover_s_measures_from_first_cooling_to_first_pwm_release():
+    """基本正確性 ＋ 防「從整段開頭找 PWM」。
+
+    軌跡刻意在**溫度回落之前**放一段 PWM 低於門檻的凹陷（t=1 的暫態）：
+    從整段開頭找「PWM < 90」會命中那個凹陷，回 1.0 秒的錯誤值。
+    正確答案：溫度在 t=6 首次 ≤ 65，其後 PWM 在 t=9 首次 < 90 → 3.0 s。
+    """
+    t = [float(i) for i in range(12)]
+    temp = [80.0, 75.0, 72.0, 70.0, 69.0, 68.0,
+            65.0, 64.0, 63.0, 62.0, 61.0, 60.0]
+    pwm = [100.0, 85.0, 100.0, 100.0, 100.0, 100.0,
+           100.0, 100.0, 100.0, 89.0, 60.0, 40.0]
+    df = trace(t, t_sense_c=temp, pwm=pwm)
+    assert metrics.recover_s(df, setpoint=65.0) == pytest.approx(3.0)
+
+
+def test_recover_s_is_nan_when_the_temperature_never_cools():
+    """飽和從未解除（溫度一直高於 setpoint）→ 實驗設計錯了，回 NaN。
+
+    回 0 的話，windup 最嚴重的那組（永遠降不下來）反而拿到最漂亮的
+    「恢復 0 秒」—— 與 settle_s 的 NaN 是同一條紀律。
+    """
+    t = [float(i) for i in range(300)]
+    df = trace(t, t_sense_c=[100.0] * 300, pwm=[100.0] * 300)
+    assert pd.isna(metrics.recover_s(df, setpoint=65.0))
+
+
+def test_recover_s_is_nan_when_the_pwm_never_releases():
+    """溫度回落了但 PWM 到軌跡結束都 ≥ 門檻 → 視窗太短，量不到就說量不到。
+
+    這正是無箝位那組可能真實發生的事（積分洩不完）。回「軌跡長度」
+    之類的數字會**低估** windup 的代價，而且方向剛好偏袒它。
+    """
+    t = [float(i) for i in range(10)]
+    df = trace(t, t_sense_c=[60.0] * 10, pwm=[100.0] * 10)
+    assert pd.isna(metrics.recover_s(df, setpoint=65.0))
+
+
+def test_recover_s_uses_positions_not_index_labels():
+    """★★ 防：計畫給的實作（拿 index 標籤當 iloc 位置用）。
+
+    exp07 的呼叫方式一定是「從 power_down_at 起裁切」——裁切後的
+    DataFrame 標籤不從 0 開始。計畫的偽碼把 `df.index[...]` 的標籤
+    餵給 `iloc`（位置），輕則 IndexError，重則默默回一個看起來合理的
+    錯秒數。這一條與 mutation P17 一起，回答「為什麼不照抄計畫」。
+    """
+    t = [float(i) for i in range(12)]
+    temp = [80.0, 75.0, 72.0, 70.0, 69.0, 68.0,
+            65.0, 64.0, 63.0, 62.0, 61.0, 60.0]
+    pwm = [100.0, 85.0, 100.0, 100.0, 100.0, 100.0,
+           100.0, 100.0, 100.0, 89.0, 60.0, 40.0]
+    df = trace(t, t_sense_c=temp, pwm=pwm).iloc[5:]   # 標籤 5..11，刻意不 reset
+    assert metrics.recover_s(df, setpoint=65.0) == pytest.approx(3.0)
+
+
+def test_recover_s_threshold_must_be_positive():
+    """門檻 ≤ 0 沒有物理意義（PWM 不會低於 0），要大聲拒絕不要默默回 NaN。"""
+    df = trace([0.0, 1.0], t_sense_c=[60.0, 60.0], pwm=[100.0, 50.0])
+    with pytest.raises(ValueError, match="pwm_threshold"):
+        metrics.recover_s(df, 65.0, pwm_threshold=0.0)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  integral_max（W7）
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def test_integral_max_is_the_absolute_extreme_not_the_signed_maximum():
+    """防：忘了絕對值。負向最深 −120、正向最高 80 → 答案是 120。
+
+    反向 windup（積分往負向累深）時忘了 abs 會回 80，
+    把「反向 windup 很嚴重」讀成「沒事」。
+    """
+    df = trace([0.0, 1.0, 2.0, 3.0], integral=[10.0, -120.0, 80.0, 0.0])
+    assert metrics.integral_max(df) == pytest.approx(120.0)
+
+
+def test_integral_max_is_nan_for_traces_without_an_integral_column():
+    """開環 CSV（exp01）沒有 integral 欄 → NaN（無定義），CLI 不該炸。
+
+    防：回 0.0 —— 「積分從未累積」與「根本沒有積分」是兩件事，
+    前者是量測結果、後者是無定義，混在一起會讓開環資料看起來像
+    「驗證過沒有 windup」。
+    """
+    df = trace([0.0, 1.0], t_sense_c=[1.0, 2.0])
+    assert pd.isna(metrics.integral_max(df))
+
+
+# ═══════════════════════════════════════════════════════════════════════
 #  summarise
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -393,18 +486,6 @@ def test_missing_time_column_says_what_is_wrong():
         metrics.fan_power_rel(df)
 
 
-def test_unimplemented_metrics_are_explicit_about_which_week():
-    """★ 還沒實作的指標要**大聲**沒實作。
-
-    這一條防的是「W6 忘了實作，但某個地方已經在呼叫它」——
-    `NotImplementedError` 會炸，回一個 0.0 或 NaN 不會，
-    而 NaN 一路流進 claims.json 與圖上是最難查的一種錯。
-    """
-    df = trace([0.0, 1.0], t_sense_c=[1.0, 2.0])
-    with pytest.raises(NotImplementedError):
-        metrics.recover_s(df, 65.0)
-
-
 def test_implemented_registry_matches_what_actually_works():
     """兩張 registry 要與現況一致。
 
@@ -429,10 +510,11 @@ def test_every_implemented_metric_is_registered_somewhere():
     W6 一次加了四個指標，這正是最容易漏掉一個的時候。
 
     ⚠️ 這裡寫死清單是刻意的：拿 registry 去比對 registry 等於沒驗。
-       W7 加 recover_s / integral_max 時，這一行要跟著改 —— 那也是刻意的。
+       下一次新增指標（W9 的 e2e_latency_ms）時，這一行要跟著改 ——
+       那也是刻意的。
     """
     expected = {"t_peak_c", "fan_power_rel", "pwm_pp", "reversals_per_min",
-                "overshoot_c", "settle_s"}
+                "overshoot_c", "settle_s", "recover_s", "integral_max"}
     registered = set(metrics.IMPLEMENTED) | set(metrics.IMPLEMENTED_WITH_SETPOINT)
     assert registered == expected
 

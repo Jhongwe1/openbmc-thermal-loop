@@ -14,8 +14,8 @@ README、履歷、圖的標註、CI 斷言全部引用同一個來源，才不�
 | `settle_s`          | 進入 setpoint ±1 °C 並維持 60 s 的起點 | 收斂速度 | ✅ W6 |
 | `pwm_pp`            | 穩態最後 120 s 內 PWM 峰對峰值 | 震盪幅度 | ✅ W6 |
 | `reversals_per_min` | PWM 一階差分的符號改變次數／分鐘 | ★ 聲學代理 | ✅ W6 |
-| `recover_s`         | 溫度回落到 setpoint 以下 → PWM 首次 < 90% | ★ anti-windup 主指標 | W7 |
-| `integral_max`      | 積分項最大絕對值 | 直接顯示 windup 有沒有發生 | W7 |
+| `recover_s`         | 溫度回落到 setpoint 以下 → PWM 首次 < 90% | ★ anti-windup 主指標 | ✅ W7 |
+| `integral_max`      | 積分項最大絕對值 | 直接顯示 windup 有沒有發生 | ✅ W7 |
 | `e2e_latency_ms`    | 溫度寫入 D-Bus → Redfish 讀到新值 | 系統量測 | W9 |
 
 用法
@@ -241,8 +241,66 @@ def reversals_per_min(df: pd.DataFrame, tail_s: float = 120.0,
     return reversals * 60.0 / span_s
 
 
-def recover_s(df: pd.DataFrame, setpoint: float) -> float:  # W7 實作
-    raise NotImplementedError("W7")
+def recover_s(df: pd.DataFrame, setpoint: float,
+              pwm_threshold: float = 90.0) -> float:
+    """飽和解除後的恢復時間 (s) —— anti-windup 的主指標（W7）。
+
+    定義：從「溫度**首次**回落到 setpoint 以下」那一刻起，
+          到「PWM **首次**低於 pwm_threshold」為止，經過幾秒。
+
+    為什麼這樣定義：windup 的症狀是「溫度已經降下來了，風扇卻還在全速」。
+    前者是條件、後者是後果，兩者的時間差就是 windup 的代價 ——
+    也是 Fig 3 的 A/B 兩組唯一該分開的數字。
+
+    ⚠️ 呼叫者要傳「飽和解除之後」的視窗（exp07 從 power_down_at 起裁）。
+       軌跡從冷機（25 °C）開始，整段傳進來的話「首次低於 setpoint」
+       會命中 t=0 的暖機段 —— 量到的是開機行為，不是恢復。
+
+    ⚠️ 兩個 NaN 出口都是刻意的（與 settle_s 同一條紀律）：
+       · 溫度從未回落 → 飽和沒有解除，實驗設計錯了，回 NaN 不回 0
+       · PWM 從未低於門檻 → 視窗太短或箝位形同虛設，同樣不能假裝量到了
+
+    ★ 位置 vs 標籤（這裡是計畫給的實作寫錯的地方）：
+      計畫的偽碼拿 `df.index[...]` 的**標籤**去餵 `iloc` 的**位置**。
+      exp07 傳進來的一定是裁切過的 DataFrame，標籤不從 0 開始，
+      兩者就對不上 —— 輕則 IndexError，重則默默回一個看起來合理的錯秒數。
+      所以這裡全程用 numpy 位置索引；mutation P17 種的就是計畫那版。
+    """
+    _require_trace(df)
+    _require_columns(df, "t_sense_c", "pwm")
+    if pwm_threshold <= 0.0:
+        raise ValueError(f"pwm_threshold 必須為正，收到 {pwm_threshold}")
+
+    t = df["t_s"].to_numpy(dtype=float)
+    sensed = df["t_sense_c"].to_numpy(dtype=float)
+    pwm = df["pwm"].to_numpy(dtype=float)
+
+    below = np.nonzero(sensed <= setpoint)[0]
+    if below.size == 0:
+        return float("nan")
+    i0 = int(below[0])
+
+    released = np.nonzero(pwm[i0:] < pwm_threshold)[0]
+    if released.size == 0:
+        return float("nan")
+    return float(t[i0 + int(released[0])] - t[i0])
+
+
+def integral_max(df: pd.DataFrame, col: str = "integral") -> float:
+    """積分項的最大**絕對值** —— windup 有沒有發生的直接證據（W7）。
+
+    ⚠️ 欄位不存在時回 NaN，不是 raise：開環軌跡（exp01）本來就沒有
+       積分項，對它們這個指標是「無定義」，不是「算失敗」——
+       模組 docstring 的用法範例就是拿 exp01 的 CSV 跑 CLI，它不該炸。
+       NaN 的下游行為與 settle_s 相同：流進表裡看得見，不會變成假數字。
+
+    ⚠️ 取的是 |·| 的最大：下界為負的箝位（或反向 windup）時積分是負的，
+       忘了絕對值會回一個小的正數，把「反向 windup 很嚴重」讀成「沒事」。
+    """
+    _require_trace(df)
+    if col not in df.columns:
+        return float("nan")
+    return float(df[col].abs().max())
 
 
 def summarise(df: pd.DataFrame, setpoint: float) -> dict:
@@ -268,6 +326,7 @@ IMPLEMENTED = {
     "fan_power_rel": fan_power_rel,
     "pwm_pp": pwm_pp,
     "reversals_per_min": reversals_per_min,
+    "integral_max": integral_max,
 }
 
 #: 需要 setpoint 才算得出來的指標。**setpoint 是實驗設定，不是資料的一部分** ——
@@ -276,6 +335,7 @@ IMPLEMENTED = {
 IMPLEMENTED_WITH_SETPOINT = {
     "overshoot_c": overshoot_c,
     "settle_s": settle_s,
+    "recover_s": recover_s,
 }
 
 

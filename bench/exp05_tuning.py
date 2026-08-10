@@ -187,7 +187,7 @@ def metrics_for(csv: pathlib.Path) -> dict:
     m = metrics.summarise(after, SETPOINT)
     # settle_s 是絕對時刻；換算成「階躍後多久」才讀得懂。NaN 傳遞下去。
     m["settle_after_step_s"] = m["settle_s"] - METRIC_FROM_S
-    m["integral_max"] = float(after["integral"].abs().max())
+    m["integral_max"] = metrics.integral_max(after)
     m["pwm_max"] = float(after["pwm"].max())
     return m
 
