@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.2.2 (Python 3.12.3 on linux)" generated="2026-08-12T03:28:37.946810" rpa="false" schemaversion="5">
+<suite id="s1" name="Test Openbmc Setup" source="/home/key/work/openbmc-test-automation/templates/test_openbmc_setup.robot">
+<test id="s1-t1" name="Test Redfish Setup" line="17">
+<kw name="Login" owner="Redfish">
+<msg time="2026-08-12T03:29:54.274721" level="INFO">Attempt 1 of /redfish/v1/SessionService/Sessions</msg>
+<msg time="2026-08-12T03:29:54.815166" level="INFO">Response Time for POST to /redfish/v1/SessionService/Sessions: 0.5402930999998716 seconds.</msg>
+<msg time="2026-08-12T03:29:54.815275" level="INFO">Login returned code 201: {
+  "@odata.id": "/redfish/v1/SessionService/Sessions/iWiL1gcGPA",
+  "@odata.type": "#Session.v1_7_0.Session",
+  "ClientOriginIPAddress": "10.0.2.2",
+  "Description": "Manager User Session",
+  "Id": "iWiL1gcGPA",
+  "Name": "User Session",
+  "Roles": [
+    "Administrator"
+  ],
+  "UserName": "root"
+}</msg>
+<doc>Assign BMC default values for username, password and auth arguments
+and call parent class login method.</doc>
+<status status="PASS" start="2026-08-12T03:29:54.270522" elapsed="0.544858"/>
+</kw>
+<kw name="Get" owner="Redfish">
+<msg time="2026-08-12T03:29:54.815732" level="INFO">Attempt 1 of /redfish/v1/</msg>
+<msg time="2026-08-12T03:29:54.852769" level="INFO">Response Time for GET to /redfish/v1/: 0.03695893799977057 seconds.</msg>
+<arg>/redfish/v1/</arg>
+<doc>Perform a GET request</doc>
+<status status="PASS" start="2026-08-12T03:29:54.815572" elapsed="0.037294"/>
+</kw>
+<kw name="Logout" owner="Redfish">
+<msg time="2026-08-12T03:29:54.856567" level="INFO">Attempt 1 of /redfish/v1/SessionService/Sessions/iWiL1gcGPA</msg>
+<msg time="2026-08-12T03:29:54.888314" level="INFO">Response Time for DELETE to /redfish/v1/SessionService/Sessions/iWiL1gcGPA: 0.03163304800000333 seconds.</msg>
+<msg time="2026-08-12T03:29:54.888411" level="INFO">User logged out: {
+  "@Message.ExtendedInfo": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The request completed successfully.",
+      "MessageArgs": [],
+      "MessageId": "Base.1.19.Success",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ]
+}</msg>
+<doc>Logout of session. YOU MUST CALL THIS WHEN YOU ARE DONE TO FREE</doc>
+<status status="PASS" start="2026-08-12T03:29:54.853050" elapsed="0.035441"/>
+</kw>
+<doc>Verify Redfish works.</doc>
+<tag>Openbmc_Setup</tag>
+<tag>Test_Redfish_Setup</tag>
+<status status="PASS" start="2026-08-12T03:29:54.269808" elapsed="0.618797"/>
+</test>
+<test id="s1-t2" name="Test SSH Setup" line="26">
+<kw name="Bmc Execute Command" owner="bmc_ssh_utils">
+<msg time="2026-08-12T03:29:54.904801" level="INFO">#(CST) 2026/08/12 03:29:54.904716 -   76.752337 - Executing: execute_ssh_command(cmd_buf = 'uname -a', open_connection_args = {'host': '127.0.0.1', 'alias': 'bm...
+</msg>
+<msg time="2026-08-12T03:29:54.908617" level="INFO">#(CST) 2026/08/12 03:29:54.908540 -    0.003824 - Issuing: uname -a
+</msg>
+<msg time="2026-08-12T03:29:54.908686" level="INFO">#(CST) 2026/08/12 03:29:54.908658 -    0.000117 - Connecting to 127.0.0.1.
+</msg>
+<msg time="2026-08-12T03:29:54.910189" level="INFO">#(CST) 2026/08/12 03:29:54.910145 -    0.001488 - Executing: login_ssh(login_args = {'username': 'root', 'password': '0penBmc'}, max_login_attempts = 5)
+</msg>
+<msg time="2026-08-12T03:29:54.910261" level="INFO">index=1
+host=127.0.0.1
+alias=bmc_connection
+port=2222
+timeout=25 seconds
+newline=
+
+prompt=# 
+term_type=vt100
+width=80
+height=24
+path_separator=/
+encoding=UTF-8
+escape_ansi=False
+encoding_errors=strict</msg>
+<msg time="2026-08-12T03:29:54.910369" level="INFO">connection:
+  index:                                          1
+  host:                                           127.0.0.1
+  alias:                                          bmc_connection
+  port:                                           2222
+  timeout:                                        25.0
+  newline:                                        
+
+  prompt:                                         # 
+  term_type:                                      vt100
+  width:                                          80
+  height:                                         24
+  path_separator:                                 /
+  encoding:                                       UTF-8
+
+</msg>
+<msg time="2026-08-12T03:29:54.910415" level="INFO">#(CST) 2026/08/12 03:29:54.910388 -    0.000243 - Logging in to 127.0.0.1.
+</msg>
+<msg time="2026-08-12T03:29:54.912309" level="INFO">login_attempt_num:                                1
+</msg>
+<msg time="2026-08-12T03:29:54.912351" level="INFO">Logging into '127.0.0.1:2222' as 'root'.</msg>
+<msg time="2026-08-12T03:29:58.335615" level="INFO">Read output: root@bletchley:~#</msg>
+<msg time="2026-08-12T03:29:58.337988" level="INFO">out_buf:                                          root@bletchley:~# 
+</msg>
+<msg time="2026-08-12T03:29:58.340460" level="INFO">exec_cmd_attempt_num:                             1
+</msg>
+<msg time="2026-08-12T03:29:58.342187" level="INFO">#(CST) 2026/08/12 03:29:58.342106 -    3.431718 - Executing: func_timer_class.run(self = &lt;self&gt;, func = &lt;bound method SSHLibrary.execute_command of &lt;SSHLibrary....
+</msg>
+<msg time="2026-08-12T03:29:58.342260" level="INFO">time_out:                                         None
+</msg>
+<msg time="2026-08-12T03:29:58.383000" level="INFO">children:                                         &lt;map type not supported by sprint_varx()&gt;
+</msg>
+<msg time="2026-08-12T03:29:58.383138" level="INFO">#(CST) 2026/08/12 03:29:58.383055 -    0.040949 - Calling the user's function.
+</msg>
+<msg time="2026-08-12T03:29:58.383178" level="INFO">func_name:                                        execute_command
+</msg>
+<msg time="2026-08-12T03:29:58.387526" level="INFO">args:
+  [0]:                                            uname -a
+kwargs:
+  [return_stdout]:                                True
+  [return_stderr]:                                True
+  [return_rc]:                                    True
+</msg>
+<msg time="2026-08-12T03:29:58.387587" level="INFO">Executing command 'uname -a'.</msg>
+<msg time="2026-08-12T03:29:58.551751" level="INFO">Command exited with return code 0.</msg>
+<msg time="2026-08-12T03:29:58.551914" level="INFO">#(CST) 2026/08/12 03:29:58.551834 -    0.168779 - Returned from the user's function.
+</msg>
+<msg time="2026-08-12T03:29:58.553941" level="INFO">#(CST) 2026/08/12 03:29:58.553854 -    0.002021 - Executing: func_timer_class.cleanup(self = &lt;self&gt;)
+</msg>
+<msg time="2026-08-12T03:29:58.555772" level="INFO">self.__child_pid:                                 0
+</msg>
+<msg time="2026-08-12T03:29:58.557840" level="INFO">${stdout} = Linux bletchley 6.18.40-c2b9fc3 #1 SMP Mon Jul 27 02:33:15 UTC 2026 armv7l GNU/Linux</msg>
+<msg time="2026-08-12T03:29:58.557884" level="INFO">${stderr} = </msg>
+<msg time="2026-08-12T03:29:58.557915" level="INFO">${rc} = 0</msg>
+<var>${stdout}</var>
+<var>${stderr}</var>
+<var>${rc}</var>
+<arg>uname -a</arg>
+<arg>print_out=1</arg>
+<arg>print_err=1</arg>
+<doc>Run the given command in an BMC SSH session and return the stdout, stderr and the return code.</doc>
+<status status="PASS" start="2026-08-12T03:29:54.890431" elapsed="3.667506"/>
+</kw>
+<if>
+<branch type="IF" condition="${rc}">
+<kw name="Fail" owner="BuiltIn">
+<arg>BMC SSH login failed.</arg>
+<doc>Fails the test with the given message and optionally alters its tags.</doc>
+<status status="NOT RUN" start="2026-08-12T03:29:58.558337" elapsed="0.000020"/>
+</kw>
+<status status="NOT RUN" start="2026-08-12T03:29:58.558099" elapsed="0.000285"/>
+</branch>
+<status status="PASS" start="2026-08-12T03:29:58.558064" elapsed="0.000343"/>
+</if>
+<doc>Verify SSH works.</doc>
+<tag>Openbmc_Setup</tag>
+<tag>Test_SSH_Setup</tag>
+<status status="PASS" start="2026-08-12T03:29:54.888837" elapsed="3.669648"/>
+</test>
+<test id="s1-t3" name="Test IPMI Setup" line="36">
+<kw name="Run IPMI Standard Command" owner="ipmi_client">
+<if>
+<branch type="IF" condition="'${IPMI_COMMAND}' == 'External'">
+<kw name="Run External IPMI Standard Command" owner="ipmi_client">
+<kw name="Process Ipmi User Options" owner="ipmi_client">
+<msg time="2026-08-12T03:29:58.562884" level="INFO">${command_string} = chassis status</msg>
+<var>${command_string}</var>
+<arg>${command}</arg>
+<doc>Return the buffer with any ipmi_user_options prepended.</doc>
+<status status="PASS" start="2026-08-12T03:29:58.562719" elapsed="0.000190"/>
+</kw>
+<kw name="Create Ipmi Ext Command String" owner="ipmi_client">
+<msg time="2026-08-12T03:29:58.563300" level="INFO">${ipmi_cmd} = ipmitool -I lanplus -C 17 -N 3 -p 623 -U root -P 0penBmc -H 127.0.0.1 chassis status</msg>
+<var>${ipmi_cmd}</var>
+<arg>${command_string}</arg>
+<arg>&amp;{options}</arg>
+<doc>Create and return an IPMI external command string which is fit to be run
+from a bash command line.</doc>
+<status status="PASS" start="2026-08-12T03:29:58.563048" elapsed="0.000273"/>
+</kw>
+<kw name="Qprint Issuing" owner="gen_print">
+<arg>${ipmi_cmd}</arg>
+<status status="PASS" start="2026-08-12T03:29:58.563447" elapsed="0.002352"/>
+</kw>
+<kw name="Run And Return Rc And Output" owner="OperatingSystem">
+<msg time="2026-08-12T03:29:58.566478" level="INFO">Running command 'ipmitool -I lanplus -C 17 -N 3 -p 623 -U root -P 0penBmc -H 127.0.0.1 chassis status 2&gt;&amp;1'.</msg>
+<msg time="2026-08-12T03:30:35.224470" level="INFO">${rc} = 1</msg>
+<msg time="2026-08-12T03:30:35.224549" level="INFO">${output} = Error: Unable to establish IPMI v2 / RMCP+ session</msg>
+<var>${rc}</var>
+<var>${output}</var>
+<arg>${ipmi_cmd}</arg>
+<doc>Runs the given command in the system and returns the RC and output.</doc>
+<status status="PASS" start="2026-08-12T03:29:58.565995" elapsed="36.658576"/>
+</kw>
+<kw name="Split String" owner="String">
+<msg time="2026-08-12T03:30:35.225026" level="INFO">${lines} = ['Error: Unable to establish IPMI v2 / RMCP+ session']</msg>
+<var>${lines}</var>
+<arg>${output}</arg>
+<arg>\n</arg>
+<doc>Splits the ``string`` using ``separator`` as a delimiter string.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.224846" elapsed="0.000197"/>
+</kw>
+<kw name="Create List" owner="BuiltIn">
+<msg time="2026-08-12T03:30:35.225231" level="INFO">${filtered} = []</msg>
+<var>${filtered}</var>
+<doc>Returns a list containing given items.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.225159" elapsed="0.000085"/>
+</kw>
+<kw name="Create List" owner="BuiltIn">
+<msg time="2026-08-12T03:30:35.225410" level="INFO">${ignore_list} = ['IANA PEN registry open failed']</msg>
+<var>${ignore_list}</var>
+<arg>IANA PEN registry open failed</arg>
+<doc>Returns a list containing given items.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.225341" elapsed="0.000082"/>
+</kw>
+<for flavor="IN">
+<iter>
+<kw name="Strip String" owner="String">
+<msg time="2026-08-12T03:30:35.225888" level="INFO">${line} = Error: Unable to establish IPMI v2 / RMCP+ session</msg>
+<var>${line}</var>
+<arg>${line}</arg>
+<doc>Remove leading and/or trailing whitespaces from the given string.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.225787" elapsed="0.000117"/>
+</kw>
+<if>
+<branch type="IF" condition="not $line">
+<continue>
+<status status="NOT RUN" start="2026-08-12T03:30:35.226198" elapsed="0.000015"/>
+</continue>
+<status status="NOT RUN" start="2026-08-12T03:30:35.226070" elapsed="0.000164"/>
+</branch>
+<status status="PASS" start="2026-08-12T03:30:35.226051" elapsed="0.000198"/>
+</if>
+<kw name="Set Variable" owner="BuiltIn">
+<msg time="2026-08-12T03:30:35.226483" level="INFO">${should_filter} = False</msg>
+<var>${should_filter}</var>
+<arg>${False}</arg>
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.226374" elapsed="0.000124"/>
+</kw>
+<for flavor="IN">
+<iter>
+<if>
+<branch type="IF" condition="&quot;${pattern}&quot; in &quot;${line}&quot;">
+<kw name="Set Variable" owner="BuiltIn">
+<var>${should_filter}</var>
+<arg>${True}</arg>
+<doc>Returns the given values which can then be assigned to a variables.</doc>
+<status status="NOT RUN" start="2026-08-12T03:30:35.226830" elapsed="0.000012"/>
+</kw>
+<break>
+<status status="NOT RUN" start="2026-08-12T03:30:35.226871" elapsed="0.000013"/>
+</break>
+<status status="NOT RUN" start="2026-08-12T03:30:35.226665" elapsed="0.000234"/>
+</branch>
+<status status="PASS" start="2026-08-12T03:30:35.226655" elapsed="0.000256"/>
+</if>
+<var name="${pattern}">IANA PEN registry open failed</var>
+<status status="PASS" start="2026-08-12T03:30:35.226638" elapsed="0.000286"/>
+</iter>
+<var>${pattern}</var>
+<value>@{ignore_list}</value>
+<status status="PASS" start="2026-08-12T03:30:35.226532" elapsed="0.000411"/>
+</for>
+<if>
+<branch type="IF" condition="not ${should_filter}">
+<kw name="Append To List" owner="Collections">
+<arg>${filtered}</arg>
+<arg>${line}</arg>
+<doc>Adds ``values`` to the end of ``list``.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.227113" elapsed="0.000091"/>
+</kw>
+<status status="PASS" start="2026-08-12T03:30:35.226977" elapsed="0.000247"/>
+</branch>
+<status status="PASS" start="2026-08-12T03:30:35.226968" elapsed="0.000270"/>
+</if>
+<var name="${line}">Error: Unable to establish IPMI v2 / RMCP+ session</var>
+<status status="PASS" start="2026-08-12T03:30:35.225682" elapsed="0.001569"/>
+</iter>
+<var>${line}</var>
+<value>@{lines}</value>
+<status status="PASS" start="2026-08-12T03:30:35.225472" elapsed="0.001797"/>
+</for>
+<kw name="Catenate" owner="BuiltIn">
+<msg time="2026-08-12T03:30:35.227463" level="INFO">${output} = Error: Unable to establish IPMI v2 / RMCP+ session</msg>
+<var>${output}</var>
+<arg>SEPARATOR=\n</arg>
+<arg>@{filtered}</arg>
+<doc>Catenates the given items together and returns the resulted string.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.227362" elapsed="0.000115"/>
+</kw>
+<kw name="Strip String" owner="String">
+<msg time="2026-08-12T03:30:35.227658" level="INFO">${output} = Error: Unable to establish IPMI v2 / RMCP+ session</msg>
+<var>${output}</var>
+<arg>${output}</arg>
+<doc>Remove leading and/or trailing whitespaces from the given string.</doc>
+<status status="PASS" start="2026-08-12T03:30:35.227575" elapsed="0.000096"/>
+</kw>
+<if>
+<branch type="IF" condition="${fail_on_err} == ${0}">
+<return>
+<value>${output}</value>
+<status status="NOT RUN" start="2026-08-12T03:30:35.229046" elapsed="0.000016"/>
+</return>
+<status status="NOT RUN" start="2026-08-12T03:30:35.227708" elapsed="0.001377"/>
+</branch>
+<status status="PASS" start="2026-08-12T03:30:35.227698" elapsed="0.001401"/>
+</if>
+<kw name="Should Be Equal" owner="BuiltIn">
+<msg time="2026-08-12T03:30:35.229454" level="FAIL">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</msg>
+<arg>${rc}</arg>
+<arg>${expected_rc}</arg>
+<arg>msg=${output}</arg>
+<doc>Fails if the given objects are unequal.</doc>
+<status status="FAIL" start="2026-08-12T03:30:35.229211" elapsed="0.000308">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</kw>
+<return>
+<value>${output}</value>
+<status status="NOT RUN" start="2026-08-12T03:30:35.229560" elapsed="0.000013"/>
+</return>
+<var>${resp}</var>
+<arg>${command}</arg>
+<arg>${fail_on_err}</arg>
+<arg>${expected_rc}</arg>
+<arg>&amp;{options}</arg>
+<doc>Run the external IPMI standard command.</doc>
+<status status="FAIL" start="2026-08-12T03:29:58.562255" elapsed="36.667396">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</kw>
+<status status="FAIL" start="2026-08-12T03:29:58.561870" elapsed="36.667822">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</branch>
+<branch type="ELSE IF" condition="'${IPMI_COMMAND}' == 'Inband'">
+<kw name="Run Inband IPMI Standard Command" owner="ipmi_client">
+<var>${resp}</var>
+<arg>${command}</arg>
+<arg>${fail_on_err}</arg>
+<doc>Run the standard IPMI command in-band.</doc>
+<status status="NOT RUN" start="2026-08-12T03:30:35.229882" elapsed="0.000016"/>
+</kw>
+<status status="NOT RUN" start="2026-08-12T03:30:35.229710" elapsed="0.000218"/>
+</branch>
+<branch type="ELSE IF" condition="'${IPMI_COMMAND}' == 'Dbus'">
+<kw name="Run Dbus IPMI Standard Command" owner="ipmi_client">
+<var>${resp}</var>
+<arg>${command}</arg>
+<doc>Run the standard IPMI command through dbus.</doc>
+<status status="NOT RUN" start="2026-08-12T03:30:35.230115" elapsed="0.000016"/>
+</kw>
+<status status="NOT RUN" start="2026-08-12T03:30:35.229943" elapsed="0.000280"/>
+</branch>
+<branch type="ELSE">
+<kw name="Fail" owner="BuiltIn">
+<arg>msg=Invalid IPMI Command type provided : ${IPMI_COMMAND}</arg>
+<doc>Fails the test with the given message and optionally alters its tags.</doc>
+<status status="NOT RUN" start="2026-08-12T03:30:35.230339" elapsed="0.000012"/>
+</kw>
+<status status="NOT RUN" start="2026-08-12T03:30:35.230239" elapsed="0.000129"/>
+</branch>
+<status status="FAIL" start="2026-08-12T03:29:58.561846" elapsed="36.668537">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</if>
+<return>
+<value>${resp}</value>
+<status status="NOT RUN" start="2026-08-12T03:30:35.230416" elapsed="0.000010"/>
+</return>
+<var>${chassis_status}</var>
+<arg>chassis status</arg>
+<doc>Run the standard IPMI command.</doc>
+<status status="FAIL" start="2026-08-12T03:29:58.559165" elapsed="36.671320">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</kw>
+<kw name="Log To Console" owner="BuiltIn">
+<arg>\n ${chassis_status}</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="NOT RUN" start="2026-08-12T03:30:35.230584" elapsed="0.000011"/>
+</kw>
+<doc>Verify Out-of-band works.</doc>
+<tag>Openbmc_Setup</tag>
+<tag>Test_IPMI_Setup</tag>
+<status status="FAIL" start="2026-08-12T03:29:58.558696" elapsed="36.671981">Error: Unable to establish IPMI v2 / RMCP+ session: 1 != 0</status>
+</test>
+<doc>Test suite to verify if the Robot setup is ready for use.</doc>
+<status status="FAIL" start="2026-08-12T03:28:37.947780" elapsed="117.283223"/>
+</suite>
+<statistics>
+<total>
+<stat pass="2" fail="1" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="2" fail="1" skip="0">Openbmc_Setup</stat>
+<stat pass="0" fail="1" skip="0">Test_IPMI_Setup</stat>
+<stat pass="1" fail="0" skip="0">Test_Redfish_Setup</stat>
+<stat pass="1" fail="0" skip="0">Test_SSH_Setup</stat>
+</tag>
+<suite>
+<stat name="Test Openbmc Setup" id="s1" pass="2" fail="1" skip="0">Test Openbmc Setup</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

@@ -1,0 +1,6 @@
+date=2026-08-12T04:17:11+08:00
+obmc_test_automation_commit=b4a1d031
+robot_version=Robot Framework 7.2.2 (Python 3.12.3 on linux)
+repo_commit=5007c82
+qemu_version=QEMU emulator version 11.0.1 (v11.0.1-3179-g9c2fa9d4b4)
+image_manifest=obmc-phosphor-image-bletchley-20260728025045.manifest

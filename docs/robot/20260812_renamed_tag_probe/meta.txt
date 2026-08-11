@@ -1,0 +1,4 @@
+Targeted probe for upstream candidate 3 (stale include in
+test_lists/QEMU_CI): running the renamed tag
+Verify_Redfish_Update_Service_Enabled alone, same variables as the
+official run. See docs/robot-qemu-ci.md observation 3.

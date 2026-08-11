@@ -1,0 +1,4 @@
+First (uncorrected) run of 2026-08-12, kept as evidence of the two
+invocation gaps analysed in docs/robot-qemu-ci.md: no CHASSIS_ID and no
+REDFISH_SUPPORT_TRANS_STATE. Result: 8 PASS / 11 FAIL (19 executed).
+Same clone (b4a1d031), same image and QEMU as the official run.
