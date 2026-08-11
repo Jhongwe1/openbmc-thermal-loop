@@ -158,7 +158,40 @@
 其中 `derivativeCoeff` 這次順手確認過:程式碼支援(`pid/ec/pid.cpp` **每一輪無條件**
 計算 D 項),但 `configure.md` 的 PID 範例沒有列它。
 
-- **狀態:** 待 W10 逐項重驗後再決定送幾個。
+- **狀態:** ★ 2026-08-12 已逐項重驗:7 個欄位全部「程式碼有、`configure.md`
+  0 次」,且上游自 `f6d4cb9`(2026-07-31)之後無新 commit —— 候選完好。
+  送幾個、怎麼分批,W10 推送前決定。
+
+### 候選 3:`test_lists/QEMU_CI` 的死 include(2026-08-12 發現)
+
+- **觀察:** 清單裡 `--include Verify_Update_Service_Enabled`,但這個 tag
+  在整個 repo 已不存在 —— `5236ec54`(2022-01-31)把該測試的 tag 改名為
+  `Verify_Redfish_Update_Service_Enabled`,而清單這一行是 2022-04-28
+  (`e4d77d2a8`)寫入的:**寫入當天起就引用著一個已改名的 tag。**
+- **證據:** 兩輪 QEMU_CI 實跑(2026-08-12,見 `docs/robot/`)都只執行
+  19 個測試(清單有 20 個生效 include);`git log -S` + `git blame` 考古
+  如上;修正後單獨實跑該 tag 驗證它在 QEMU 上的行為(結果見
+  `docs/robot-qemu-ci.md`)。
+- **修法:** 一行 —— 把 include 改成現行 tag。
+- **【判】三個候選裡最小、證據最硬,適合當 `openbmc-test-automation`
+  的第一筆。** W10 推(CI 白名單核准後),commit message 引用 5236ec54。
+- **狀態:** 已驗證、已起草、待推。
+
+### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
+
+- **依據(三段論):** ① 清單 `grep -ic 'thermal\|sensor'` = 0;
+  ② repo 現有兩份 sensor 套件都進不了這份清單 ——
+  `test_sensor_monitoring.robot` 需要 host OS 的 SSH 與每機型的
+  `redfish_sensor_info_map` 變數檔;`test_thermal_ambient_temperatures.robot`
+  走的是現代 bmcweb 已不提供的舊 `/Thermal` schema(本映像 404,
+  見 `docs/redfish-notes.md`);③ 現代 `ThermalSubsystem`/`Sensors`
+  路徑我在 QEMU 上手動驗證過。
+- **草稿:** `docs/upstream-drafts/test_thermal_subsystem.robot`
+  (兩個案例;**容忍空 Sensors collection** —— stock QEMU 映像是
+  0 成員,這一點不寫進去的話,案例會在官方 CI 的 pristine 映像上假紅)。
+- **上游規矩:** 介於「文件修正」與「新功能」之間 → 先 Discord 徵詢,
+  有共識才推(訊息已擬;發出時間與回應回填於此)。
+- **狀態:** 已起草;Discord 徵詢待發。
 
 ---
 
