@@ -15,8 +15,8 @@
 | `~/.ssh/config` 設定 `openbmc.gerrit` | **已完成** | 2026-08-04 | Port 29418;`ssh openbmc.gerrit` 回 `Hi Chung-Wei Lan` |
 | 三個 repo clone ＋ `commit-msg` hook 安裝 | **已完成** | 2026-08-04 | hook 來自 Gerrit 3.11.7;三個 repo 預設分支皆為 `master` |
 | 推一次 `%private,wip` change 驗證流程 | **已完成** | 2026-08-05 | change [93169](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93169),3 個 patchset(含一組單一變因 A/B),驗完立即 Abandon |
-| `run-unit-test-docker.sh` 對目標 repo 綠燈 | 未開始 | — | 預計 W8 |
-| 至少一筆 change 已推上 Gerrit | 未開始 | — | 預計 W8 |
+| 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠)。Jenkins CI 由 Gerrit 在 change 上自動跑 |
+| 至少一筆 change 已推上 Gerrit | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397),見下方紀錄 |
 | 至少收到一次 reviewer 回覆 | 未開始 | — | 預計 W10~W11 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
@@ -111,8 +111,6 @@
 
 > ⚠️ **【驗】`OWNERS` 在送 patch 前要重讀一次** —— 名單會變。
 
-## 1. (尚未提交任何 change)
-
 ---
 
 ## 未提交的候選(同樣有訊號值)
@@ -180,3 +178,41 @@
 
 > ⚠️ **【驗】W8 送出前要重讀一次這份文件** —— 上游隨時可能已經改掉,
 > 改掉的話這個候選作廢,要另外找。
+
+## 1. gerrit-setup: add SSH check and name caveats
+
+- **Gerrit: <https://gerrit.openbmc.org/c/openbmc/docs/+/93397>**
+- Repo: `openbmc/docs`
+- 狀態: **Under review**(2026-08-11 推出,patchset 1)
+- 起因: W2 照這份文件設 Gerrit 帳號時踩到三個缺口(Full name 被 GitHub
+  預填成 `wei`、確認步驟只有重量級的 clone、`for for` typo)。
+  W5 的單一變因 A/B 實測釐清了「Gerrit 驗 email 不驗名字」,
+  這個事實成為缺口 A 的正確措辭依據。
+- 事前討論: 無 —— 文件修正,依 CONTRIBUTING 不需事先討論。
+- 內容: 一個 patch 修同一份文件的三個缺口(一個邏輯變更):
+  Full name 補 GitHub 預填與 Signed-off-by 一致的理由、
+  Confirm Setup 先 `ssh openbmc.gerrit` 再 clone、typo 與權限指令修正。
+- Reviewers: Gunnar Mills、Andrew Jeffery(從 OWNERS 挑,`gerrit
+  set-reviewers` 加入);Patrick Williams(owner,系統自動)、
+  OpenBMC CI(自動)。
+- Review 往返:
+  - Patchset 1 → (等待中,2026-08-11 推出;**一週內不 ping**)
+  - 2026-08-11:推出約 40 分鐘後**誤按 Abandon**(當時誤以為
+    「上游貢獻要改主專案的 repo 才算相關」),同日 Restore 並留言說明。
+    留在這裡不刪:①流程紀錄要忠實;②這個誤解本身值得記 ——
+    T0 的意義是「從自己的工作長出、對社群有用的修正 + 真實的 review
+    往返」,不是「上游收下我的專案」。三 repo 階梯(docs → W10 的
+    phosphor-pid-control,同一位 owner)是刻意的風險排序,
+    見上方〈目標 repo 投資組合〉。
+- 我從這次 review 學到: (待填)
+
+### 送出前檢查(全過才推)
+
+| 送出前檢查 | 結果 |
+|---|---|
+| 重讀上游 master(當日 `git pull`) | 三個缺口 **全部還在**(A: L52-54、B: L73-79、C: L71) |
+| Gerrit 搜同類 open change(`gerrit query project:openbmc/docs status:open`) | **沒有人**在改 gerrit-setup |
+| OWNERS 重讀 | 沒變:owner Patrick Williams;reviewers Andrew Jeffery / Gunnar Mills / Lei Yu |
+| 格式 | prettier(repo 的 `.prettierrc.yaml`)綠;diff +19/−2 全在三處改動內 |
+| commit | 主旨 `gerrit-setup: add SSH check and name caveats`(45 字元)、正文每行 ≤72、`Tested:` 寫實際做過的、Change-Id `I31efbb72…`、Signed-off-by 與 Gerrit Profile 一致 |
+| 措辭紅線 | 守住:寫的是「Gerrit verifies the committer e-mail …, but it does not check the name」,**沒有**寫「不一致會被擋」 |

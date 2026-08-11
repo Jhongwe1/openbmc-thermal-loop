@@ -1,9 +1,15 @@
 # OpenBMC Closed-Loop Thermal Control Testbed
 
+🔗 **Upstream contribution:**
+[gerrit.openbmc.org/c/openbmc/docs/+/93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397)
+(under review —— 三個缺口都是做本專案時實測踩到的,見
+[`docs/upstream.md`](docs/upstream.md))
+
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~2 完成、Gate 3 進度 6/7**。
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~4 完成(六張圖全到齊)、
+> Gate 6 第一個 change 已推上 Gerrit(93397,review 中)**。
 >
 > **端到端可觀測:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
 > 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
@@ -424,7 +430,58 @@ dump 強制。所以圖上的每一點差異,只可能來自 `integralLimit` 這
 > python bench/plot.py --fig 3                                # 從以上原始資料產圖
 > ```
 
-- [ ] Gate 3　控制器與量測　　　　← **6/7**
+### Fig 5:slew rate limit 的三方取捨(W8)
+
+![Fig 5 — slew 掃描](figures/fig5_slew_sweep.png)
+
+上游 `ec::pid()` 的另一個內建機制:slew rate limit(限制輸出每秒最大
+變化量,**含它自己的積分回算** —— 掃描用 parity 模式,行為即上游)。
+8 組對稱 ±S × 5 seeds,方波負載反覆調節:
+
+- **選定 0.5 %PWM/s**:方向反轉 23.0 → 6.5 次/分(**3.43×**,配對範圍
+  3.0~4.6),代價峰值溫度 **+6.2 °C**、相對風扇功耗 **+84%**(親和定律
+  N³ 模型值,不是量到的瓦數)。這是取捨曲線上的一個點,不是最佳解。
+- **與 Fig 2 合起來才是完整的故事**:λ 放大壓的是穩態抖動的**幅度**
+  (3.26×)但完全不壓**次數**;slew 壓次數但額外付功耗。
+  兩種不同的聲學缺陷、兩個互補的旋鈕。
+- **掃描基準是 λ=0.5τ,不是部署採用的 2.0τ** —— 這是被先導實測逼出來
+  的偏離:在低增益整定上,雜訊步幅(0.10%)與追蹤斜率(0.33%/s)都在
+  掃描範圍之下,slew 是**死旋鈕**(八組反轉全同、五組峰值逐位相同)。
+  slew 治的是高增益的病;Fig 5 回答的是「保留高增益的抗擾動峰值,
+  用 slew 買聲學」這條互補的邊。詳見 `docs/measurement.md` exp08。
+
+```bash
+python bench/exp08_slew_sweep.py --out bench/data   # 8 × 5 = 40 CSV + meta
+python bench/plot.py --fig 5
+```
+
+### Fig 4:failsafe 偵測時序(W8,Gate 4)
+
+![Fig 4 — failsafe 偵測時序](figures/fig4_failsafe.png)
+
+**感測器讀不到值,風扇怎麼辦?—— fail to safe,不是 fail to
+last-known-good。** 我實際量了這個延遲:停止推送溫度後,
+**中位數 5.081 s [5.010, 5.155](5 次獨立 run)** PWM 拉到
+`failsafePercent`,組成是 sensor timeout(config 5 s)+ 逾時檢查節奏
+(騎在外圈 1 Hz 上)+ **恰好一個內圈週期(100 ms,5/5 次)** + ms 級
+傳遞。⚠️ 不是「100 ms 內觸發」—— timeout 本來就是秒級設定。
+
+- 量測方法本身就是個發現:上游的 `FailSafe` D-Bus 屬性是**純 getter、
+  從不發 PropertiesChanged**,`busctl monitor` 永遠等不到 —— 時序一律
+  從 `zone_0.log` 讀(每輪一行、無節流、自帶 epoch);`busctl
+  get-property` 留作單點驗證(每 run 讀到 `b true`)。
+- 「凍結感測器」的機制是 W3 那顆地雷的反向應用:passive D-Bus 感測器
+  的 staleness 時鐘只在 PropertiesChanged 推進 —— bridge 活著時每
+  100 ms 推一個新值,**停止推送就是凍結事件**,時戳由腳本控制。
+- 觸發條件、四個 build option、兩個逾時的關注點分離、以及誠實的
+  「我沒有驗證的部分」:見 [`docs/failsafe.md`](docs/failsafe.md)。
+
+```bash
+python bench/exp09_failsafe.py    # 5 runs × 330 s 即時 ≈ 28 min
+python bench/plot.py --fig 4
+```
+
+- [x] Gate 3　控制器與量測　　　　← **7/7,W8 收關**
   - [x] 我自己的 PI(C++,四種抗飽和 + 一個上游相容模式)← [`controller/`](controller/)
   - [x] 與上游 `ec::pid()` 的 gtest parity 測試(六個參數 144 組,`1e-12`)
   - [x] **符號檢查實驗**(兩點法;`temp` 型別要用負係數)
@@ -437,7 +494,12 @@ dump 強制。所以圖上的每一點差異,只可能來自 `integralLimit` 這
         L2 用未修改的 swampd 二進位重現 **12.9×**)
         ← `bench/exp07_antiwindup.py`、[`harness/l2_ab.sh`](harness/l2_ab.sh)、
         `bench/data/exp07_*`
-  - [ ] slew 掃描(含風扇功耗)
+  - [x] **slew 掃描 → Fig 5**(8 組 ±S × 5 seed;基準 λ=0.5τ ——
+        部署整定 2.0τ 上 slew 是死旋鈕,先導實測後刻意偏離,見
+        `docs/measurement.md` exp08)。**選定 0.5 %PWM/s:反轉 3.43×↓,
+        代價峰值 +6.2 °C、相對功耗 +84%(N³ 模型值)** ——
+        與 Fig 2 對照:λ 壓抖動幅度不壓次數,slew 壓次數,兩旋鈕互補
+        ← `bench/exp08_slew_sweep.py`、`bench/data/exp08_*`
 
   > **✅ W6 宣告的缺口在 W7 關閉:** 熱模型接上了私有 D-Bus
   > ([`harness/dbus_bridge.py`](harness/dbus_bridge.py) + mock ObjectMapper
@@ -446,9 +508,14 @@ dump 強制。所以圖上的每一點差異,只可能來自 `integralLimit` 這
   > 150 RPM/%PWM 換算(`bench/tune.py`);內圈改為純前饋
   > `feedFwdGainCoeff = 1/150` —— 量綱換算不是整定,回授係數仍為 0,
   > 「沒有量測就不整定」的原則不變(見 `config/swampd/README.md`)。
-- [ ] Gate 4　失效安全
-- [ ] Gate 5　官方測試套件
-- [ ] Gate 6　Upstream
+- [x] Gate 4　失效安全　　　　　　← **W8,見上方 Fig 4**
+  - [x] 殺掉溫度來源,PWM 在 N 秒內跳 failsafe;**N 量出來了**:
+        中位 5.081 s,且說得出四段組成
+  - [x] `busctl` 讀出 `FailSafe` = true(5/5 run 存證)
+  - [x] 兩個逾時的差別(dbus-sensors → NaN vs swampd → zone failsafe)
+        與四個 failsafe build option 各治什麼 ← [`docs/failsafe.md`](docs/failsafe.md)
+- [ ] Gate 5　官方測試套件　← W9
+- [ ] Gate 6　Upstream　← **change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) 已推(2026-08-11),等第一次 reviewer 回覆**
 - [ ] Gate 7　交付與敘事
 
 ## 授權
