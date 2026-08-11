@@ -177,7 +177,14 @@ async def run(args) -> int:
             sensed = lib.plant_step(plant, pwm_pct, power)
             rpm = lib.plant_rpm(plant)
             tach_path.write_text(f"{rpm:.0f}")
-            sensor.push(sensed)
+            # ★ exp09（W8）：t ≥ stop-push-at 之後停止推送溫度 ——
+            #   D-Bus 上的 Value 凍結、PropertiesChanged 不再發、swampd 的
+            #   _updated 停止推進 → sensor timeout 開始累積。其餘一切照常：
+            #   plant 繼續走、tach 繼續寫、PWM 繼續讀（風扇沒有壞，壞的是
+            #   溫度感測器）。這正是 W3 那顆「值不變 = 假死」地雷的反向應用，
+            #   見 docs/failsafe.md §4。
+            if args.stop_push_at < 0.0 or t < args.stop_push_at:
+                sensor.push(sensed)
             fh.write(f"{t:.3f},{pwm_pct:.4f},{power:.4f},{sensed:.4f},"
                      f"{lib.plant_die(plant):.4f},{rpm:.2f}\n")
 
@@ -208,6 +215,10 @@ def main() -> int:
     ap.add_argument("--power-step", type=float, default=400.0)
     ap.add_argument("--power-at", type=float, default=300.0)
     ap.add_argument("--power-down-at", type=float, default=900.0)
+    ap.add_argument("--stop-push-at", type=float, default=-1.0,
+                    help="這個時刻（相對秒）之後停止推送溫度，模擬感測器"
+                         "凍結（exp09）。負數 = 不停止。t0 = epoch0_ms + 這個值"
+                         "（節拍是絕對期限，1500 s 累積誤差 ~1 ms，W7 實測）")
     args = ap.parse_args()
     return asyncio.run(run(args))
 
