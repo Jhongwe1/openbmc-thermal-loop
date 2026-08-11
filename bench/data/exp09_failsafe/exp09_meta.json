@@ -1,0 +1,69 @@
+{
+  "experiment": "exp09_failsafe",
+  "config_source": "config/swampd/config.tuned.json",
+  "config_delta": {
+    "sensors[die0].timeout": [
+      0,
+      5
+    ]
+  },
+  "stop_push_at_s": 300.0,
+  "run_seconds": 330.0,
+  "timeout_s": 5,
+  "runs": [
+    {
+      "run": 1,
+      "t0_epoch_ms": 1786440979056.9448,
+      "t1_minus_t0_s": 4.98105517578125,
+      "t2_minus_t0_s": 5.08105517578125,
+      "t2_minus_t1_s": 0.1
+    },
+    {
+      "run": 2,
+      "t0_epoch_ms": 1786441309523.6755,
+      "t1_minus_t0_s": 4.910324462890625,
+      "t2_minus_t0_s": 5.010324462890625,
+      "t2_minus_t1_s": 0.1
+    },
+    {
+      "run": 3,
+      "t0_epoch_ms": 1786441639836.7717,
+      "t1_minus_t0_s": 4.955228271484375,
+      "t2_minus_t0_s": 5.055228271484375,
+      "t2_minus_t1_s": 0.1
+    },
+    {
+      "run": 4,
+      "t0_epoch_ms": 1786441970000.9905,
+      "t1_minus_t0_s": 5.053009521484375,
+      "t2_minus_t0_s": 5.153009521484375,
+      "t2_minus_t1_s": 0.1
+    },
+    {
+      "run": 5,
+      "t0_epoch_ms": 1786442300161.8467,
+      "t1_minus_t0_s": 5.0551533203125,
+      "t2_minus_t0_s": 5.1551533203125,
+      "t2_minus_t1_s": 0.1
+    }
+  ],
+  "summary": {
+    "t1_minus_t0_s": {
+      "median": 4.98105517578125,
+      "min": 4.910324462890625,
+      "max": 5.0551533203125
+    },
+    "t2_minus_t0_s": {
+      "median": 5.08105517578125,
+      "min": 5.010324462890625,
+      "max": 5.1551533203125
+    },
+    "t2_minus_t1_s": {
+      "median": 0.1,
+      "min": 0.1,
+      "max": 0.1
+    }
+  },
+  "swampd": "unmodified upstream @ c5e5955 (see docs/env-baseline.md)",
+  "repo_commit": "ddd35ad"
+}

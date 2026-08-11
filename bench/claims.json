@@ -142,12 +142,26 @@
   },
 
   "reversals_reduction_ratio": {
-    "value": null,
+    "value": 3.428571,
     "tolerance_pct": 0.20,
     "unit": "ratio",
-    "meaning": "slew rate λ 放大後，每分鐘 PWM 方向反轉次數的下降比。",
-    "source": "bench/data/exp08_*.csv",
+    "meaning": "slew rate limit 收緊到選定工作點（對稱 ±0.5 %PWM/s）後，每分鐘 PWM 方向反轉次數相對「不限制」基準的下降比：23.0 → 6.5 次/分。★ 代價必須一起講：峰值溫度 +6.2 °C、相對風扇功耗 +84%（N³ 模型值，不是量到的瓦數）。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp08_slew*_seed*.csv",
     "figure": "figures/fig5_slew_sweep.png",
-    "note": "同上，原本登記為 exp05。"
+    "seed_range": [3.0, 4.6],
+    "note": "★ 兩組共用同一組 seed，比值按 seed 配對後取中位數（3.43，同 recover_s_ratio 的慣例）；用兩組中位數相除是 3.54，一致。0.5 %PWM/s 是取捨曲線上的一個點不是最佳解 —— 0.25 買到 15.3× 但峰值 +9.8 °C。★★ 掃描基準是 λ=0.5τ，不是部署採用的 2.0τ：slew 治的是高增益的病，在 2.0τ 上這整個範圍都是死旋鈕（先導試探：八組 reversals 全部相同）。與 Fig 2 對照：λ 壓抖動的**幅度**（pwm_pp 3.26×）但不壓次數（reversals_ratio_lambda ≈ 1），slew 壓**次數** —— 兩種不同的聲學缺陷，機制互補不互斥。此欄原本登記為 exp05（編號重整見 docs/measurement.md §4.0）；meaning 曾誤寫「slew rate λ」—— λ 是 IMC 整定參數，與 slew 無關，2026-08-11 填值時修正。"
+  },
+
+  "failsafe_detect_s": {
+    "value": 5.081,
+    "tolerance_pct": 0.25,
+    "unit": "s",
+    "meaning": "停止推送溫度到 PWM 拉滿 failsafePercent 的總延遲（t2−t0，5 次獨立 run 中位數）。組成：sensor timeout（config 5 s，從最後一次 push 起算）+ 逾時檢查節奏（隨外圈 1 Hz）+ 內圈一輪（100 ms，5/5 恰好一行之差）+ ms 級傳遞。★ 不是「100 ms 內觸發」—— timeout 本來就是秒級設定。",
+    "measured_on": "2026-08-11",
+    "source": "bench/data/exp09_failsafe/run*_zone0.log",
+    "figure": "figures/fig4_failsafe.png",
+    "seed_range": [5.01, 5.155],
+    "note": "L2 rig：未修改 swampd @ c5e5955、config 與部署版唯一差異是 die0 timeout 0→5（腳本生成並逐欄驗證）。★ run 間散布 145 ms 遠小於機制抖動上界（~1 s）：逾時檢查騎在外圈 1 Hz 上、相位理論上均勻，但本 rig 啟動序列固定讓每 run 相位幾乎相同 —— 窄散布是採樣偏差不是精度，tolerance 給 0.25 涵蓋別的相位。事件時刻從 zone_0.log 讀（FailSafe D-Bus 屬性是純 getter、從不發 PropertiesChanged，busctl monitor 量不到）；環境凍結（事件窗行距 >0.5 s）的 run 自動作廢。見 docs/failsafe.md §5。"
   }
 }

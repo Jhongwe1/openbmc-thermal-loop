@@ -1,0 +1,17 @@
+{
+  "epoch0_ms": 1786442000161.8467,
+  "args": {
+    "lib": "build/libplant_cabi.so",
+    "pwm_path": "/tmp/sys/pwm0",
+    "tach_path": "/tmp/sys/fan0_input",
+    "csv": "bench/data/exp09_failsafe/run5_plant.csv",
+    "dt": 0.1,
+    "seconds": 330.0,
+    "seed": 5,
+    "power_base": 150.0,
+    "power_step": 400.0,
+    "power_at": -1.0,
+    "power_down_at": -1.0,
+    "stop_push_at": 300.0
+  }
+}
