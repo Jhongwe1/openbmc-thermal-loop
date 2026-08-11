@@ -1,15 +1,12 @@
 # OpenBMC Closed-Loop Thermal Control Testbed
 
-🔗 **Upstream contribution:**
-[gerrit.openbmc.org/c/openbmc/docs/+/93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397)
-(under review —— 三個缺口都是做本專案時實測踩到的,見
-[`docs/upstream.md`](docs/upstream.md))
-
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~4 完成(六張圖全到齊)、
-> Gate 6 第一個 change 已推上 Gerrit(93397,review 中)**。
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~4 完成(六張圖全到齊)**。
+> 上游貢獻(Gate 6)進行中:第一筆 change 已完整走過推送流程後收回,
+> 決策與過程誠實記錄在 [`docs/upstream.md`](docs/upstream.md);
+> 主線 patch(`phosphor-pid-control`)照計畫 W10 提交。
 >
 > **端到端可觀測:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
 > 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
@@ -515,7 +512,11 @@ python bench/plot.py --fig 4
   - [x] 兩個逾時的差別(dbus-sensors → NaN vs swampd → zone failsafe)
         與四個 failsafe build option 各治什麼 ← [`docs/failsafe.md`](docs/failsafe.md)
 - [ ] Gate 5　官方測試套件　← W9
-- [ ] Gate 6　Upstream　← **change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) 已推(2026-08-11),等第一次 reviewer 回覆**
+- [ ] Gate 6　Upstream　← 第一筆 change(docs,93397)2026-08-11 完整走過
+      推送流程(commit-msg hook、refs/for/master、OWNERS 加 reviewer)後
+      **由我決定收回**;過程與決策記錄在 [`docs/upstream.md`](docs/upstream.md)。
+      主線 patch(`phosphor-pid-control`:configure.md 未文件化欄位、
+      `ec::pid()` 釘住測試)照計畫 **W10** 提交
 - [ ] Gate 7　交付與敘事
 
 ## 授權

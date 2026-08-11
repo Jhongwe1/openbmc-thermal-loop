@@ -15,8 +15,9 @@
 | `~/.ssh/config` 設定 `openbmc.gerrit` | **已完成** | 2026-08-04 | Port 29418;`ssh openbmc.gerrit` 回 `Hi Chung-Wei Lan` |
 | 三個 repo clone ＋ `commit-msg` hook 安裝 | **已完成** | 2026-08-04 | hook 來自 Gerrit 3.11.7;三個 repo 預設分支皆為 `master` |
 | 推一次 `%private,wip` change 驗證流程 | **已完成** | 2026-08-05 | change [93169](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93169),3 個 patchset(含一組單一變因 A/B),驗完立即 Abandon |
-| 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠)。Jenkins CI 由 Gerrit 在 change 上自動跑 |
-| 至少一筆 change 已推上 Gerrit | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397),見下方紀錄 |
+| 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠) |
+| 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄 |
+| 至少一筆 change 掛在 Gerrit 上(open) | **重新歸零** | — | 預計 **W10**(`phosphor-pid-control`);⚠️ 前置:CI 白名單(Discord 找管理員)、網頁顯示名 `wei` 要修 |
 | 至少收到一次 reviewer 回覆 | 未開始 | — | 預計 W10~W11 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
@@ -183,7 +184,7 @@
 
 - **Gerrit: <https://gerrit.openbmc.org/c/openbmc/docs/+/93397>**
 - Repo: `openbmc/docs`
-- 狀態: **Under review**(2026-08-11 推出,patchset 1)
+- 狀態: **Abandoned(2026-08-11,我自己的決定)**
 - 起因: W2 照這份文件設 Gerrit 帳號時踩到三個缺口(Full name 被 GitHub
   預填成 `wei`、確認步驟只有重量級的 clone、`for for` typo)。
   W5 的單一變因 A/B 實測釐清了「Gerrit 驗 email 不驗名字」,
@@ -196,15 +197,27 @@
   set-reviewers` 加入);Patrick Williams(owner,系統自動)、
   OpenBMC CI(自動)。
 - Review 往返:
-  - Patchset 1 → (等待中,2026-08-11 推出;**一週內不 ping**)
-  - 2026-08-11:推出約 40 分鐘後**誤按 Abandon**(當時誤以為
-    「上游貢獻要改主專案的 repo 才算相關」),同日 Restore 並留言說明。
-    留在這裡不刪:①流程紀錄要忠實;②這個誤解本身值得記 ——
-    T0 的意義是「從自己的工作長出、對社群有用的修正 + 真實的 review
-    往返」,不是「上游收下我的專案」。三 repo 階梯(docs → W10 的
-    phosphor-pid-control,同一位 owner)是刻意的風險排序,
-    見上方〈目標 repo 投資組合〉。
-- 我從這次 review 學到: (待填)
+  - Patchset 1 推出(13:30)→ 我 Set private + Abandon(13:38)→
+    Restore 並留言(17:37)→ 兩次 Abandon/Restore 拉鋸 →
+    **最終 Abandon(18:11)**。沒有等到人工 review。
+  - 收回的理由(我的判斷,如實記錄):我認為一個 +19/−2 的文件
+    patch 不足以代表我想呈現的技術水準,寧可讓第一筆掛名的 change
+    是 W10 的 `phosphor-pid-control` 主線 patch。
+  - 指導方的不同意見(也如實記錄):docs 的 merge 歷史顯示同尺寸
+    patch 是常態;第一個 patch 的功能是把流程錯誤在便宜處犯完,
+    並在同一位 owner 面前建立首次往返;abandoned 紀錄仍公開可見。
+    兩個論點我都聽過之後做了決定 —— 這一段留著,因為
+    「知道所有代價之後做選擇」與「不知道就選」是兩回事。
+- **這次推送真實學到的三件事(只有推了才會知道):**
+  1. **OpenBMC CI 對新貢獻者有白名單**:change 一推,CI 帳號回
+     `User not approved, see admin, no CI` —— 第一次要請管理員核准
+     才會跑 Jenkins。**W10 推 patch 前要先在 Discord 解決**,
+     否則主線 patch 同樣拿不到 Verified。
+  2. **Gerrit 網頁的 change log 顯示我為 `wei`**:W2 修過 Profile 的
+     Full name(ssh 歡迎訊息也確認過),但網頁另有顯示名的來源 ——
+     **W10 前要查清楚並修正**(身分一致性表加一列,見上方)。
+  3. push → private → abandon → restore 的每一步都留在公開的
+     change log 上,含時間戳。Gerrit 沒有「刪除」,只有「狀態」。
 
 ### 送出前檢查(全過才推)
 
