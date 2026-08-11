@@ -40,6 +40,14 @@ struct Args
     double powerStep = 400.0;///< 階躍後功耗 (W)
     double powerAtS = -1.0;  ///< 功耗階躍時刻 (s)，負數 = 不階躍
     double powerDownAtS = -1.0; ///< 功耗降回 base 的時刻 (s)，負數 = 不降（W7）
+
+    // ── 週期性負載（W8）────────────────────────────────────────────────
+    // Fig 5 量的是「反覆調節時的行為」：單一階躍的穩態段只剩雜訊在動，
+    // slew 的代價（跟不上熱瞬變）顯不出來，所以要讓負載持續切換。
+    // 只實作 square：計畫還列了 sine，但沒有實驗消費它 ——
+    // 沒有測試守著的程式碼不寫（偏離記錄在 memory 的 plan-deviations-log）。
+    std::string powerProfile = "step"; ///< step = 既有行為，square = 方波
+    double powerPeriodS = 120.0; ///< square 的**全週期** (s)：前半 step、後半 base
     double pwmBase = 40.0;   ///< 基準 PWM (%)
     double pwmStep = 60.0;   ///< 階躍後 PWM (%)
     double pwmAtS = -1.0;    ///< PWM 階躍時刻 (s)，負數 = 不階躍（開環系統識別用）
@@ -99,6 +107,9 @@ void usage()
                  "  --power-at <s>      功耗階躍時刻，負數=不階躍\n"
                  "  --power-down-at <s> 功耗降回 base 的時刻，負數=不降（W7，"
                  "要配合 --power-at）\n"
+                 "  --power-profile <s> step|square，預設 step（W8）\n"
+                 "  --power-period <s>  square 的全週期，預設 120（前半 step、"
+                 "後半 base；square 專用）\n"
                  "  --pwm-base <%%>      基準 PWM，預設 40\n"
                  "  --pwm-step <%%>      階躍後 PWM，預設 60\n"
                  "  --pwm-at <s>        PWM 階躍時刻，負數=不階躍\n"
@@ -134,6 +145,9 @@ int main(int argc, char** argv)
     Args a;
     thermal::PlantParams p;
     CtrlArgs c;
+    // step 模式下給 --power-period 要報錯（不能安靜忽略），所以要記「有沒有給」，
+    // 不能拿「值 == 預設」判斷 —— 手動給 120 與沒給是兩回事。
+    bool powerPeriodGiven = false;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -167,6 +181,8 @@ int main(int argc, char** argv)
         else if (k == "--power-step")  a.powerStep = parseD(v);
         else if (k == "--power-at")    a.powerAtS = parseD(v);
         else if (k == "--power-down-at") a.powerDownAtS = parseD(v);
+        else if (k == "--power-profile") a.powerProfile = v;
+        else if (k == "--power-period")  { a.powerPeriodS = parseD(v); powerPeriodGiven = true; }
         else if (k == "--pwm-base")    a.pwmBase = parseD(v);
         else if (k == "--pwm-step")    a.pwmStep = parseD(v);
         else if (k == "--pwm-at")      a.pwmAtS = parseD(v);
@@ -210,6 +226,50 @@ int main(int argc, char** argv)
                      "--power-down-at (%g) 需要一個更早的 --power-at (%g)："
                      "沒有先上去，就沒有「降回來」可言。\n",
                      a.powerDownAtS, a.powerAtS);
+        return 2;
+    }
+
+    // ── W8：--power-profile 的一致性 ──────────────────────────────────
+    // 與 --anti-windup 同一條紀律：不認得的值直接報錯，不要默默退回 step。
+    // 打錯字而被安靜忽略的話，40 份「以為有方波」的 CSV 看起來完全正常。
+    if (a.powerProfile != "step" && a.powerProfile != "square")
+    {
+        std::fprintf(stderr,
+                     "不認得的 --power-profile: %s\n合法值：step square\n",
+                     a.powerProfile.c_str());
+        return 2;
+    }
+    if (a.powerProfile == "square")
+    {
+        // 方波的相位以 --power-at 為原點；沒有原點就沒有波形。
+        if (a.powerAtS < 0.0)
+        {
+            std::fprintf(stderr,
+                         "--power-profile square 需要 --power-at（方波的起點）。\n");
+            return 2;
+        }
+        // down-at 屬於 step 家族（W7 的「上去再下來」）；兩個都給的話
+        // 誰蓋過誰完全是實作細節，不該讓使用者猜。
+        if (a.powerDownAtS >= 0.0)
+        {
+            std::fprintf(stderr,
+                         "--power-profile square 與 --power-down-at 互斥：\n"
+                         "方波自己會降回 base，down-at 屬於單階躍那條路。\n");
+            return 2;
+        }
+        if (a.powerPeriodS <= 0.0)
+        {
+            std::fprintf(stderr, "--power-period 必須為正，收到 %g\n",
+                         a.powerPeriodS);
+            return 2;
+        }
+    }
+    else if (powerPeriodGiven)
+    {
+        // step 模式下 --power-period 不會有任何作用 —— 安靜收下它，
+        // 使用者就會拿到一份「以為是方波」的單階躍資料（同 --pwm-at 的紀律）。
+        std::fprintf(stderr,
+                     "--power-period 只在 --power-profile square 下有意義。\n");
         return 2;
     }
 
@@ -296,6 +356,15 @@ int main(int argc, char** argv)
         std::fprintf(stderr, "power_down_at=%g\n", a.powerDownAtS);
     }
 
+    // ★ W8 同一條紀律。square 時一定要印 —— exp08 的單變因檢查
+    //   （check_single_variable）讀的就是這份 stderr：這兩行不在，
+    //   「所有組都真的在跑同一個方波」就沒有機器可查的證據。
+    if (a.powerProfile == "square")
+    {
+        std::fprintf(stderr, "power_profile=square\npower_period=%g\n",
+                     a.powerPeriodS);
+    }
+
     // ★ 閉環的參數**追加**在後面，不插進上面那一段。
     //
     //   理由：bench/exp01_sysid.py 把整份 stderr 存成 meta 檔，而那些 meta
@@ -349,10 +418,23 @@ int main(int argc, char** argv)
 
         // 負載曲線：base →（power-at）step →（power-down-at）base。
         // 上去製造飽和、降回來讓飽和解除 —— recover_s 量的就是解除後那段。
+        //
+        // square（W8）：t ≥ power-at 之後以 power-period 為全週期，
+        // 前半週期 step、後半週期 base。第一段是 step —— 與單階躍的
+        // 「時間到就上去」同一個方向，兩種 profile 在 t = power-at
+        // 處的行為一致。
         double pw = a.powerBase;
         if (a.powerAtS >= 0.0 && t >= a.powerAtS)
         {
-            pw = a.powerStep;
+            if (a.powerProfile == "square")
+            {
+                const double phase = std::fmod(t - a.powerAtS, a.powerPeriodS);
+                pw = (phase < a.powerPeriodS / 2.0) ? a.powerStep : a.powerBase;
+            }
+            else
+            {
+                pw = a.powerStep;
+            }
         }
         if (a.powerDownAtS >= 0.0 && t >= a.powerDownAtS)
         {
