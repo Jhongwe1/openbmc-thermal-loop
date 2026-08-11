@@ -1,0 +1,1090 @@
+1786481673.744607	Monitoring bus message stream.
+1786481673.744625	
+1786481683.434078	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=962  Timestamp="Tue 2026-08-11 20:54:43.076516 UTC"
+1786481683.434091	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481683.434092	  UniqueName=:1.174
+1786481683.434093	  MESSAGE "sa{sv}as" {
+1786481683.434094	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481683.434095	          ARRAY "{sv}" {
+1786481683.434095	                  DICT_ENTRY "sv" {
+1786481683.434096	                          STRING "Value";
+1786481683.434097	                          VARIANT "d" {
+1786481683.434097	                                  DOUBLE 89.938;
+1786481683.434098	                          };
+1786481683.434099	                  };
+1786481683.434099	          };
+1786481683.434100	          ARRAY "s" {
+1786481683.434100	          };
+1786481683.434101	  };
+1786481683.434102	
+1786481683.435211	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=963  Timestamp="Tue 2026-08-11 20:54:43.150259 UTC"
+1786481683.435228	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481683.435230	  UniqueName=:1.174
+1786481683.435231	  MESSAGE "sa{sv}as" {
+1786481683.435233	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481683.435234	          ARRAY "{sv}" {
+1786481683.435236	                  DICT_ENTRY "sv" {
+1786481683.435237	                          STRING "WarningAlarmHigh";
+1786481683.435238	                          VARIANT "b" {
+1786481683.435239	                                  BOOLEAN true;
+1786481683.435240	                          };
+1786481683.436074	                  };
+1786481683.436086	          };
+1786481683.449893	          ARRAY "s" {
+1786481683.452089	          };
+1786481683.452951	  };
+1786481683.452960	
+1786481691.220873	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=984  Timestamp="Tue 2026-08-11 20:54:49.642955 UTC"
+1786481691.238775	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481691.238790	  UniqueName=:1.174
+1786481691.238791	  MESSAGE "sa{sv}as" {
+1786481691.238792	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481691.238793	          ARRAY "{sv}" {
+1786481691.238794	                  DICT_ENTRY "sv" {
+1786481691.238795	                          STRING "Value";
+1786481691.238796	                          VARIANT "d" {
+1786481691.238797	                                  DOUBLE 54.938;
+1786481691.238797	                          };
+1786481691.238798	                  };
+1786481691.238799	          };
+1786481691.238799	          ARRAY "s" {
+1786481691.238800	          };
+1786481691.247611	  };
+1786481691.247630	
+1786481691.266928	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=985  Timestamp="Tue 2026-08-11 20:54:49.665139 UTC"
+1786481691.266946	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481691.266950	  UniqueName=:1.174
+1786481691.266951	  MESSAGE "sa{sv}as" {
+1786481691.266953	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481691.266954	          ARRAY "{sv}" {
+1786481691.266956	                  DICT_ENTRY "sv" {
+1786481691.269103	                          STRING "WarningAlarmHigh";
+1786481691.269116	                          VARIANT "b" {
+1786481691.270268	                                  BOOLEAN false;
+1786481691.294456	                          };
+1786481691.294473	                  };
+1786481691.294476	          };
+1786481691.294477	          ARRAY "s" {
+1786481691.294479	          };
+1786481691.294480	  };
+1786481691.294482	
+1786481699.661043	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1007  Timestamp="Tue 2026-08-11 20:54:56.672648 UTC"
+1786481699.661061	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481699.689090	  UniqueName=:1.174
+1786481699.689108	  MESSAGE "sa{sv}as" {
+1786481699.689111	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481699.689112	          ARRAY "{sv}" {
+1786481699.689114	                  DICT_ENTRY "sv" {
+1786481699.689116	                          STRING "Value";
+1786481699.689118	                          VARIANT "d" {
+1786481699.689119	                                  DOUBLE 89.938;
+1786481699.689121	                          };
+1786481699.689122	                  };
+1786481699.689123	          };
+1786481699.689125	          ARRAY "s" {
+1786481699.689126	          };
+1786481699.689127	  };
+1786481699.689129	
+1786481699.689131	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1008  Timestamp="Tue 2026-08-11 20:54:56.695118 UTC"
+1786481699.689134	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481699.689135	  UniqueName=:1.174
+1786481699.689137	  MESSAGE "sa{sv}as" {
+1786481699.689138	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481699.689140	          ARRAY "{sv}" {
+1786481699.689141	                  DICT_ENTRY "sv" {
+1786481699.689143	                          STRING "WarningAlarmHigh";
+1786481699.689144	                          VARIANT "b" {
+1786481699.689146	                                  BOOLEAN true;
+1786481699.689147	                          };
+1786481699.689149	                  };
+1786481699.689150	          };
+1786481699.689151	          ARRAY "s" {
+1786481699.689152	          };
+1786481699.689153	  };
+1786481699.689155	
+1786481708.397216	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1030  Timestamp="Tue 2026-08-11 20:55:03.211560 UTC"
+1786481708.405114	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481708.405126	  UniqueName=:1.174
+1786481708.405128	  MESSAGE "sa{sv}as" {
+1786481708.405128	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481708.405130	          ARRAY "{sv}" {
+1786481708.405131	                  DICT_ENTRY "sv" {
+1786481708.405132	                          STRING "Value";
+1786481708.405133	                          VARIANT "d" {
+1786481708.405133	                                  DOUBLE 54.938;
+1786481708.405133	                          };
+1786481708.405134	                  };
+1786481708.405135	          };
+1786481708.405136	          ARRAY "s" {
+1786481708.405136	          };
+1786481708.405137	  };
+1786481708.405138	
+1786481708.417043	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1031  Timestamp="Tue 2026-08-11 20:55:03.233668 UTC"
+1786481708.417056	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481708.417057	  UniqueName=:1.174
+1786481708.417058	  MESSAGE "sa{sv}as" {
+1786481708.417060	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481708.417060	          ARRAY "{sv}" {
+1786481708.417061	                  DICT_ENTRY "sv" {
+1786481708.417062	                          STRING "WarningAlarmHigh";
+1786481708.417063	                          VARIANT "b" {
+1786481708.417064	                                  BOOLEAN false;
+1786481708.417065	                          };
+1786481708.417066	                  };
+1786481708.417067	          };
+1786481708.417068	          ARRAY "s" {
+1786481708.417068	          };
+1786481708.417069	  };
+1786481708.417070	
+1786481716.251512	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1054  Timestamp="Tue 2026-08-11 20:55:09.762538 UTC"
+1786481716.277313	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481716.277326	  UniqueName=:1.174
+1786481716.277327	  MESSAGE "sa{sv}as" {
+1786481716.277328	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481716.277329	          ARRAY "{sv}" {
+1786481716.281663	                  DICT_ENTRY "sv" {
+1786481716.281679	                          STRING "Value";
+1786481716.281681	                          VARIANT "d" {
+1786481716.281682	                                  DOUBLE 89.938;
+1786481716.281683	                          };
+1786481716.281687	                  };
+1786481716.281689	          };
+1786481716.288613	          ARRAY "s" {
+1786481716.288625	          };
+1786481716.288626	  };
+1786481716.288627	
+1786481716.288629	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1055  Timestamp="Tue 2026-08-11 20:55:09.793158 UTC"
+1786481716.288630	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481716.288631	  UniqueName=:1.174
+1786481716.288632	  MESSAGE "sa{sv}as" {
+1786481716.288633	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481716.288634	          ARRAY "{sv}" {
+1786481716.288634	                  DICT_ENTRY "sv" {
+1786481716.288636	                          STRING "WarningAlarmHigh";
+1786481716.288636	                          VARIANT "b" {
+1786481716.288637	                                  BOOLEAN true;
+1786481716.288638	                          };
+1786481716.288638	                  };
+1786481716.288639	          };
+1786481716.288651	          ARRAY "s" {
+1786481716.288652	          };
+1786481716.288652	  };
+1786481716.288653	
+1786481724.153887	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1077  Timestamp="Tue 2026-08-11 20:55:23.923941 UTC"
+1786481724.153907	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481724.153910	  UniqueName=:1.174
+1786481724.153911	  MESSAGE "sa{sv}as" {
+1786481724.153913	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481724.153914	          ARRAY "{sv}" {
+1786481724.153915	                  DICT_ENTRY "sv" {
+1786481724.153917	                          STRING "Value";
+1786481724.153919	                          VARIANT "d" {
+1786481724.153920	                                  DOUBLE 54.938;
+1786481724.153921	                          };
+1786481724.153922	                  };
+1786481724.153923	          };
+1786481724.153925	          ARRAY "s" {
+1786481724.153926	          };
+1786481724.153927	  };
+1786481724.153929	
+1786481724.154750	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1078  Timestamp="Tue 2026-08-11 20:55:23.940131 UTC"
+1786481724.154766	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481724.154769	  UniqueName=:1.174
+1786481724.154770	  MESSAGE "sa{sv}as" {
+1786481724.154772	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481724.154773	          ARRAY "{sv}" {
+1786481724.154775	                  DICT_ENTRY "sv" {
+1786481724.154777	                          STRING "WarningAlarmHigh";
+1786481724.154778	                          VARIANT "b" {
+1786481724.154780	                                  BOOLEAN false;
+1786481724.154781	                          };
+1786481724.164189	                  };
+1786481724.164203	          };
+1786481724.164204	          ARRAY "s" {
+1786481724.164205	          };
+1786481724.164206	  };
+1786481724.164207	
+1786481732.106612	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1099  Timestamp="Tue 2026-08-11 20:55:30.524674 UTC"
+1786481732.106642	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481732.106643	  UniqueName=:1.174
+1786481732.106644	  MESSAGE "sa{sv}as" {
+1786481732.106645	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481732.106646	          ARRAY "{sv}" {
+1786481732.106646	                  DICT_ENTRY "sv" {
+1786481732.106647	                          STRING "Value";
+1786481732.106647	                          VARIANT "d" {
+1786481732.106648	                                  DOUBLE 89.938;
+1786481732.106649	                          };
+1786481732.106649	                  };
+1786481732.106650	          };
+1786481732.106651	          ARRAY "s" {
+1786481732.106651	          };
+1786481732.106652	  };
+1786481732.106653	
+1786481732.142466	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1100  Timestamp="Tue 2026-08-11 20:55:30.551077 UTC"
+1786481732.142477	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481732.142478	  UniqueName=:1.174
+1786481732.142479	  MESSAGE "sa{sv}as" {
+1786481732.142480	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481732.142481	          ARRAY "{sv}" {
+1786481732.142481	                  DICT_ENTRY "sv" {
+1786481732.142483	                          STRING "WarningAlarmHigh";
+1786481732.142483	                          VARIANT "b" {
+1786481732.142484	                                  BOOLEAN true;
+1786481732.142485	                          };
+1786481732.142486	                  };
+1786481732.142486	          };
+1786481732.142487	          ARRAY "s" {
+1786481732.142488	          };
+1786481732.142488	  };
+1786481732.142489	
+1786481741.409281	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1126  Timestamp="Tue 2026-08-11 20:55:37.517079 UTC"
+1786481741.409296	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481741.409297	  UniqueName=:1.174
+1786481741.409298	  MESSAGE "sa{sv}as" {
+1786481741.409298	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481741.409299	          ARRAY "{sv}" {
+1786481741.409300	                  DICT_ENTRY "sv" {
+1786481741.409301	                          STRING "Value";
+1786481741.409301	                          VARIANT "d" {
+1786481741.409302	                                  DOUBLE 54.938;
+1786481741.409302	                          };
+1786481741.409303	                  };
+1786481741.409304	          };
+1786481741.409304	          ARRAY "s" {
+1786481741.409305	          };
+1786481741.409306	  };
+1786481741.409306	
+1786481741.409307	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1127  Timestamp="Tue 2026-08-11 20:55:37.525636 UTC"
+1786481741.409308	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481741.409309	  UniqueName=:1.174
+1786481741.409309	  MESSAGE "sa{sv}as" {
+1786481741.409310	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481741.409311	          ARRAY "{sv}" {
+1786481741.409311	                  DICT_ENTRY "sv" {
+1786481741.409312	                          STRING "WarningAlarmHigh";
+1786481741.409313	                          VARIANT "b" {
+1786481741.409313	                                  BOOLEAN false;
+1786481741.409314	                          };
+1786481741.409315	                  };
+1786481741.409315	          };
+1786481741.409316	          ARRAY "s" {
+1786481741.409317	          };
+1786481741.409317	  };
+1786481741.409318	
+1786481749.840400	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1155  Timestamp="Tue 2026-08-11 20:55:44.553484 UTC"
+1786481749.840413	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481749.840415	  UniqueName=:1.174
+1786481749.840415	  MESSAGE "sa{sv}as" {
+1786481749.840416	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481749.846740	          ARRAY "{sv}" {
+1786481749.867441	                  DICT_ENTRY "sv" {
+1786481749.867455	                          STRING "Value";
+1786481749.867456	                          VARIANT "d" {
+1786481749.867457	                                  DOUBLE 89.938;
+1786481749.867459	                          };
+1786481749.867460	                  };
+1786481749.867461	          };
+1786481749.867462	          ARRAY "s" {
+1786481749.867463	          };
+1786481749.867472	  };
+1786481749.867473	
+1786481749.867475	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1156  Timestamp="Tue 2026-08-11 20:55:44.574844 UTC"
+1786481749.867478	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481749.867479	  UniqueName=:1.174
+1786481749.867480	  MESSAGE "sa{sv}as" {
+1786481749.867481	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481749.867482	          ARRAY "{sv}" {
+1786481749.867483	                  DICT_ENTRY "sv" {
+1786481749.867484	                          STRING "WarningAlarmHigh";
+1786481749.867486	                          VARIANT "b" {
+1786481749.867486	                                  BOOLEAN true;
+1786481749.867487	                          };
+1786481749.867489	                  };
+1786481749.867489	          };
+1786481749.867490	          ARRAY "s" {
+1786481749.867491	          };
+1786481749.867492	  };
+1786481749.867493	
+1786481757.080721	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1182  Timestamp="Tue 2026-08-11 20:55:50.584533 UTC"
+1786481757.080746	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481757.080750	  UniqueName=:1.174
+1786481757.080753	  MESSAGE "sa{sv}as" {
+1786481757.080756	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481757.080759	          ARRAY "{sv}" {
+1786481757.080762	                  DICT_ENTRY "sv" {
+1786481757.080764	                          STRING "Value";
+1786481757.080767	                          VARIANT "d" {
+1786481757.080770	                                  DOUBLE 54.938;
+1786481757.080772	                          };
+1786481757.080775	                  };
+1786481757.080777	          };
+1786481757.080780	          ARRAY "s" {
+1786481757.080783	          };
+1786481757.080786	  };
+1786481757.080788	
+1786481757.080791	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1183  Timestamp="Tue 2026-08-11 20:55:50.586002 UTC"
+1786481757.080795	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481757.080798	  UniqueName=:1.174
+1786481757.080801	  MESSAGE "sa{sv}as" {
+1786481757.080804	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481757.080806	          ARRAY "{sv}" {
+1786481757.080809	                  DICT_ENTRY "sv" {
+1786481757.080812	                          STRING "WarningAlarmHigh";
+1786481757.080815	                          VARIANT "b" {
+1786481757.080818	                                  BOOLEAN false;
+1786481757.080821	                          };
+1786481757.080824	                  };
+1786481757.080826	          };
+1786481757.080829	          ARRAY "s" {
+1786481757.080831	          };
+1786481757.080833	  };
+1786481757.080836	
+1786481765.565047	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1211  Timestamp="Tue 2026-08-11 20:56:05.104437 UTC"
+1786481765.565059	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481765.565060	  UniqueName=:1.174
+1786481765.565061	  MESSAGE "sa{sv}as" {
+1786481765.565062	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481765.565063	          ARRAY "{sv}" {
+1786481765.565063	                  DICT_ENTRY "sv" {
+1786481765.565064	                          STRING "Value";
+1786481765.565065	                          VARIANT "d" {
+1786481765.565066	                                  DOUBLE 89.938;
+1786481765.565066	                          };
+1786481765.565068	                  };
+1786481765.565068	          };
+1786481765.565069	          ARRAY "s" {
+1786481765.565070	          };
+1786481765.565071	  };
+1786481765.565071	
+1786481765.565072	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1212  Timestamp="Tue 2026-08-11 20:56:05.110041 UTC"
+1786481765.565073	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481765.565074	  UniqueName=:1.174
+1786481765.565075	  MESSAGE "sa{sv}as" {
+1786481765.565076	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481765.565076	          ARRAY "{sv}" {
+1786481765.565077	                  DICT_ENTRY "sv" {
+1786481765.565077	                          STRING "WarningAlarmHigh";
+1786481765.565078	                          VARIANT "b" {
+1786481765.565078	                                  BOOLEAN true;
+1786481765.565079	                          };
+1786481765.565079	                  };
+1786481765.565080	          };
+1786481765.565081	          ARRAY "s" {
+1786481765.565081	          };
+1786481765.565082	  };
+1786481765.565082	
+1786481774.255930	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1241  Timestamp="Tue 2026-08-11 20:56:11.653053 UTC"
+1786481774.255946	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481774.255948	  UniqueName=:1.174
+1786481774.255949	  MESSAGE "sa{sv}as" {
+1786481774.255951	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481774.255952	          ARRAY "{sv}" {
+1786481774.255953	                  DICT_ENTRY "sv" {
+1786481774.255954	                          STRING "Value";
+1786481774.255955	                          VARIANT "d" {
+1786481774.255956	                                  DOUBLE 54.938;
+1786481774.255957	                          };
+1786481774.255958	                  };
+1786481774.255959	          };
+1786481774.255960	          ARRAY "s" {
+1786481774.255962	          };
+1786481774.255963	  };
+1786481774.255964	
+1786481774.255965	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1242  Timestamp="Tue 2026-08-11 20:56:11.654654 UTC"
+1786481774.255967	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481774.255968	  UniqueName=:1.174
+1786481774.255969	  MESSAGE "sa{sv}as" {
+1786481774.255970	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481774.257069	          ARRAY "{sv}" {
+1786481774.257078	                  DICT_ENTRY "sv" {
+1786481774.257079	                          STRING "WarningAlarmHigh";
+1786481774.257081	                          VARIANT "b" {
+1786481774.257082	                                  BOOLEAN false;
+1786481774.257082	                          };
+1786481774.257083	                  };
+1786481774.257083	          };
+1786481774.257084	          ARRAY "s" {
+1786481774.257084	          };
+1786481774.257085	  };
+1786481774.257086	
+1786481782.322714	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1267  Timestamp="Tue 2026-08-11 20:56:18.346600 UTC"
+1786481782.322730	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481782.354280	  UniqueName=:1.174
+1786481782.364640	  MESSAGE "sa{sv}as" {
+1786481782.364652	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481782.364653	          ARRAY "{sv}" {
+1786481782.364654	                  DICT_ENTRY "sv" {
+1786481782.364654	                          STRING "Value";
+1786481782.364655	                          VARIANT "d" {
+1786481782.364656	                                  DOUBLE 89.938;
+1786481782.366478	                          };
+1786481782.366489	                  };
+1786481782.366490	          };
+1786481782.366491	          ARRAY "s" {
+1786481782.366492	          };
+1786481782.366493	  };
+1786481782.366494	
+1786481782.366496	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1268  Timestamp="Tue 2026-08-11 20:56:18.409186 UTC"
+1786481782.366498	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481782.366499	  UniqueName=:1.174
+1786481782.366500	  MESSAGE "sa{sv}as" {
+1786481782.366501	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481782.366502	          ARRAY "{sv}" {
+1786481782.366503	                  DICT_ENTRY "sv" {
+1786481782.366504	                          STRING "WarningAlarmHigh";
+1786481782.366505	                          VARIANT "b" {
+1786481782.366506	                                  BOOLEAN true;
+1786481782.366507	                          };
+1786481782.366508	                  };
+1786481782.366509	          };
+1786481782.366510	          ARRAY "s" {
+1786481782.366510	          };
+1786481782.366511	  };
+1786481782.366512	
+1786481790.166348	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1292  Timestamp="Tue 2026-08-11 20:56:24.908858 UTC"
+1786481790.166367	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481790.166369	  UniqueName=:1.174
+1786481790.166371	  MESSAGE "sa{sv}as" {
+1786481790.166373	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481790.166375	          ARRAY "{sv}" {
+1786481790.166376	                  DICT_ENTRY "sv" {
+1786481790.166378	                          STRING "Value";
+1786481790.166379	                          VARIANT "d" {
+1786481790.166380	                                  DOUBLE 54.938;
+1786481790.166382	                          };
+1786481790.166383	                  };
+1786481790.166384	          };
+1786481790.166387	          ARRAY "s" {
+1786481790.166388	          };
+1786481790.166390	  };
+1786481790.166391	
+1786481790.166393	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1293  Timestamp="Tue 2026-08-11 20:56:24.911120 UTC"
+1786481790.166395	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481790.166397	  UniqueName=:1.174
+1786481790.166398	  MESSAGE "sa{sv}as" {
+1786481790.166400	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481790.166401	          ARRAY "{sv}" {
+1786481790.166403	                  DICT_ENTRY "sv" {
+1786481790.166404	                          STRING "WarningAlarmHigh";
+1786481790.167335	                          VARIANT "b" {
+1786481790.167342	                                  BOOLEAN false;
+1786481790.167343	                          };
+1786481790.167344	                  };
+1786481790.167345	          };
+1786481790.168097	          ARRAY "s" {
+1786481790.179597	          };
+1786481790.179613	  };
+1786481790.179614	
+1786481797.996673	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1320  Timestamp="Tue 2026-08-11 20:56:31.433546 UTC"
+1786481797.996698	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481797.996700	  UniqueName=:1.174
+1786481797.996701	  MESSAGE "sa{sv}as" {
+1786481797.996702	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481797.996702	          ARRAY "{sv}" {
+1786481797.996703	                  DICT_ENTRY "sv" {
+1786481797.996703	                          STRING "Value";
+1786481797.996705	                          VARIANT "d" {
+1786481797.996705	                                  DOUBLE 89.938;
+1786481797.996706	                          };
+1786481797.996706	                  };
+1786481797.996707	          };
+1786481797.996707	          ARRAY "s" {
+1786481797.996715	          };
+1786481797.996716	  };
+1786481797.996716	
+1786481797.996717	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1321  Timestamp="Tue 2026-08-11 20:56:31.435297 UTC"
+1786481797.996718	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481797.996719	  UniqueName=:1.174
+1786481797.996720	  MESSAGE "sa{sv}as" {
+1786481797.996720	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481797.996721	          ARRAY "{sv}" {
+1786481797.996722	                  DICT_ENTRY "sv" {
+1786481797.996722	                          STRING "WarningAlarmHigh";
+1786481797.996723	                          VARIANT "b" {
+1786481797.996724	                                  BOOLEAN true;
+1786481797.996725	                          };
+1786481797.996725	                  };
+1786481797.996726	          };
+1786481797.996727	          ARRAY "s" {
+1786481797.996727	          };
+1786481797.996727	  };
+1786481797.996728	
+1786481807.301751	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1351  Timestamp="Tue 2026-08-11 20:56:45.947821 UTC"
+1786481807.301763	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481807.301764	  UniqueName=:1.174
+1786481807.301765	  MESSAGE "sa{sv}as" {
+1786481807.301766	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481807.301766	          ARRAY "{sv}" {
+1786481807.301767	                  DICT_ENTRY "sv" {
+1786481807.301768	                          STRING "Value";
+1786481807.301768	                          VARIANT "d" {
+1786481807.301769	                                  DOUBLE 54.938;
+1786481807.301770	                          };
+1786481807.301770	                  };
+1786481807.301771	          };
+1786481807.301771	          ARRAY "s" {
+1786481807.301772	          };
+1786481807.301773	  };
+1786481807.301774	
+1786481807.301774	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1352  Timestamp="Tue 2026-08-11 20:56:45.949873 UTC"
+1786481807.301775	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481807.301776	  UniqueName=:1.174
+1786481807.301776	  MESSAGE "sa{sv}as" {
+1786481807.301777	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481807.301778	          ARRAY "{sv}" {
+1786481807.301778	                  DICT_ENTRY "sv" {
+1786481807.301779	                          STRING "WarningAlarmHigh";
+1786481807.301780	                          VARIANT "b" {
+1786481807.301780	                                  BOOLEAN false;
+1786481807.301791	                          };
+1786481807.301791	                  };
+1786481807.305859	          };
+1786481807.305874	          ARRAY "s" {
+1786481807.305875	          };
+1786481807.305876	  };
+1786481807.305877	
+1786481814.563296	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1378  Timestamp="Tue 2026-08-11 20:56:52.012747 UTC"
+1786481814.566259	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481814.567991	  UniqueName=:1.174
+1786481814.572819	  MESSAGE "sa{sv}as" {
+1786481814.572834	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481814.577882	          ARRAY "{sv}" {
+1786481814.577895	                  DICT_ENTRY "sv" {
+1786481814.581400	                          STRING "Value";
+1786481814.581410	                          VARIANT "d" {
+1786481814.581411	                                  DOUBLE 89.938;
+1786481814.581412	                          };
+1786481814.581413	                  };
+1786481814.581413	          };
+1786481814.581414	          ARRAY "s" {
+1786481814.581414	          };
+1786481814.581415	  };
+1786481814.581416	
+1786481814.597423	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1379  Timestamp="Tue 2026-08-11 20:56:52.033175 UTC"
+1786481814.597436	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481814.597437	  UniqueName=:1.174
+1786481814.597438	  MESSAGE "sa{sv}as" {
+1786481814.597439	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481814.597440	          ARRAY "{sv}" {
+1786481814.597441	                  DICT_ENTRY "sv" {
+1786481814.597441	                          STRING "WarningAlarmHigh";
+1786481814.597442	                          VARIANT "b" {
+1786481814.597443	                                  BOOLEAN true;
+1786481814.597444	                          };
+1786481814.597444	                  };
+1786481814.597445	          };
+1786481814.597445	          ARRAY "s" {
+1786481814.597456	          };
+1786481814.597457	  };
+1786481814.597458	
+1786481822.486640	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1405  Timestamp="Tue 2026-08-11 20:56:58.563366 UTC"
+1786481822.486656	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481822.489959	  UniqueName=:1.174
+1786481822.489970	  MESSAGE "sa{sv}as" {
+1786481822.489972	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481822.489973	          ARRAY "{sv}" {
+1786481822.501273	                  DICT_ENTRY "sv" {
+1786481822.501284	                          STRING "Value";
+1786481822.501285	                          VARIANT "d" {
+1786481822.501286	                                  DOUBLE 54.938;
+1786481822.501287	                          };
+1786481822.501287	                  };
+1786481822.501287	          };
+1786481822.501289	          ARRAY "s" {
+1786481822.501289	          };
+1786481822.501290	  };
+1786481822.501291	
+1786481822.501292	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1406  Timestamp="Tue 2026-08-11 20:56:58.625768 UTC"
+1786481822.505502	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481822.505513	  UniqueName=:1.174
+1786481822.505514	  MESSAGE "sa{sv}as" {
+1786481822.511851	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481822.511863	          ARRAY "{sv}" {
+1786481822.511864	                  DICT_ENTRY "sv" {
+1786481822.511865	                          STRING "WarningAlarmHigh";
+1786481822.511866	                          VARIANT "b" {
+1786481822.519960	                                  BOOLEAN false;
+1786481822.519975	                          };
+1786481822.519976	                  };
+1786481822.519984	          };
+1786481822.519985	          ARRAY "s" {
+1786481822.519986	          };
+1786481822.519987	  };
+1786481822.519988	
+1786481830.862306	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1432  Timestamp="Tue 2026-08-11 20:57:05.583224 UTC"
+1786481830.862318	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481830.862320	  UniqueName=:1.174
+1786481830.862320	  MESSAGE "sa{sv}as" {
+1786481830.862321	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481830.862322	          ARRAY "{sv}" {
+1786481830.862323	                  DICT_ENTRY "sv" {
+1786481830.862324	                          STRING "Value";
+1786481830.862324	                          VARIANT "d" {
+1786481830.862325	                                  DOUBLE 89.938;
+1786481830.862325	                          };
+1786481830.862326	                  };
+1786481830.862327	          };
+1786481830.862327	          ARRAY "s" {
+1786481830.862328	          };
+1786481830.862329	  };
+1786481830.862329	
+1786481830.881513	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1433  Timestamp="Tue 2026-08-11 20:57:05.608019 UTC"
+1786481830.881526	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481830.881527	  UniqueName=:1.174
+1786481830.881528	  MESSAGE "sa{sv}as" {
+1786481830.881529	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481830.881529	          ARRAY "{sv}" {
+1786481830.881530	                  DICT_ENTRY "sv" {
+1786481830.881531	                          STRING "WarningAlarmHigh";
+1786481830.881532	                          VARIANT "b" {
+1786481830.881533	                                  BOOLEAN true;
+1786481830.881533	                          };
+1786481830.881534	                  };
+1786481830.881535	          };
+1786481830.881535	          ARRAY "s" {
+1786481830.881536	          };
+1786481830.881536	  };
+1786481830.881537	
+1786481839.593457	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1457  Timestamp="Tue 2026-08-11 20:57:12.122480 UTC"
+1786481839.593473	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481839.593475	  UniqueName=:1.174
+1786481839.593476	  MESSAGE "sa{sv}as" {
+1786481839.593477	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481839.593478	          ARRAY "{sv}" {
+1786481839.593478	                  DICT_ENTRY "sv" {
+1786481839.593479	                          STRING "Value";
+1786481839.593480	                          VARIANT "d" {
+1786481839.593480	                                  DOUBLE 54.938;
+1786481839.593481	                          };
+1786481839.593482	                  };
+1786481839.593482	          };
+1786481839.593482	          ARRAY "s" {
+1786481839.593483	          };
+1786481839.593484	  };
+1786481839.593485	
+1786481839.593486	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1458  Timestamp="Tue 2026-08-11 20:57:12.125778 UTC"
+1786481839.593487	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481839.593487	  UniqueName=:1.174
+1786481839.593488	  MESSAGE "sa{sv}as" {
+1786481839.593489	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481839.593490	          ARRAY "{sv}" {
+1786481839.593490	                  DICT_ENTRY "sv" {
+1786481839.593491	                          STRING "WarningAlarmHigh";
+1786481839.602563	                          VARIANT "b" {
+1786481839.613155	                                  BOOLEAN false;
+1786481839.613169	                          };
+1786481839.613171	                  };
+1786481839.613171	          };
+1786481839.613172	          ARRAY "s" {
+1786481839.613173	          };
+1786481839.613173	  };
+1786481839.613174	
+1786481847.462007	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1483  Timestamp="Tue 2026-08-11 20:57:26.176371 UTC"
+1786481847.469903	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481847.469916	  UniqueName=:1.174
+1786481847.469916	  MESSAGE "sa{sv}as" {
+1786481847.469918	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481847.469918	          ARRAY "{sv}" {
+1786481847.469919	                  DICT_ENTRY "sv" {
+1786481847.469919	                          STRING "Value";
+1786481847.469920	                          VARIANT "d" {
+1786481847.479227	                                  DOUBLE 89.938;
+1786481847.479239	                          };
+1786481847.479240	                  };
+1786481847.479240	          };
+1786481847.479241	          ARRAY "s" {
+1786481847.479241	          };
+1786481847.491566	  };
+1786481847.491580	
+1786481847.491581	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1484  Timestamp="Tue 2026-08-11 20:57:26.193594 UTC"
+1786481847.491593	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481847.491595	  UniqueName=:1.174
+1786481847.491595	  MESSAGE "sa{sv}as" {
+1786481847.491596	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481847.491596	          ARRAY "{sv}" {
+1786481847.491597	                  DICT_ENTRY "sv" {
+1786481847.491598	                          STRING "WarningAlarmHigh";
+1786481847.491599	                          VARIANT "b" {
+1786481847.491599	                                  BOOLEAN true;
+1786481847.491600	                          };
+1786481847.491601	                  };
+1786481847.491601	          };
+1786481847.491602	          ARRAY "s" {
+1786481847.491602	          };
+1786481847.491603	  };
+1786481847.491603	
+1786481855.928303	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1514  Timestamp="Tue 2026-08-11 20:57:33.230244 UTC"
+1786481855.928315	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481855.928316	  UniqueName=:1.174
+1786481855.928317	  MESSAGE "sa{sv}as" {
+1786481855.928318	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481855.928319	          ARRAY "{sv}" {
+1786481855.928319	                  DICT_ENTRY "sv" {
+1786481855.928320	                          STRING "Value";
+1786481855.928321	                          VARIANT "d" {
+1786481855.928321	                                  DOUBLE 54.938;
+1786481855.928322	                          };
+1786481855.928323	                  };
+1786481855.928938	          };
+1786481855.929591	          ARRAY "s" {
+1786481855.929597	          };
+1786481855.930106	  };
+1786481855.930111	
+1786481855.941871	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1515  Timestamp="Tue 2026-08-11 20:57:33.234622 UTC"
+1786481855.941882	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481855.941884	  UniqueName=:1.174
+1786481855.941885	  MESSAGE "sa{sv}as" {
+1786481855.941886	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481855.941886	          ARRAY "{sv}" {
+1786481855.941887	                  DICT_ENTRY "sv" {
+1786481855.941888	                          STRING "WarningAlarmHigh";
+1786481855.941889	                          VARIANT "b" {
+1786481855.941890	                                  BOOLEAN false;
+1786481855.941890	                          };
+1786481855.941891	                  };
+1786481855.941892	          };
+1786481855.941892	          ARRAY "s" {
+1786481855.941904	          };
+1786481855.941905	  };
+1786481855.941906	
+1786481863.969506	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1544  Timestamp="Tue 2026-08-11 20:57:39.863447 UTC"
+1786481863.996734	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481863.996747	  UniqueName=:1.174
+1786481863.996747	  MESSAGE "sa{sv}as" {
+1786481863.996748	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481863.996749	          ARRAY "{sv}" {
+1786481863.996750	                  DICT_ENTRY "sv" {
+1786481863.996751	                          STRING "Value";
+1786481863.996751	                          VARIANT "d" {
+1786481863.996752	                                  DOUBLE 89.938;
+1786481863.996753	                          };
+1786481863.996754	                  };
+1786481863.996755	          };
+1786481863.996755	          ARRAY "s" {
+1786481863.996756	          };
+1786481863.996757	  };
+1786481863.996758	
+1786481863.996759	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1545  Timestamp="Tue 2026-08-11 20:57:39.920762 UTC"
+1786481863.996761	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481863.996761	  UniqueName=:1.174
+1786481863.996762	  MESSAGE "sa{sv}as" {
+1786481863.996763	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481864.032376	          ARRAY "{sv}" {
+1786481864.032387	                  DICT_ENTRY "sv" {
+1786481864.032389	                          STRING "WarningAlarmHigh";
+1786481864.032389	                          VARIANT "b" {
+1786481864.032390	                                  BOOLEAN true;
+1786481864.032390	                          };
+1786481864.032391	                  };
+1786481864.032391	          };
+1786481864.032392	          ARRAY "s" {
+1786481864.032393	          };
+1786481864.032393	  };
+1786481864.032394	
+1786481872.623418	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1567  Timestamp="Tue 2026-08-11 20:57:46.428030 UTC"
+1786481872.623433	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481872.623435	  UniqueName=:1.174
+1786481872.623435	  MESSAGE "sa{sv}as" {
+1786481872.623436	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481872.623437	          ARRAY "{sv}" {
+1786481872.623438	                  DICT_ENTRY "sv" {
+1786481872.623438	                          STRING "Value";
+1786481872.623439	                          VARIANT "d" {
+1786481872.623440	                                  DOUBLE 54.938;
+1786481872.623440	                          };
+1786481872.623441	                  };
+1786481872.623442	          };
+1786481872.623442	          ARRAY "s" {
+1786481872.623443	          };
+1786481872.623444	  };
+1786481872.623445	
+1786481872.623446	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1568  Timestamp="Tue 2026-08-11 20:57:46.430190 UTC"
+1786481872.624757	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481872.624761	  UniqueName=:1.174
+1786481872.624762	  MESSAGE "sa{sv}as" {
+1786481872.624763	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481872.624768	          ARRAY "{sv}" {
+1786481872.624769	                  DICT_ENTRY "sv" {
+1786481872.624770	                          STRING "WarningAlarmHigh";
+1786481872.624771	                          VARIANT "b" {
+1786481872.624772	                                  BOOLEAN false;
+1786481872.624773	                          };
+1786481872.624774	                  };
+1786481872.624775	          };
+1786481872.624776	          ARRAY "s" {
+1786481872.624777	          };
+1786481872.624779	  };
+1786481872.624779	
+1786481880.482018	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1593  Timestamp="Tue 2026-08-11 20:58:00.461236 UTC"
+1786481880.482033	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481880.482035	  UniqueName=:1.174
+1786481880.482037	  MESSAGE "sa{sv}as" {
+1786481880.482038	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481880.482039	          ARRAY "{sv}" {
+1786481880.482041	                  DICT_ENTRY "sv" {
+1786481880.482042	                          STRING "Value";
+1786481880.482048	                          VARIANT "d" {
+1786481880.482049	                                  DOUBLE 89.938;
+1786481880.482050	                          };
+1786481880.482051	                  };
+1786481880.482052	          };
+1786481880.482053	          ARRAY "s" {
+1786481880.482054	          };
+1786481880.482056	  };
+1786481880.482057	
+1786481880.482059	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1594  Timestamp="Tue 2026-08-11 20:58:00.463438 UTC"
+1786481880.482060	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481880.482061	  UniqueName=:1.174
+1786481880.482062	  MESSAGE "sa{sv}as" {
+1786481880.482063	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481880.482064	          ARRAY "{sv}" {
+1786481880.492622	                  DICT_ENTRY "sv" {
+1786481880.492638	                          STRING "WarningAlarmHigh";
+1786481880.492639	                          VARIANT "b" {
+1786481880.492640	                                  BOOLEAN true;
+1786481880.492641	                          };
+1786481880.492642	                  };
+1786481880.492643	          };
+1786481880.492644	          ARRAY "s" {
+1786481880.492645	          };
+1786481880.492646	  };
+1786481880.492647	
+1786481888.899142	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1622  Timestamp="Tue 2026-08-11 20:58:07.480834 UTC"
+1786481888.903195	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481888.904483	  UniqueName=:1.174
+1786481888.904494	  MESSAGE "sa{sv}as" {
+1786481888.906251	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481888.906261	          ARRAY "{sv}" {
+1786481888.908496	                  DICT_ENTRY "sv" {
+1786481888.908517	                          STRING "Value";
+1786481888.909718	                          VARIANT "d" {
+1786481888.909729	                                  DOUBLE 54.938;
+1786481888.910695	                          };
+1786481888.911541	                  };
+1786481888.911549	          };
+1786481888.914065	          ARRAY "s" {
+1786481888.916611	          };
+1786481888.917650	  };
+1786481888.917663	
+1786481888.918714	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1623  Timestamp="Tue 2026-08-11 20:58:07.496578 UTC"
+1786481888.920250	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481888.926261	  UniqueName=:1.174
+1786481888.926276	  MESSAGE "sa{sv}as" {
+1786481888.926286	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481888.926287	          ARRAY "{sv}" {
+1786481888.926288	                  DICT_ENTRY "sv" {
+1786481888.926289	                          STRING "WarningAlarmHigh";
+1786481888.927574	                          VARIANT "b" {
+1786481888.927586	                                  BOOLEAN false;
+1786481888.941956	                          };
+1786481888.941970	                  };
+1786481888.941972	          };
+1786481888.941972	          ARRAY "s" {
+1786481888.941973	          };
+1786481888.941975	  };
+1786481888.941976	
+1786481896.754620	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1651  Timestamp="Tue 2026-08-11 20:58:14.019149 UTC"
+1786481896.754645	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481896.754647	  UniqueName=:1.174
+1786481896.754648	  MESSAGE "sa{sv}as" {
+1786481896.754649	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481896.754650	          ARRAY "{sv}" {
+1786481896.754650	                  DICT_ENTRY "sv" {
+1786481896.754651	                          STRING "Value";
+1786481896.754652	                          VARIANT "d" {
+1786481896.754654	                                  DOUBLE 89.938;
+1786481896.754654	                          };
+1786481896.754655	                  };
+1786481896.754656	          };
+1786481896.754657	          ARRAY "s" {
+1786481896.754657	          };
+1786481896.754658	  };
+1786481896.754659	
+1786481896.755733	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1652  Timestamp="Tue 2026-08-11 20:58:14.025572 UTC"
+1786481896.755740	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481896.755741	  UniqueName=:1.174
+1786481896.755742	  MESSAGE "sa{sv}as" {
+1786481896.755743	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481896.755744	          ARRAY "{sv}" {
+1786481896.755744	                  DICT_ENTRY "sv" {
+1786481896.755745	                          STRING "WarningAlarmHigh";
+1786481896.755746	                          VARIANT "b" {
+1786481896.755746	                                  BOOLEAN true;
+1786481896.755747	                          };
+1786481896.755748	                  };
+1786481896.755748	          };
+1786481896.755749	          ARRAY "s" {
+1786481896.755755	          };
+1786481896.755756	  };
+1786481896.755757	
+1786481904.648622	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1678  Timestamp="Tue 2026-08-11 20:58:20.595663 UTC"
+1786481904.648640	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481904.648643	  UniqueName=:1.174
+1786481904.648644	  MESSAGE "sa{sv}as" {
+1786481904.648646	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481904.648647	          ARRAY "{sv}" {
+1786481904.648649	                  DICT_ENTRY "sv" {
+1786481904.648650	                          STRING "Value";
+1786481904.648650	                          VARIANT "d" {
+1786481904.648652	                                  DOUBLE 54.938;
+1786481904.648653	                          };
+1786481904.648654	                  };
+1786481904.648655	          };
+1786481904.648656	          ARRAY "s" {
+1786481904.648656	          };
+1786481904.648657	  };
+1786481904.648659	
+1786481904.648660	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1679  Timestamp="Tue 2026-08-11 20:58:20.597591 UTC"
+1786481904.648662	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481904.648663	  UniqueName=:1.174
+1786481904.648663	  MESSAGE "sa{sv}as" {
+1786481904.663353	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481904.663371	          ARRAY "{sv}" {
+1786481904.663373	                  DICT_ENTRY "sv" {
+1786481904.663374	                          STRING "WarningAlarmHigh";
+1786481904.663376	                          VARIANT "b" {
+1786481904.663377	                                  BOOLEAN false;
+1786481904.663378	                          };
+1786481904.663379	                  };
+1786481904.663393	          };
+1786481904.663394	          ARRAY "s" {
+1786481904.663395	          };
+1786481904.663397	  };
+1786481904.663399	
+1786481914.087046	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1703  Timestamp="Tue 2026-08-11 20:58:27.671406 UTC"
+1786481914.087059	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481914.087060	  UniqueName=:1.174
+1786481914.087061	  MESSAGE "sa{sv}as" {
+1786481914.087062	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481914.087063	          ARRAY "{sv}" {
+1786481914.087064	                  DICT_ENTRY "sv" {
+1786481914.087065	                          STRING "Value";
+1786481914.090852	                          VARIANT "d" {
+1786481914.090865	                                  DOUBLE 89.938;
+1786481914.090866	                          };
+1786481914.090867	                  };
+1786481914.090868	          };
+1786481914.090868	          ARRAY "s" {
+1786481914.090869	          };
+1786481914.090870	  };
+1786481914.090871	
+1786481914.090872	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1704  Timestamp="Tue 2026-08-11 20:58:27.728837 UTC"
+1786481914.090873	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481914.090875	  UniqueName=:1.174
+1786481914.090876	  MESSAGE "sa{sv}as" {
+1786481914.090877	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481914.090878	          ARRAY "{sv}" {
+1786481914.090878	                  DICT_ENTRY "sv" {
+1786481914.090879	                          STRING "WarningAlarmHigh";
+1786481914.090879	                          VARIANT "b" {
+1786481914.090880	                                  BOOLEAN true;
+1786481914.090888	                          };
+1786481914.090889	                  };
+1786481914.090889	          };
+1786481914.090890	          ARRAY "s" {
+1786481914.090890	          };
+1786481914.090891	  };
+1786481914.090891	
+1786481921.272599	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1727  Timestamp="Tue 2026-08-11 20:58:41.214613 UTC"
+1786481921.272614	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481921.296636	  UniqueName=:1.174
+1786481921.296650	  MESSAGE "sa{sv}as" {
+1786481921.296653	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481921.296654	          ARRAY "{sv}" {
+1786481921.296655	                  DICT_ENTRY "sv" {
+1786481921.296656	                          STRING "Value";
+1786481921.296657	                          VARIANT "d" {
+1786481921.296658	                                  DOUBLE 54.938;
+1786481921.296659	                          };
+1786481921.296660	                  };
+1786481921.296662	          };
+1786481921.296663	          ARRAY "s" {
+1786481921.296664	          };
+1786481921.296665	  };
+1786481921.296666	
+1786481921.296669	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1728  Timestamp="Tue 2026-08-11 20:58:41.243894 UTC"
+1786481921.296670	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481921.296672	  UniqueName=:1.174
+1786481921.296673	  MESSAGE "sa{sv}as" {
+1786481921.296674	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481921.296674	          ARRAY "{sv}" {
+1786481921.296675	                  DICT_ENTRY "sv" {
+1786481921.296676	                          STRING "WarningAlarmHigh";
+1786481921.296677	                          VARIANT "b" {
+1786481921.296687	                                  BOOLEAN false;
+1786481921.296687	                          };
+1786481921.296688	                  };
+1786481921.296689	          };
+1786481921.296689	          ARRAY "s" {
+1786481921.296690	          };
+1786481921.296690	  };
+1786481921.296691	
+1786481929.113354	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1753  Timestamp="Tue 2026-08-11 20:58:47.759751 UTC"
+1786481929.113367	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481929.113369	  UniqueName=:1.174
+1786481929.113370	  MESSAGE "sa{sv}as" {
+1786481929.121697	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481929.121710	          ARRAY "{sv}" {
+1786481929.121710	                  DICT_ENTRY "sv" {
+1786481929.121711	                          STRING "Value";
+1786481929.121712	                          VARIANT "d" {
+1786481929.121712	                                  DOUBLE 89.938;
+1786481929.121713	                          };
+1786481929.121714	                  };
+1786481929.121715	          };
+1786481929.121716	          ARRAY "s" {
+1786481929.121716	          };
+1786481929.121717	  };
+1786481929.121717	
+1786481929.129387	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1754  Timestamp="Tue 2026-08-11 20:58:47.773391 UTC"
+1786481929.150107	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481929.150122	  UniqueName=:1.174
+1786481929.150123	  MESSAGE "sa{sv}as" {
+1786481929.150124	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481929.150124	          ARRAY "{sv}" {
+1786481929.150125	                  DICT_ENTRY "sv" {
+1786481929.150126	                          STRING "WarningAlarmHigh";
+1786481929.150127	                          VARIANT "b" {
+1786481929.150127	                                  BOOLEAN true;
+1786481929.150128	                          };
+1786481929.150128	                  };
+1786481929.150129	          };
+1786481929.150129	          ARRAY "s" {
+1786481929.150130	          };
+1786481929.150131	  };
+1786481929.150131	
+1786481937.570613	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1782  Timestamp="Tue 2026-08-11 20:58:54.795223 UTC"
+1786481937.570631	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481937.570634	  UniqueName=:1.174
+1786481937.570636	  MESSAGE "sa{sv}as" {
+1786481937.570638	          STRING "xyz.openbmc_project.Sensor.Value";
+1786481937.570640	          ARRAY "{sv}" {
+1786481937.570642	                  DICT_ENTRY "sv" {
+1786481937.570643	                          STRING "Value";
+1786481937.570644	                          VARIANT "d" {
+1786481937.570646	                                  DOUBLE 54.938;
+1786481937.570647	                          };
+1786481937.570649	                  };
+1786481937.570650	          };
+1786481937.570652	          ARRAY "s" {
+1786481937.570653	          };
+1786481937.570662	  };
+1786481937.570664	
+1786481937.570667	‣ Type=signal  Endian=l  Flags=1  Version=1 Cookie=1783  Timestamp="Tue 2026-08-11 20:58:54.798332 UTC"
+1786481937.570669	  Sender=:1.174  Path=/xyz/openbmc_project/sensors/temperature/die0  Interface=org.freedesktop.DBus.Properties  Member=PropertiesChanged
+1786481937.570671	  UniqueName=:1.174
+1786481937.570672	  MESSAGE "sa{sv}as" {
+1786481937.570674	          STRING "xyz.openbmc_project.Sensor.Threshold.Warning";
+1786481937.570675	          ARRAY "{sv}" {
+1786481937.570677	                  DICT_ENTRY "sv" {
+1786481937.570678	                          STRING "WarningAlarmHigh";
+1786481937.570681	                          VARIANT "b" {
+1786481937.571307	                                  BOOLEAN false;
+1786481937.571314	                          };
+1786481937.571315	                  };
+1786481937.571316	          };
+1786481937.571317	          ARRAY "s" {
+1786481937.571318	          };
+1786481937.571319	  };
+1786481937.571320	

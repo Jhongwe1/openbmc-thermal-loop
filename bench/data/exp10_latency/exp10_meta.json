@@ -1,0 +1,84 @@
+{
+  "experiment": "exp10_latency",
+  "collect": {
+    "config_md5": "a3ac4a0a83ae0cc4ce85a5c107cc8201",
+    "reps": 32,
+    "warmup_reps": 2,
+    "period_s": 8.0,
+    "levels_c": [
+      90.0,
+      55.0
+    ],
+    "redfish_uri": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0"
+  },
+  "summary": {
+    "n": 28,
+    "seg2_s": {
+      "median": 0.564050555229187,
+      "p95": 1.0242844820022583,
+      "min": 0.16017913818359375,
+      "max": 1.0912530422210693
+    },
+    "seg3_s": {
+      "median": 0.0,
+      "p95": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "total_redfish_s": {
+      "median": 0.8603605031967163,
+      "p95": 1.4570468068122864,
+      "min": 0.1451270580291748,
+      "max": 1.958441972732544
+    }
+  },
+  "rejected_reps": [
+    {
+      "rep": 19,
+      "why": "rep 19: zone 的 BMC epoch 行距 7.59 s > 0.5 s —— guest 時鐘跳步/停擺,rep 無效"
+    },
+    {
+      "rep": 31,
+      "why": "rep 31: zone 序列尾端缺失(串流提早關閉,只對齊到 31 個)—— rep 無效"
+    }
+  ],
+  "sawtooth": {
+    "count": 7,
+    "amplitude_median_s": 7.5940001010894775,
+    "period_median_s": 39.723999977111816
+  },
+  "sawtooth_jumps": [
+    {
+      "epoch_s": 1786481680.878,
+      "amplitude_s": 7.674000024795532
+    },
+    {
+      "epoch_s": 1786481720.565,
+      "amplitude_s": 7.689000129699707
+    },
+    {
+      "epoch_s": 1786481760.318,
+      "amplitude_s": 7.550000190734863
+    },
+    {
+      "epoch_s": 1786481800.104,
+      "amplitude_s": 7.588000059127808
+    },
+    {
+      "epoch_s": 1786481839.792,
+      "amplitude_s": 7.587000131607056
+    },
+    {
+      "epoch_s": 1786481879.487,
+      "amplitude_s": 7.5940001010894775
+    },
+    {
+      "epoch_s": 1786481919.274,
+      "amplitude_s": 7.596999883651733
+    }
+  ],
+  "guest_clock_rate_between_corrections": 0.8099510514752248,
+  "redfish_poll_median_s": 0.3630828857421875,
+  "swampd": "unmodified upstream @ c5e5955 (docs/env-baseline.md)",
+  "repo_commit": "5007c82"
+}

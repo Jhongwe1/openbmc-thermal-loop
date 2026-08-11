@@ -163,5 +163,16 @@
     "figure": "figures/fig4_failsafe.png",
     "seed_range": [5.01, 5.155],
     "note": "L2 rig：未修改 swampd @ c5e5955、config 與部署版唯一差異是 die0 timeout 0→5（腳本生成並逐欄驗證）。★ run 間散布 145 ms 遠小於機制抖動上界（~1 s）：逾時檢查騎在外圈 1 Hz 上、相位理論上均勻，但本 rig 啟動序列固定讓每 run 相位幾乎相同 —— 窄散布是採樣偏差不是精度，tolerance 給 0.25 涵蓋別的相位。事件時刻從 zone_0.log 讀（FailSafe D-Bus 屬性是純 getter、從不發 PropertiesChanged，busctl monitor 量不到）；環境凍結（事件窗行距 >0.5 s）的 run 自動作廢。見 docs/failsafe.md §5。"
+  },
+
+  "e2e_inject_to_redfish_s": {
+    "value": 0.860,
+    "tolerance_pct": 0.40,
+    "unit": "s",
+    "meaning": "從 QMP 注入(晶片層)到 host 從 Redfish 讀到新值的全程延遲中位數(L3 QEMU BMC,n=28,p95 = 1.457 s)。★ 純 host 時鐘,不跨時鐘域 —— 這是 exp10 裡最可靠的量。同場加映(guest 時鐘域):② D-Bus→swampd zone log 中位 0.564 s(外圈 1 Hz 的相位骰子,不是「PID 多慢」);③ 外圈輸出→PWM 28/28 同列(≤1 個內圈週期 100 ms)。",
+    "measured_on": "2026-08-12",
+    "source": "bench/data/exp10_latency/events.csv",
+    "figure": null,
+    "note": "★ 本欄原登記為 e2e_redfish_vs_dbus_ratio(④/①):實測發現 guest 時鐘(TCG)以 0.81× 速率行走、每 ~39.7 s 跳步 +7.59 s,跨時鐘域的 ①④ 無法以小於跳步幅度的精度分離 —— 改 claim 發生在 value 仍為 null 時(規則一),兩個原始預測(計畫:④最慢;我:①最慢)與「判定不了」的結論都留檔於 docs/measurement.md exp10 與 bench/exp10_latency.py docstring。系統量測受 host 負載影響大 → 容差 0.40;逐 rep 量具健康(zone epoch 連續性/Redfish host 節奏/注入節奏)拒收 2 個 rep,理由在 exp10_meta.json。★ CI 跑不了 QEMU:W10 的 assert_metrics.py 要把這一項標 informational(只報告不斷言)。"
   }
 }

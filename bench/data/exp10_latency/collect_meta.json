@@ -1,0 +1,11 @@
+{
+  "config_md5": "a3ac4a0a83ae0cc4ce85a5c107cc8201",
+  "reps": 32,
+  "warmup_reps": 2,
+  "period_s": 8.0,
+  "levels_c": [
+    90.0,
+    55.0
+  ],
+  "redfish_uri": "/redfish/v1/Chassis/Thermal_Loop_Demo/Sensors/temperature_die0"
+}
