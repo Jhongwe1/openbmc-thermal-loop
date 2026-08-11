@@ -811,7 +811,374 @@ def fig3() -> None:
     print(f"wrote {out}")
 
 
-FIGURES = {1: fig1, 2: fig2, 3: fig3}
+def fig4() -> None:
+    """Fig 4 — failsafe 偵測時序：t0 停止推值 → t1 failsafe → t2 PWM 拉頂。
+
+    ★ 版面上的四個決定：
+
+    1. **畫「中位數那一次」run，不是最好看的那次** —— 挑 t2−t0 最接近
+       5 次中位數的 run；五次的完整數字都在表格裡。
+    2. **x 軸從 t0 前 60 s 開始**（與 Fig 1/2 同慣例）：前 240 s 的
+       冷機收斂不是實驗的一部分。
+    3. **溫度面板畫兩條線**：plant 的真實溫度（bridge 還在記）與
+       D-Bus 上凍結的最後推送值 —— 「感測器凍結」的視覺就是這兩條線
+       在 t0 分家。
+    4. **t1→t2 只有一個內圈週期（~0.1 s），在 90 s 寬的圖上是一條線的
+       厚度** —— 與 Fig 1 的死區、Fig 2 的穩態同款：發現在小尺度上就
+       得放大，PWM 面板配一個事件放大鏡。
+    """
+    meta = json.loads((DATA / "exp09_failsafe/exp09_meta.json").read_text())
+    runs = meta["runs"]
+    med_t2 = meta["summary"]["t2_minus_t0_s"]["median"]
+    pick = min(runs, key=lambda r: abs(r["t2_minus_t0_s"] - med_t2))
+    k = pick["run"]
+    t0 = meta["stop_push_at_s"]
+    t1_rel = t0 + pick["t1_minus_t0_s"]
+    t2_rel = t0 + pick["t2_minus_t0_s"]
+
+    plant = pd.read_csv(DATA / f"exp09_failsafe/run{k}_plant.csv")
+    zone = pd.read_csv(DATA / f"exp09_failsafe/run{k}_zone0.log")
+    pmeta = json.loads(
+        (DATA / f"exp09_failsafe/run{k}_plant_meta.json").read_text())
+    zt = (zone["epoch_ms"] - pmeta["epoch0_ms"]) / 1000.0
+    # ★ `fan0_pwm`（0~1 比例）×100，**不是** `fan0_pwm_raw` —— 本 rig 的
+    #   writePath 讀不回 raw，那一欄恆為 -1。同一個欄位語意錯在同一天
+    #   出現第三次（P22 → detect_events → 這裡），這行註解就是墓碑。
+    zpwm = zone["fan0_pwm"].astype(float) * 100.0
+    zfs = zone["failsafe"].astype(int)
+
+    frozen = float(plant.loc[plant["t_s"] < t0, "t_sense_c"].iloc[-1])
+    view_lo, view_hi = t0 - 60.0, float(plant["t_s"].iloc[-1])
+
+    fig, (ax_t, ax_p, ax_f) = plt.subplots(
+        3, 1, sharex=True, figsize=(11, 9.2),
+        gridspec_kw={"height_ratios": [1.2, 1.0, 0.45], "hspace": 0.13},
+    )
+    fig.patch.set_facecolor(C_SURFACE)
+
+    for ax in (ax_t, ax_p, ax_f):
+        ax.axvline(t0, ls="--", lw=1.1, color=C_MODEL, zorder=4)
+        ax.axvline(t1_rel, ls="--", lw=1.1, color=C_ANNOTATE, zorder=4)
+        ax.axvline(t2_rel, ls=":", lw=1.1, color="#a03d12", zorder=4)
+
+    # ── 上：plant 真實溫度 vs D-Bus 凍結值 ─────────────────────────────
+    ax_t.plot(plant["t_s"], plant["t_sense_c"], color=C_MEASURED, lw=1.6,
+              zorder=3, label="plant temperature (bridge keeps recording)")
+    ax_t.plot([t0, view_hi], [frozen, frozen], ls="--", lw=1.4,
+              color=C_MUTED, zorder=3,
+              label="last pushed value - frozen on D-Bus after t0")
+    ax_t.set_ylabel("temperature (°C)", fontsize=10, color=C_MUTED)
+    ax_t.set_title("Fig 4 - Failsafe detection timing "
+                   "(sensor freeze -> failsafe -> PWM to failsafePercent)",
+                   fontsize=14, color="#0b0b0b", loc="left", pad=10)
+    leg = ax_t.legend(loc="center left", fontsize=8.5, framealpha=1.0,
+                      facecolor=C_SURFACE, edgecolor=C_GRID)
+    for text in leg.get_texts():
+        text.set_color("#52514e")
+    _style(ax_t)
+
+    ax_t.annotate(
+        "t0 = stop pushing\n(scripted, epoch-anchored)",
+        xy=(t0, frozen - 1.0), xytext=(t0 - 50, frozen - 14), fontsize=8.5,
+        color=C_MODEL,
+        arrowprops=dict(arrowstyle="->", color=C_MODEL, lw=0.8))
+    ax_t.annotate(
+        f"t1 = failsafe flag  (+{pick['t1_minus_t0_s']:.2f} s:\n"
+        f"timeout {meta['timeout_s']} s + staleness-check\n"
+        f"phase, outer loop 1 Hz)",
+        xy=(t1_rel, frozen - 2.0), xytext=(t1_rel + 5, frozen - 22),
+        fontsize=8.5, color=C_ANNOTATE,
+        arrowprops=dict(arrowstyle="->", color=C_ANNOTATE, lw=0.8))
+
+    # ── 中：PWM(swampd 視角)+ 事件放大鏡 ────────────────────────────
+    ax_p.plot(zt, zpwm, color=C_COMMANDED, lw=1.5, zorder=3)
+    ax_p.set_ylabel("PWM command (%)", fontsize=10, color=C_MUTED)
+    ax_p.set_ylim(0, 108)
+    _style(ax_p)
+
+    # inset 抬高到面板上半 —— 主線是 30% 的平線（y=30，面板下 1/3），
+    # 放低會把它自己要放大的那條線遮住。
+    axin = ax_p.inset_axes([0.055, 0.44, 0.40, 0.50])
+    zlo, zhi = t1_rel - 1.5, t2_rel + 1.5
+    zm = (zt >= zlo) & (zt <= zhi)
+    axin.plot(zt[zm], zpwm[zm], color=C_COMMANDED, lw=1.2, zorder=3,
+              drawstyle="steps-post")
+    axin.axvline(t1_rel, ls="--", lw=1.0, color=C_ANNOTATE)
+    axin.axvline(t2_rel, ls=":", lw=1.0, color="#a03d12")
+    axin.set_xlim(zlo, zhi)
+    _style(axin)
+    axin.tick_params(labelsize=8)
+    axin.set_title(
+        f"zoom: t1 -> t2 = {pick['t2_minus_t1_s'] * 1000.0:.0f} ms "
+        f"(one fan-loop cycle + file write)",
+        fontsize=8.5, color=C_MUTED, loc="left", pad=4)
+    ax_p.indicate_inset_zoom(axin, edgecolor=C_MUTED, alpha=0.6, lw=0.8)
+
+    # ── 下:failsafe 布林(zone_0.log 的末欄,每輪直寫、無節流)──────────
+    ax_f.plot(zt, zfs, color=C_ANNOTATE, lw=1.6, drawstyle="steps-post",
+              zorder=3)
+    ax_f.set_ylim(-0.15, 1.25)
+    ax_f.set_yticks([0, 1])
+    ax_f.set_yticklabels(["normal", "failsafe"])
+    ax_f.set_ylabel("zone mode", fontsize=10, color=C_MUTED)
+    ax_f.set_xlabel("time since run start (s)", fontsize=10, color=C_MUTED)
+    _style(ax_f)
+    ax_f.set_xlim(view_lo, view_hi)
+
+    # ── 表格:五次 run 全列(不挑好看的)──────────────────────────────
+    s1, s2 = meta["summary"]["t1_minus_t0_s"], meta["summary"]["t2_minus_t0_s"]
+    rows = [[f"run {r['run']}{'  *' if r['run'] == k else ''}",
+             f"{r['t1_minus_t0_s']:.3f}", f"{r['t2_minus_t0_s']:.3f}",
+             f"{r['t2_minus_t1_s'] * 1000.0:.0f}"] for r in runs]
+    rows.append(["median [min, max]",
+                 f"{s1['median']:.3f} [{s1['min']:.3f}, {s1['max']:.3f}]",
+                 f"{s2['median']:.3f} [{s2['min']:.3f}, {s2['max']:.3f}]",
+                 "-"])
+    tbl = ax_f.table(
+        cellText=rows,
+        colLabels=["run (* = plotted)", "t1 - t0 (s)", "t2 - t0 (s)",
+                   "t2 - t1 (ms)"],
+        loc="bottom", bbox=[0.10, -2.35, 0.80, 1.85],
+    )
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(7.5)
+    for (row, _), cell in tbl.get_celld().items():
+        cell.set_edgecolor(C_GRID)
+        cell.set_facecolor(C_SURFACE)
+        cell.get_text().set_color("#0b0b0b" if row == 0 else "#52514e")
+
+    # ── 參數區塊 ─────────────────────────────────────────────────────
+    params = (
+        f"Single variable: whether temperature keeps being pushed - a one-shot "
+        f"event at t0 = {t0:g} s, not a sweep. Load constant 150 W.\n"
+        f"Config = config.tuned.json with exactly one field changed: die0 "
+        f"timeout 0 -> {meta['timeout_s']} s (generated and field-checked by "
+        f"bench/exp09_failsafe.py, not hand-edited).\n"
+        f"Why timeout was 0 in deployment: a passive D-Bus sensor only "
+        f"advances its staleness clock on PropertiesChanged, so a *stable* "
+        f"temperature looks dead (W3). This experiment inverts that trap:\n"
+        f"  the bridge pushes a fresh (noisy) value every 100 ms while "
+        f"running, so stopping the push IS the sensor-freeze event, with a "
+        f"script-controlled timestamp.\n"
+        f"t1 is read from zone_0.log (written every fan cycle, no throttling, "
+        f"wall-clock epoch per line). The FailSafe D-Bus property is a plain "
+        f"getter and never emits PropertiesChanged\n"
+        f"  (upstream zone.cpp @ c5e5955), so the plan's 'busctl monitor' "
+        f"method cannot observe t1 at all; busctl get-property is kept as a "
+        f"point check (run*_failsafe_property.txt = 'b true').\n"
+        f"Composition of the delay: timeout ({meta['timeout_s']} s, config) + "
+        f"staleness-check phase (checks ride the 1 Hz thermal loop -> up to "
+        f"~1 s jitter, the dominant spread below) + D-Bus/log write (ms).\n"
+        f"t2 - t1 is one 100 ms fan cycle + a plain-file write. "
+        f"LIMIT - this is NOT '100 ms failsafe': the sensor timeout itself "
+        f"is a seconds-scale config value; N here is ~{s2['median']:.1f} s.\n"
+        f"LIMIT - the freeze is simulated by stopping value pushes, not by "
+        f"unplugging I2C; swampd is the unmodified upstream binary at "
+        f"c5e5955 on a private D-Bus (L2, same rig as Fig 3)."
+    )
+    fig.text(0.012, 0.005, params, fontsize=7.6, va="bottom", color="#0b0b0b",
+             family="monospace",
+             bbox=dict(boxstyle="round,pad=0.55", fc=C_SURFACE, ec=C_GRID))
+
+    what = (
+        f"Fig 4 - Failsafe detection timing on the L2 rig: unmodified "
+        f"upstream swampd @ c5e5955 against the same C++ plant, private "
+        f"D-Bus. t0 = stop pushing temperature (script-anchored epoch), "
+        f"t1 = failsafe flag in zone_0.log, t2 = PWM reaches "
+        f"failsafePercent (100% -> raw 255). {len(runs)} independent runs "
+        f"(seeds 1-{len(runs)}); the plotted run is the one closest to the "
+        f"median t2 - t0. Raw: bench/data/exp09_failsafe/."
+    )
+    fig.text(0.012, -0.155, _caption(what, provenance.FIG4_INPUTS),
+             fontsize=7.5, va="bottom", color=C_MUTED)
+
+    fig.subplots_adjust(bottom=0.40)
+    FIGS.mkdir(exist_ok=True)
+    out = FIGS / "fig4_failsafe.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=C_SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
+
+
+#: Fig 5 的三個指標：一個收益、兩個代價。**語意色，不是三個並列的類別色**：
+#: 收益（reversals ↓）沿用量測藍；兩個代價（T peak ↑、fan power ↑）用
+#: 橘色系的兩個深度 —— 同一個「代價」家族，深度只是讓相鄰面板分得開。
+SLEW_PANELS = [
+    ("reversals_per_min", "#2a78d6", "reversals / min\n(acoustic proxy)"),
+    ("t_peak_c", "#eb6834", "peak temperature\n(°C)"),
+    ("fan_power_rel", "#a03d12", "fan power\n(relative, N³ model)"),
+]
+
+#: 圖上標的「選定工作點」。claims.json 的 reversals_reduction_ratio 也指它。
+#: 選它的理由（取捨語言，不是最佳解）寫在 docs/measurement.md exp08。
+SLEW_CHOSEN = 0.5
+
+
+def fig5() -> None:
+    """Fig 5 — slew 掃描：聲學代理 / 峰值溫度 / 相對風扇功耗的三方取捨。
+
+    ★ 版面上的四個決定：
+
+    1. **三個 sharex 面板，不是計畫偽碼的三重 y 軸（twinx×2）。**
+       三個量綱擠同一格時帶狀範圍互相蓋，第三條軸的刻度沒有人讀得懂；
+       分面板後「同一個 slew 值往下對」就是取捨的讀法，
+       轉折的垂直對應一眼可見。
+    2. **x 軸是 log₂（0.25~16 %PWM/s），slew=0（不限制）不在軸上** ——
+       0 在這個軸上的語意是「無限鬆」不是「最緊」，畫在原點會把
+       整條曲線的方向讀反。它改畫成每個面板的水平基準帶
+       （中位數虛線 + 5 seed 範圍）。
+    3. 帶狀是 5 個 seed 的 min~max，線是中位數（與 Fig 2 同一慣例）。
+    4. 指標數字直接讀 exp08_meta.json，不在這裡重算（同 Fig 2 理由）。
+    """
+    meta = json.loads((DATA / "exp08_meta.json").read_text())
+    table = meta["slew_table"]
+    slews = meta["slew_values"]
+    swept = np.array([s for s in slews if s > 0], dtype=float)
+    base_key = str(slews[0])  # "0.0" = unlimited 基準
+    power = meta["power_w"]
+
+    def stats(key: str, metric: str) -> tuple[float, float, float]:
+        m = table[key]["metrics"][metric]
+        return m["median"], m["min"], m["max"]
+
+    fig, axes = plt.subplots(
+        3, 1, sharex=True, figsize=(9.5, 10.2),
+        gridspec_kw={"hspace": 0.16},
+    )
+    fig.patch.set_facecolor(C_SURFACE)
+
+    for ax, (metric, colour, label) in zip(axes, SLEW_PANELS, strict=True):
+        med = [stats(str(s), metric)[0] for s in swept]
+        lo = [stats(str(s), metric)[1] for s in swept]
+        hi = [stats(str(s), metric)[2] for s in swept]
+        bmed, blo, bhi = stats(base_key, metric)
+
+        # unlimited 基準：水平帶（它也有 5 個 seed 的不確定度，不是一條理想線）
+        ax.axhspan(blo, bhi, color=colour, alpha=0.10, lw=0, zorder=1)
+        ax.axhline(bmed, ls="--", lw=1.1, color=colour, alpha=0.8, zorder=2)
+
+        ax.fill_between(swept, lo, hi, color=colour, alpha=0.22, lw=0, zorder=3)
+        ax.plot(swept, med, "o-", color=colour, lw=1.7, ms=4.5, zorder=4)
+
+        ax.axvline(SLEW_CHOSEN, ls=":", lw=1.2, color=C_MUTED, zorder=2)
+        ax.set_xscale("log", base=2)
+        ax.set_ylabel(label, fontsize=9.5, color=C_MUTED)
+        _style(ax)
+
+    # 基準帶與選定點只標一次（第一面板），三個面板共用同一套視覺語言
+    ax0 = axes[0]
+    bmed0 = stats(base_key, "reversals_per_min")[0]
+    ax0.text(swept[-1], bmed0, "  unlimited (slew = 0):\n  median + seed range",
+             fontsize=8, color="#2a78d6", va="center", ha="left", clip_on=False)
+    ax0.text(SLEW_CHOSEN, ax0.get_ylim()[1], " chosen operating point\n"
+             f" ({SLEW_CHOSEN:g} %PWM/s - a point on the curve,\n"
+             " not an optimum)",
+             fontsize=8, color=C_MUTED, va="top", ha="left")
+
+    axes[0].set_title(
+        "Fig 5 - Slew rate limit: acoustic proxy vs thermal margin vs fan power",
+        fontsize=14, color="#0b0b0b", loc="left", pad=10)
+    axes[-1].set_xticks(swept)
+    axes[-1].set_xticklabels([f"{s:g}" for s in swept])
+    axes[-1].minorticks_off()
+    axes[-1].set_xlabel(
+        "slew rate limit, symmetric ±S (%PWM per second) - "
+        "log scale, tighter to the LEFT",
+        fontsize=10, color=C_MUTED)
+
+    # ── 指標表：3 指標 × 8 組的中位數（帶狀已在圖上，表格只放中位數）──────
+    col_labels = ["unlimited"] + [f"{s:g}" for s in swept]
+    row_labels = ["reversals/min", "T peak (°C)", "fan power (rel)"]
+    cells = []
+    for metric, _, _ in SLEW_PANELS:
+        row = []
+        for key in [base_key] + [str(s) for s in swept]:
+            m = table[key]["metrics"][metric]["median"]
+            row.append("NaN" if m is None else f"{m:.3g}")
+        cells.append(row)
+    tbl = axes[-1].table(cellText=cells, rowLabels=row_labels,
+                         colLabels=col_labels,
+                         loc="bottom", bbox=[0.06, -0.62, 0.94, 0.38])
+    tbl.auto_set_font_size(False)
+    tbl.set_fontsize(7.5)
+    for (row, _), cell in tbl.get_celld().items():
+        cell.set_edgecolor(C_GRID)
+        cell.set_facecolor(C_SURFACE)
+        cell.get_text().set_color("#0b0b0b" if row == 0 else "#52514e")
+
+    # ── 參數區塊：最重要的是「為什麼 λ=0.5τ」與兩個 LIMIT ────────────────
+    fopdt = meta["fopdt"]
+    ms = meta["metric_settings"]
+    gains = meta["gains"]
+    chosen = stats(str(SLEW_CHOSEN), "reversals_per_min")[0]
+    base_rev = stats(base_key, "reversals_per_min")[0]
+    # claims.json 的 reversals_reduction_ratio 就是這個數 —— 按 seed 配對的
+    # 比值中位數（兩組共用同一組 seed），從 meta 讀，不在這裡重算。
+    paired = meta["reversals_ratio_vs_unlimited"][str(SLEW_CHOSEN)]
+    d_peak = (stats(str(SLEW_CHOSEN), "t_peak_c")[0]
+              - stats(base_key, "t_peak_c")[0])
+    d_pow = (stats(str(SLEW_CHOSEN), "fan_power_rel")[0]
+             / stats(base_key, "fan_power_rel")[0] - 1.0)
+    params = (
+        f"Single variable: slewNeg/slewPos only - machine-checked field by "
+        f"field across all {len(slews)} x {len(meta['seeds'])} runs "
+        f"(bench/exp08_slew_sweep.py).\n"
+        f"Tuning held at lambda = 0.5 tau (Kc = {gains['Kc']:.3f}, from Fig 1's "
+        f"K = {fopdt['k']:+.4f}, tau = {fopdt['tau']:.2f} s) - deliberately NOT "
+        f"the deployed lambda = 2.0 tau of Fig 2/Fig 3.\n"
+        f"  Why: slew acts on high-rate output changes. At lambda = 2.0 tau the "
+        f"noise-driven step is ~0.10 %PWM and tracking this load needs only "
+        f"~0.33 %PWM/s,\n"
+        f"  so every value in this range is a dead knob there (pilot run: all "
+        f"eight groups returned identical reversals). This sweep asks the "
+        f"complementary question:\n"
+        f"  keep the high-gain tuning's disturbance peak and buy acoustics "
+        f"with slew instead. Fig 2 buys amplitude with lambda; slew buys "
+        f"*rate* - two different acoustic defects.\n"
+        f"Square-wave load {power['base']:g} <-> {power['step']:g} W, full "
+        f"period {power['period_s']:g} s, from t = {power['at_s']:g} s; "
+        f"{power['step']:g} W < controllable limit "
+        f"{meta['controllable_power_limit_w']:.1f} W, so no group saturates. "
+        f"Metrics from t = {meta['metrics_computed_from_s']:g} s; reversals "
+        f"tail = {ms['reversals_tail_s']:g} s = exactly the last half-period.\n"
+        f"At the chosen {SLEW_CHOSEN:g} %PWM/s: reversals {base_rev:.3g} -> "
+        f"{chosen:.3g} per min ({paired['paired_median']:.2f}x paired by seed, "
+        f"range {paired['paired_min']:.2g}-{paired['paired_max']:.2g}), peak "
+        f"temperature +{d_peak:.2g} °C, fan power {d_pow:+.0%} (relative).\n"
+        f"LIMIT - fan power is the affinity-law N^3 proxy computed from fan "
+        f"speed, a *relative model value*, not measured watts.\n"
+        f"LIMIT - reversals use deadband = {ms['reversals_deadband']:g} %PWM "
+        f"(untuned, W6 value): sub-deadband reversals are invisible to this "
+        f"metric by definition."
+    )
+    fig.text(0.012, 0.005, params, fontsize=7.6, va="bottom", color="#0b0b0b",
+             family="monospace",
+             bbox=dict(boxstyle="round,pad=0.55", fc=C_SURFACE, ec=C_GRID))
+
+    what = (
+        f"Fig 5 - Symmetric slew rate limit sweep, {len(swept)} values + "
+        f"unlimited baseline, x {len(meta['seeds'])} seeds. Square-wave load "
+        f"{power['base']:g} <-> {power['step']:g} W (period "
+        f"{power['period_s']:g} s), setpoint {meta['setpoint_c']:g} °C, "
+        f"controller sample {meta['ctrl_ts_s']:g} s, anti-windup "
+        f"{meta['anti_windup']} (upstream ec::pid() semantics, including its "
+        f"integral back-calculation whenever slew is set).\n"
+        f"Line = median, band = min~max over seeds; the dashed horizontal "
+        f"line + tint is the unlimited baseline. Raw traces: "
+        f"bench/data/exp08_slew*_seed*.csv."
+    )
+    fig.text(0.012, -0.062, _caption(what, provenance.FIG5_INPUTS),
+             fontsize=7.5, va="bottom", color=C_MUTED)
+
+    fig.subplots_adjust(bottom=0.30, top=0.955)
+    FIGS.mkdir(exist_ok=True)
+    out = FIGS / "fig5_slew_sweep.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight", facecolor=C_SURFACE)
+    plt.close(fig)
+    print(f"wrote {out}")
+
+
+FIGURES = {1: fig1, 2: fig2, 3: fig3, 4: fig4, 5: fig5}
 
 
 def main() -> int:

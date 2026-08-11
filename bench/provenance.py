@@ -83,6 +83,30 @@ FIG3_INPUTS = [
     "docs/env-baseline.md",
 ]
 
+#: Fig 4 的輸入（W8 的 failsafe 偵測時序，exp09）。
+#:
+#: ⚠️ `config.tuned.json` 也算 —— 實驗 config 是「tuned + timeout 5」
+#:    機器生成的，tuned 變了整個時序實驗的前提就變了。
+FIG4_INPUTS = [
+    "bench/data/exp09_failsafe/run*_zone0.log",
+    "bench/data/exp09_failsafe/run*_plant.csv",
+    "bench/data/exp09_failsafe/run*_plant_meta.json",
+    "bench/data/exp09_failsafe/exp09_meta.json",
+    "config/swampd/config.tuned.json",
+    "docs/env-baseline.md",
+]
+
+#: Fig 5 的輸入（W8 的 slew 掃描）。
+#:
+#: ⚠️ `exp01_fit.txt` 也算 —— 掃描基準 λ=0.5τ 的 Kc/Ki 從那份擬合算出來，
+#:    它變了整條掃描的工作點就變了。
+FIG5_INPUTS = [
+    "bench/data/exp08_slew*_seed*.csv",
+    "bench/data/exp08_meta.json",
+    "bench/data/exp01_fit.txt",
+    "docs/env-baseline.md",
+]
+
 #: Fig 6 的輸入。
 FIG6_INPUTS = [
     "bench/data/exp03_trace/layers.json",

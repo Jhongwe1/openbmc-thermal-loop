@@ -40,6 +40,10 @@ CASES = [
     ("fig2_tuning.png", ["bench/plot.py", "--fig", "2"], provenance.FIG2_INPUTS),
     ("fig3_antiwindup.png", ["bench/plot.py", "--fig", "3"],
      provenance.FIG3_INPUTS),
+    ("fig4_failsafe.png", ["bench/plot.py", "--fig", "4"],
+     provenance.FIG4_INPUTS),
+    ("fig5_slew_sweep.png", ["bench/plot.py", "--fig", "5"],
+     provenance.FIG5_INPUTS),
     ("fig6_dts_to_redfish.png", ["bench/plot_fig6.py"], provenance.FIG6_INPUTS),
 ]
 
