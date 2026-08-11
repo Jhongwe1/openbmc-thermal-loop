@@ -38,6 +38,7 @@ STD="tools/set_die_temp.py"
 PRV="bench/provenance.py"
 SIM="bench/sim.cpp"
 PRS="bench/parse_l2.py"
+EX9="bench/exp09_failsafe.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -71,7 +72,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS $EX9"
 # shellcheck disable=SC2086
 cp $ALL_SOURCES "$BACKUP/"
 
@@ -506,6 +507,44 @@ run_case "B1 sim 的 power-down-at 不生效" "$SIM" \
         {
             pw = a.powerStep;
         }'
+
+# ── 方波負載（bench/sim.cpp，W8）──────────────────────────────────────
+#
+# Fig 5 的 40 份 CSV 全靠這個波形。S1~S3 是「波形錯但 CSV 看起來完全正常」
+# 的三種寫法（恆為高、高低顛倒、相位沒對 power-at）—— 每一種都會讓
+# 整條掃描量到別的東西。守門員是 test_sim_cli.py 的五段逐段斷言。
+run_case "S1 方波半週期忘了除 2（恆為 step）" "$SIM" \
+    'pw = (phase < a.powerPeriodS / 2.0) ? a.powerStep : a.powerBase;' \
+    'pw = (phase < a.powerPeriodS) ? a.powerStep : a.powerBase;'
+
+run_case "S2 方波高低顛倒" "$SIM" \
+    'pw = (phase < a.powerPeriodS / 2.0) ? a.powerStep : a.powerBase;' \
+    'pw = (phase < a.powerPeriodS / 2.0) ? a.powerBase : a.powerStep;'
+
+run_case "S3 方波相位忘了以 power-at 為原點" "$SIM" \
+    'const double phase = std::fmod(t - a.powerAtS, a.powerPeriodS);' \
+    'const double phase = std::fmod(t, a.powerPeriodS);'
+
+# S4：square 的參數沒進 stderr dump —— exp08 的單變因檢查讀的就是這份 dump，
+# 沒進 dump 的參數等於躲過了機器檢查（與 test_power_down_at_is_recorded 同族）。
+run_case "S4 方波參數沒進參數 dump" "$SIM" \
+    '"power_profile=square\npower_period=%g\n"' \
+    '""'
+
+# ── failsafe 事件偵測（bench/exp09_failsafe.py，W8）──────────────────
+#
+# E1 是「看起來完全正常的負延遲」：swampd 開機就在 failsafe
+# （initializeCache），忘了裁到 t0 之後，全域第一個 failsafe=1 是
+# **開機殘留** —— 量到的是開機時刻不是逾時偵測，方向剛好偏袒好看。
+run_case "E1 exp09 事件搜尋忘了裁到 t0 後" "$EX9" \
+    'after = zone[zone["epoch_ms"] >= t0_ms]' \
+    'after = zone'
+
+# E2：run 有效性前提被拿掉 —— t0 時還在開機 failsafe 的 run 會被
+# 當成正常資料收下，而它的「延遲」是垃圾。
+run_case "E2 exp09 的 t0 前狀態檢查失效" "$EX9" \
+    'if int(before["failsafe"].iloc[-1]) != 0:' \
+    'if False:'
 
 # ── L2 載入器（bench/parse_l2.py，W7）────────────────────────────────
 #
