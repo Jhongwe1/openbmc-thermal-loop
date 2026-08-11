@@ -39,6 +39,7 @@ PRV="bench/provenance.py"
 SIM="bench/sim.cpp"
 PRS="bench/parse_l2.py"
 EX9="bench/exp09_failsafe.py"
+EXA="bench/exp10_latency.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -72,7 +73,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS $EX9"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS $EX9 $EXA"
 # shellcheck disable=SC2086
 cp $ALL_SOURCES "$BACKUP/"
 
@@ -545,6 +546,38 @@ run_case "E1 exp09 事件搜尋忘了裁到 t0 後" "$EX9" \
 run_case "E2 exp09 的 t0 前狀態檢查失效" "$EX9" \
     'if int(before["failsafe"].iloc[-1]) != 0:' \
     'if False:'
+
+# ── 端到端延遲分析(bench/exp10_latency.py,W9)────────────────────────
+#
+# T1:②的基準拿成注入時刻 —— 段差仍是正數、量綱正確,只是把①偷進②。
+# T5 是 E1 的同族:事件搜尋忘了裁到 t0 之後,抓到上一輪的殘影,
+# 這次的後果是**負的延遲**被悄悄收下。守門員:test_exp10.py。
+run_case "T1 exp10 的②段偷含了①(基準錯拿注入時刻)" "$EXA" \
+    '"seg2_s": t_zone_bmc - t_dbus_bmc,' \
+    '"seg2_s": (t_zone_bmc + offset) - t0,'
+
+run_case "T2 exp10 量具健康看平均不看最大" "$EXA" \
+    'max_gap = max(gaps) if gaps else float("inf")' \
+    'max_gap = min(gaps) if gaps else float("inf")'
+
+run_case "T3 exp10 的 p95 偷換成 max" "$EXA" \
+    '"p95": statistics.quantiles(vals, n=20, method="inclusive")[18],' \
+    '"p95": vals[-1],'
+
+run_case "T4 exp10 拿注入值而非量化預測值比對" "$EXA" \
+    'EXPECTED_C = tuple(expected_hwmon_mC(int(round(c * 1000))) / 1000.0
+                   for c in LEVELS_C)' \
+    'EXPECTED_C = LEVELS_C'
+
+run_case "T5 exp10 序列建構忘了去重(dbus 每變化發兩則)" "$EXA" \
+    '        if lev != last:
+            dbus_seq.append((lev, ts))' \
+    '        if True:
+            dbus_seq.append((lev, ts))'
+
+run_case "T6 exp10 統計忘了排除暖身" "$EXA" \
+    '    kept = [r for r in rows if not r["warmup"]]' \
+    '    kept = rows'
 
 # ── L2 載入器（bench/parse_l2.py，W7）────────────────────────────────
 #
