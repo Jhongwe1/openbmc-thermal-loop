@@ -3,7 +3,8 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~4 完成(六張圖全到齊)**。
+> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~5 完成**(六張圖全到齊;
+> 官方 Robot 測試證據 + 端到端延遲量測,見 Gate 5)。
 > 上游貢獻(Gate 6)進行中:第一筆 change 已完整走過推送流程後收回,
 > 決策與過程誠實記錄在 [`docs/upstream.md`](docs/upstream.md);
 > 主線 patch(`phosphor-pid-control`)照計畫 W10 提交。
@@ -511,12 +512,34 @@ python bench/plot.py --fig 4
   - [x] `busctl` 讀出 `FailSafe` = true(5/5 run 存證)
   - [x] 兩個逾時的差別(dbus-sensors → NaN vs swampd → zone failsafe)
         與四個 failsafe build option 各治什麼 ← [`docs/failsafe.md`](docs/failsafe.md)
-- [ ] Gate 5　官方測試套件　← W9
+- [x] Gate 5　官方測試套件　← **W9(2026-08-12)**
+  - [x] setup suite:Redfish ✅ SSH ✅ IPMI ❌ —— **映像沒有 netipmid**
+        (manifest 佐證;out-of-band IPMI 是 vendor layer 裁掉的,
+        與 W3 的 external sensor 同一種裁剪)
+  - [x] `QEMU_CI` 清單(20 個生效 include)兩輪實跑:第一輪暴露的是
+        **我方調用缺口**(`CHASSIS_ID` 預設是字面值 `chassis`、沒設
+        `REDFISH_SUPPORT_TRANS_STATE` 會走 legacy REST 的 `/login`),
+        修正後 **10 PASS / 9 FAIL,剩餘失敗零項是本側問題**,逐案
+        根因與類別 ← [`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)
+  - [x] 報告 + 版本紀錄(`meta.txt`)進 repo,三輪都留檔含未修正的
+        第一輪 ← `docs/robot/`、`harness/qemu/run_robot_qemu_ci.sh`
+  - [x] ★ 發現官方清單一行**掛了四年的死 include**(tag 於 2022-01
+        改名、清單沒跟上;探針證明改名版的 suite setup 需要 host
+        電源,QEMU 天生跑不了 → 修法 = 刪行)→ upstream 候選 3
+  - [x] **端到端延遲(exp10)**:注入 → Redfish 可見全程中位
+        **0.860 s**(p95 1.457,n=28);D-Bus → 控制迴路吃到中位
+        **0.564 s**(= 外圈 1 Hz 的相位骰子,不是「PID 多慢」);
+        外圈輸出 → PWM **≤ 1 個內圈週期**(28/28 同列)。
+        guest 時鐘鋸齒(0.81× 速率、每 39.7 s 跳 +7.59 s)被量化,
+        ①④ 依此宣告**不可分離** ←
+        [`docs/measurement.md`](docs/measurement.md) exp10
 - [ ] Gate 6　Upstream　← 第一筆 change(docs,93397)2026-08-11 完整走過
       推送流程(commit-msg hook、refs/for/master、OWNERS 加 reviewer)後
       **由我決定收回**;過程與決策記錄在 [`docs/upstream.md`](docs/upstream.md)。
       主線 patch(`phosphor-pid-control`:configure.md 未文件化欄位、
-      `ec::pid()` 釘住測試)照計畫 **W10** 提交
+      `ec::pid()` 釘住測試)照計畫 **W10** 提交;W9 新增兩個有依據的
+      候選(官方清單死 include、ThermalSubsystem 測試案例草稿)與
+      兩項前置(CI 白名單、Gerrit 顯示名)
 - [ ] Gate 7　交付與敘事
 
 ## 授權
