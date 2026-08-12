@@ -1,0 +1,13 @@
+# CI 專用的版本釘(pip install -c 用,只約束、不新增套件)。
+#
+# 為什麼要釘:test_figures.py 的斷言是「重畫的 PNG 與 repo 裡的逐 byte
+# 相同」。PNG 的 bytes 由 matplotlib 與其 wheel 內建的 freetype/libpng
+# 決定,換版本就紅。釘住版本讓 CI 的「紅」只剩一種意思:
+# 程式碼或資料真的變了。
+#
+# 這四個版本 = 產出 figures/ 的那台開發機(WSL Ubuntu 24.04)實際
+# 安裝的版本。開發機升版時,這裡要一起升,並重畫六張圖同 commit 交付。
+matplotlib==3.11.1
+numpy==2.5.1
+pandas==3.0.5
+scipy==1.18.0

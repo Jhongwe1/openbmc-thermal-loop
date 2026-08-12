@@ -1,0 +1,151 @@
+# 三個 job,訊號各不相同(對應 README「5 分鐘驗證這個 repo」那張表):
+#
+#   cpp            —— C++ 單元測試 + 與上游 ec::pid() 的逐步 parity
+#   experiments    —— 重跑 L1 實驗、重算全部 claim、斷言 README 的數字仍成立
+#   upstream-build —— 用上游自己的 CI 腳本建置並測試 phosphor-pid-control
+#
+# 設計決定(每一條都有理由,不是抄範本):
+#
+#   · cpp 與 experiments 各自獨立,不用 needs 串接 —— 紅燈證明(W10 D4)
+#     要能看到「哪一類改壞被哪一類檢查抓到」;串起來的話上游 job 一紅,
+#     下游只會顯示 skipped,證據就少一半。
+#   · runner 釘 ubuntu-24.04,不用 ubuntu-latest —— 與開發機(WSL Ubuntu
+#     24.04、gcc 13)同代。byte 級的決定性檢查對編譯器版本敏感,latest
+#     哪天升版,「紅」就多了一種與程式碼無關的意思。
+#   · Python 套件版本釘在 .github/ci-constraints.txt —— test_figures.py
+#     是 PNG 逐 byte 比對,matplotlib 換版就紅;釘住版本讓「紅」只剩
+#     一種意思:程式碼或資料真的變了。
+#   · 實驗的增益不在這裡手填 —— exp05/07/08 自己從 bench/data/exp01_fit.txt
+#     經 tune.py 導出(計畫範本的 KP/KI 環境變數已過時,而且手抄數字
+#     正是這個 repo 要消滅的東西)。
+
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpp:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # provenance.py 拿「資料檔最後一次變動的 commit」當圖的 caption,
+          # 淺 clone 會讓它讀到空 —— 這類問題正是乾淨 clone 檢查的獵物。
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build libgtest-dev \
+            libgmock-dev nlohmann-json3-dev
+
+      - name: Install Python deps (pinned, see .github/ci-constraints.txt)
+        run: pip install -e ".[dev]" -c .github/ci-constraints.txt
+
+      - name: Configure and build (pulls upstream parity subproject)
+        run: |
+          meson setup build
+          meson compile -C build
+
+      - name: Guard against silently skipped tests (runbook §8, pit 27)
+        # parity 的 subproject 拉不下來時,meson 用 disabler 把整個測試
+        # 安靜跳過、其餘照綠;metrics(pytest)在 configure 時找不到
+        # pandas/pytest 也會安靜消失。兩種「綠得不對」都在這裡擋下來。
+        run: |
+          meson test -C build --list
+          meson test -C build --list | grep -q parity_upstream
+          meson test -C build --list | grep -q metrics
+
+      - name: Unit tests incl. upstream ec::pid() parity + pytest suite
+        run: meson test -C build --print-errorlogs
+
+  experiments:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build libgtest-dev \
+            libgmock-dev nlohmann-json3-dev
+
+      - name: Install Python deps (pinned, see .github/ci-constraints.txt)
+        run: pip install -e ".[dev]" -c .github/ci-constraints.txt
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Build (the experiments drive build/sim and build/identify_csv)
+        run: |
+          meson setup build
+          meson compile -C build
+
+      - name: Re-run the L1 experiments (deterministic, seeds pinned)
+        # 順序有意義:exp01 先產 exp01_fit.txt,後面三個從它導增益。
+        run: |
+          python bench/exp01_sysid.py      --out bench/data
+          python bench/exp05_tuning.py     --out bench/data
+          python bench/exp07_antiwindup.py --out bench/data
+          python bench/exp08_slew_sweep.py --out bench/data
+
+      - name: Re-derive exp10 events from the committed raw streams
+        # CI 上沒有 QEMU:量測重不了,推導可以 —— 原始串流在 git 裡。
+        run: python bench/exp10_latency.py --analyze-only
+
+      - name: "Assert published metrics still hold (bench/claims.json)"
+        run: python bench/assert_metrics.py
+
+      - name: "Determinism: re-run output must be byte-identical"
+        # meta 檔刻意不在比對範圍:它們記錄「這批資料產生時的 repo
+        # commit」(provenance 欄),CI 重跑本來就會改寫那一欄。
+        # 數字的漂移由上一步 assert_metrics 守;bytes 的漂移由這一步守。
+        run: >
+          git diff --exit-code --
+          ':(glob)bench/data/*.csv'
+          bench/data/exp01_fit.txt
+          bench/data/exp10_latency/events.csv
+
+      - name: Regenerate all six figures
+        run: python bench/plot.py --all
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: figures
+          path: figures/
+
+  upstream-build:
+    # 整合驗證,不是回歸測試:這個 job 拉上游 master 的**最新**狀態,
+    # 紅可能代表「上游變了」而不是「我變了」。所以只在 main 的 push 與
+    # 手動觸發時跑,不擋分支與 PR —— 取捨理由也寫在 README 的 CI 一節。
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Build & test upstream phosphor-pid-control the upstream way
+        run: |
+          git clone --depth 1 \
+            https://github.com/openbmc/openbmc-build-scripts.git
+          git clone --depth 1 \
+            https://github.com/openbmc/phosphor-pid-control.git
+          WORKSPACE=$(pwd) UNIT_TEST_PKG=phosphor-pid-control TEST_ONLY=1 \
+            ./openbmc-build-scripts/run-unit-test-docker.sh
