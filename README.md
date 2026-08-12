@@ -3,26 +3,61 @@
 在 QEMU ASPEED AST2600 上，用上游 `phosphor-pid-control` 建立一條可量測、
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
-> 🚧 進行中(2026-07 起)。目前進度:**Gate 0~5 完成**(六張圖全到齊;
-> 官方 Robot 測試證據 + 端到端延遲量測,見 Gate 5)。
-> 上游貢獻(Gate 6)進行中:第一筆 change 已完整走過推送流程後收回,
-> 決策與過程誠實記錄在 [`docs/upstream.md`](docs/upstream.md);
-> 主線 patch(`phosphor-pid-control`)照計畫 W10 提交。
+[![ci](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml)
+　🔗 **上游貢獻(Gerrit):** change 連結、review 往返與未提交候選的完整
+紀錄在 [`docs/upstream.md`](docs/upstream.md)。
+
+![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
+
+**招牌圖(Fig 3):** 同一份 swampd 設定只差 `integralLimit` 兩行(完整
+diff 見下方〈Fig 3〉一節):飽和解除後的恢復時間 **197.2 s → 14.3 s
+(13.7×,5 seed 配對範圍 [12.8, 13.9])**。虛線是**未修改的上游 swampd
+二進位**在同一 plant 上重現(12.9×,落在 L1 範圍內)。模擬結果:plant
+是自建熱模型([`docs/plant-model.md`](docs/plant-model.md)),
+swampd @ `c5e5955`。
+
+## 5 分鐘驗證這個 repo
+
+| 你想確認 | 花多久 | 怎麼做 |
+|---|---|---|
+| 程式碼真的能跑 | 10 秒 | 點上面的 CI badge 看最近一次執行(cpp 91 s、experiments 68 s,實測於 GitHub 的 ubuntu-24.04 runner) |
+| 數字是真的 | 60 秒 | CI 的 `experiments` job **重跑全部 L1 實驗**,[`bench/assert_metrics.py`](bench/assert_metrics.py) 斷言 [`claims.json`](bench/claims.json) 的 14 個數字,外加重跑 CSV 的**逐 byte 決定性檢查** |
+| 我讀得懂上游 C++ | 60 秒 | [`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp):meson wrap 把上游 `ec::pid()`(釘 `c5e5955`)真的編進來,144 組參數逐步比對到 1e-12 |
+| 測試有在保護東西 | 60 秒 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 65 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 |
+| 圖是資料產的 | 60 秒 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD |
+| 我碰過真的 OpenBMC | 90 秒 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) |
+| 我知道自己的邊界 | 90 秒 | [`docs/limitations.md`](docs/limitations.md)(W11 補完)+ 每張圖旁的誠實標註 |
+
+## 自己跑一次
+
+```bash
+git clone https://github.com/Jhongwe1/openbmc-thermal-loop.git
+cd openbmc-thermal-loop
+make test      # C++ 測試 + 上游 parity + pytest(GitHub runner 實測 91 s)
+make figures   # 重跑全部 L1 實驗、重畫六張圖(不需要 QEMU;runner 上 68 s)
+make qemu      # 抓 bletchley 映像 + 開 QEMU BMC(需網路;部署步驟見 runbook)
+```
+
+> **現在能做到什麼:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)
+> 改溫度,經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
+> **`busctl`、swampd 的 PID 軌跡、Redfish 三個地方同時變**
+> (行程數與 IPC 次數見 [`docs/architecture.md`](docs/architecture.md)
+> 的〈一個溫度值的旅程〉);PI 係數由開環識別的 `K/τ/θ` 用 IMC 法
+> **算**出來(Fig 2),swampd 的內外圈週期是**量**出來的
+> (100 ms / 1000 ms,[`docs/cascade.md`](docs/cascade.md));
+> 注入到 Redfish 可見的端到端延遲中位 **0.860 s**(exp10)。
 >
-> **端到端可觀測:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)改溫度,
-> 經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,
-> **`busctl`、`swampd` 的 PID 軌跡、Redfish 三個地方同時變**。
-> 每一段的行程數與 IPC 次數都量過,見
-> [`docs/architecture.md`](docs/architecture.md) 的〈一個溫度值的旅程〉。
->
-> **閉環已經跑起來:** PI 係數由開環系統識別的 `K/τ/θ` 用 IMC 法算出
-> ——**不是試出來的**,見下方 Fig 2。
-> 而 swampd 的兩個迴路週期是量到的、不是引用的
-> (內圈 **100 ms** / 外圈 **1000 ms**,見 [`docs/cascade.md`](docs/cascade.md))。
+> 進度:Gate 0~5 ✅;Gate 6(上游)與 Gate 7(交付:CI + 本 README)
+> 進行中 —— 現況見文末〈現況〉。
 
 ## 為什麼做這個
 
-（W10 補完。）
+BMC 是伺服器裡「主機關了它還醒著」的那顆控制器,而風扇控制是它少數
+**閉環、即時、壞了會傷硬體**的職責。產業把 BMC 從主機板拆出去(OCP
+DC-SCM)之後,感測器到風扇這條鏈路跨的抽象層更多 —— 我想搞懂它怎麼
+收斂、怎麼量測、失效時怎麼保持安全。選「量化上游既有的 anti-windup」
+當題目,是因為它同時逼我讀上游 C++、用控制理論、練量測方法學;而且
+**上游本來就有這個機制,我做的是量出它值多少,不是重新發明它**。
 
 ## 目標平台
 
@@ -317,9 +352,10 @@ swampd 外圈輸出 RPM setpoint)填進去,BMC 上 `pidcore.die0` 的實測:
 ### 證據怎麼被守住
 
 ```bash
-meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
-                             # = 32 個 gtest case + 82 個 pytest case
-./tools/mutation_check.sh    # 故意植入 41 個錯誤，每一個都必須讓某個測試變紅
+meson test -C build              # 6 個測試（5 支 gtest 執行檔 + pytest）
+                                 # = 32 個 gtest case + 145 個 pytest case
+./tools/mutation_check.sh        # 故意植入 65 個錯誤，每一個都要讓某個測試變紅
+python bench/assert_metrics.py   # README 的 14 個數字，逐一從資料重算並斷言
 ```
 
 **第二行才是重點。** 「測試是綠的」只證明目前沒有斷言被觸發,
@@ -328,7 +364,7 @@ meson test -C build          # 6 個測試（5 支 gtest 執行檔 + pytest）
 把 `rthMin` 調小讓飽和條件悄悄消失……),重編、重跑、記錄哪些測試變紅,
 **有任何一個活下來就離開碼 1**。
 
-實測 **41 個全被抓到**,其中數個**各自只有一個測試抓得到** ——
+實測 **65 個全被抓到**(2026-08-13),其中數個**各自只有一個測試抓得到** ——
 那些測試是它們各自性質的唯一防線,而這份對照證明了它們守得住。
 
 > ★ **有兩個植入的錯誤,植的是「另一種合理的寫法」而不是「明顯的 bug」。**

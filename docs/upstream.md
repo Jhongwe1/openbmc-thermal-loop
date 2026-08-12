@@ -172,7 +172,16 @@
   19 個測試(清單有 20 個生效 include);`git log -S` + `git blame` 考古
   如上;修正後單獨實跑該 tag 驗證它在 QEMU 上的行為(結果見
   `docs/robot-qemu-ci.md`)。
-- **修法:** 一行 —— 把 include 改成現行 tag。
+- **修法:** 一行 —— **刪掉那行 include**。不是改指新 tag:改名後的測試
+  隸屬 firmware-inventory suite,其 Test Setup 走 boot-test 框架的
+  `Redfish Power Off`,需要 host 電源堆疊,BMC-only 的 QEMU 天生沒有
+  (探針 `docs/robot/20260812_renamed_tag_probe/`;詳見
+  `docs/robot-qemu-ci.md` 觀察 3)。
+  ⚠️ 2026-08-13 稽核:本行原寫「把 include 改成現行 tag」——那是探針
+  **之前**的舊結論,與 robot-qemu-ci.md 自相矛盾;W9 收工時漏改,今修正。
+  另:上游 `HW_CI`/`HW_CI_DEV` 也有同一行死 include,patch 刻意不動它們
+  (硬體上該 suite 可能跑得動,正確修法可能是改指新 tag,無硬體無法驗證
+  —— 這個範圍取捨寫進了 commit message)。
 - **【判】三個候選裡最小、證據最硬,適合當 `openbmc-test-automation`
   的第一筆。** W10 推(CI 白名單核准後),commit message 引用 5236ec54。
 - **狀態:** 已驗證、已起草、待推。
