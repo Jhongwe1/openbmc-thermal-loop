@@ -2426,3 +2426,78 @@ single source of truth。
 其他地方用指標;做不到時,收工檢查要加一條「grep 這個結論的
 所有出現點」。矛盾的兩份文件比錯的一份更傷 —— 讀者無從判斷
 哪份是新的。
+
+## 2026-08-13(W11)第一則上游 review:reviewer 的要求與自己的量測相撞
+
+**現象** George Keishing(openbmc-test-automation 頭號 maintainer,
+1796 commits)給 93469 投 −1,inline comment 要求把「刪行」改成
+「重指 `Verify_Redfish_Update_Service_Enabled`」——正是 commit
+message 第二段用實測否決過的選項;而他「告知」的 rename 就是
+第一段引用的 5236ec54。
+
+**假設** ① maintainer 說了算,照改;② 他只讀了 diff+開頭,
+回覆說明即可;③ 我們的第二段本身有洞,被他的要求剛好逼出來。
+
+**先驗哪個、為什麼** ③ 最便宜也最要命——回錯話的信用成本最高,
+先審自己再回。審出兩件事:(a) 同 suite 的 SoftwareInventory 兩案
+在清單裡活了四年、上游 CI 沒紅,而我們寫的是「suite 天生進不了
+QEMU_CI」——單平台(bletchley)量測被寫成了全稱命題,是外推;
+(b) 使用者要求 fresh boot 重驗探針,FAIL 復現(見下則)。
+結論:②③ 並存——他大概真沒讀完,但我們的第二段也真有外推。
+
+**根因** maintainer 一天 triage 幾十個 change,只讀 diff 與訊息
+開頭;我們把關鍵證據埋在第二段中間,等於對這種閱讀模式不設防。
+
+**教訓(方法論)** reviewer 要求與自己量測衝突時的順序:重審
+自己 → 重驗 → 回覆 = 證據前置 + 明說量測邊界 + 一個能分勝負的
+問題(這裡是「CI 的 QEMU target 是誰」)。不是說服,也不是服從。
+設計回覆時假設對方沒讀完;措辭時假設對方都讀了。
+
+## 2026-08-13(W11)重驗多挖出一層根因——因為這次留了 console
+
+**現象** 重跑探針(fresh boot、同官方變數):FAIL 復現。但這次
+console 流裡看到 8/12 沒記到的死點:boot-test 框架內建的
+`Auto_reboot/cp_setup` plug-in 對 `/redfish/v1/Systems/system`
+PATCH `{"Boot":{"AutomaticRetryConfig":"Disabled"}}`(host 開機
+設定),bmcweb 回 **HTTP 500**、三試全敗,才吐出那句
+「Plug-in setup failed」。
+
+**假設** 8/12 為什麼沒看到這層?① 當天失敗路徑不同,沒有 500;
+② 同病,但證據沒被打包——這層細節不在 Robot 三件套裡。
+
+**先驗哪個、為什麼** zgrep 兩天的 log.html.gz:
+`AutomaticRetryConfig` **兩天都是 0 筆**(連 8/13 自己的都是)——
+plug-in 是子行程,輸出只上 console,不進 Robot 的 log.html。
+8/12 沒存 console → ① 無法回溯驗證;② 被檔案結構直接證實:
+這一層**只活在 console 流**。
+
+**根因** 打包清單抄了 Robot 的三件套(log/output/report),但
+boot-test 框架的 plug-in 輸出走 console —— 證據打包用了 Robot 的
+視角,漏了框架的視角。追根因的深度被打包內容封頂:8/12 停在
+「plug-in 前置死掉」不是不想深,是沒料。
+
+**教訓(方法論)** 能追多深,取決於**存了什麼**:失敗 run 的
+console stream 一律進打包。修在流程不是修在記憶:rerun 目錄補存
+`console.log.gz`,`run_robot_qemu_ci.sh` 加 `tee`。順帶補齊對照組:
+舊 tag 單獨跑,Robot 拒跑(rc 252,`no tests matching`)——
+「無聲 no-op(舊 tag)vs 大聲紅燈(新 tag)」,這一對比就是
+刪行 vs 重指的本質差異,也是回覆 George 的骨架。
+
+## 2026-08-13(W11)CLA 寄出九天等於沒寄:對外依賴要自帶 timer
+
+**現象** Discord 請核白名單,Milton 回「complete a cla first」;
+但 ICLA 8/4 已寄 manager@lfprojects.org,九天無 ack —— 在對方的
+流程裡,我們等於不存在。
+
+**假設** ① 信沒送達;② 在處理但不發 ack;③ 寄錯地址。
+
+**先驗哪個、為什麼** ③ 最便宜:比對 CONTRIBUTING.md(L50 就是
+這個地址),排除。①② 無法自查 → 回 Milton 時直接問「怎麼查
+狀態」,並設兩三天的追蹤點(forward 8/4 原信重寄,保留時間戳)。
+
+**根因** 把「寄出」當「完成」,沒設回音期限。它卡的不只是禮貌:
+Jenkins 白名單、93469/93470 的 CI、ec::pid() 測試貢獻全排在它
+後面 —— 時程風險最大的不是自己手上的工作,是無 SLA 的外部佇列。
+
+**教訓(方法論)** 任何交到別人手上的依賴,寄出當下就記
+「N 天沒回音就做什麼」。等別人踢到才發現,已經晚了九天。
