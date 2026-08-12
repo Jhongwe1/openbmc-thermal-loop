@@ -2240,3 +2240,189 @@ guest 時鐘鋸齒毀「跨域比較」;兩層 8 KB 緩衝毀「串流完整性�
 也要量化:①④ 不可分離的結論帶著鋸齒的次數/幅度/週期三個數字,
 比硬拆一個錯的數字值錢;④ 修一層就靠「症狀消失」驗收會把運氣當成
 修好 —— 三層根因就是三次「修完再驗屍」挖出來的。
+
+
+## 2026-08-13(W10)CI 首紅 3 秒:No module named 'sh'
+
+**現象** ci.yml 首推,cpp/experiments 一次綠,`upstream-build` 3 秒紅。
+
+**假設** ① runner 上 docker 不可用;② 上游腳本缺 Python 相依;
+③ WORKSPACE 佈局不符合腳本預期。
+
+**先驗哪個、為什麼** 直接抓 job log(最便宜、而且是**一手證據**;
+三個假設用同一份 log 一次分辨)。traceback 指到
+`build-unit-test-docker:38` 的 `from sh import git`。
+
+**根因** 兩層:表層是 runner 的 python 沒有 `sh` 模組;底層是
+**記憶與事實不符** —— 記憶說「W8 跑過 run-unit-test-docker 綠」,
+實查 docs/upstream.md 前置表,W8 做的是 docs repo 的 prettier;
+這支腳本今天才第一次在任何一台我的機器上真的執行。
+本機以裸 python3 重現同錯,`pip install sh` 後過關 → ci.yml 補一步。
+
+**教訓(方法論)** 「跑過沒」以 log 與文件為準,不以印象為準 ——
+印象會把「相鄰的事」合併成「同一件事」。CI 對第三方腳本的相依要
+顯式安裝,不賭 runner 映像剛好有。
+
+## 2026-08-13(W10)93397 匿名看是 Not found —— private 旗標
+
+**現象** 用匿名 REST 查 change 93397(W8 的第一筆,已 Abandon)回
+`Not found`;查詢式搜尋回空陣列。
+
+**假設** ① change 被刪除;② 編號記錯;③ 可見性問題(private/wip)。
+
+**先驗哪個、為什麼** 用自己的 ssh 身分 `gerrit query`(一條指令、
+authed,三個假設一次分辨:查得到=沒刪+編號對,剩可見性)。
+
+**根因** `"private": true` —— 當時推送帶了 private 選項。順帶把另一件
+W9 待辦一起驗掉:owner.name = `Chung-Wei Lan`,顯示名根本不用修。
+
+**教訓(方法論)** T0 證據的「對外可見性」是獨立於「存在性」的性質,
+要用**別人的身分**(匿名)驗過才算數;文件裡的連結,自己點得開
+不代表別人點得開。決策(使用者):維持 private,文件註明。
+
+## 2026-08-13(W10)候選 B 差點被大小寫騙過
+
+**現象** 推 93470 前查 Gerrit merged 紀錄,發現 47606
+(2022-01「Make specific UNA sensors not trigger failsafe」)動過
+configure.md —— 而那正是 missingIsAcceptable 機制的功能 commit,
+「七欄未文件化」的前提瞬間可疑。
+
+**假設** ① 已被文件化(EM 拼法 MissingIsAcceptable,我的 grep 區分
+大小寫所以漏抓);② 它文件化的是別的欄位;③ 文件化過又被刪。
+
+**先驗哪個、為什麼** 直接看該 commit 對 configure.md 的 diff
+(`git show <sha> -- configure.md`,一條指令直接分辨三者,
+比任何 grep 都便宜且權威)。
+
+**根因** ② —— 它加的是 sensor 層的 `unavailableAsFailed`(存在但
+自報 unavailable),與 controller 層的 `missingIsAcceptable`
+(整顆缺席)是兩個機制。再以不分大小寫 grep 重驗七欄:0 次,前提成立。
+把這個區分寫進 patch 的 margin 表 —— reviewer 最可能問的問題,
+先答在文件裡。
+
+**教訓(方法論)** 「grep 0 次」的證據強度取決於 pattern(大小寫、
+同義詞、EM/JSON 拼法差);查「有沒有人做過」要沿**功能史**
+(commit 歷史、路徑過濾)查,不能只沿字串。查證流程本身要能
+推翻自己的結論,否則只是儀式。
+
+## 2026-08-13(W10)紅燈證明 R1 的兩個發現
+
+**現象** rthMin +20% 推上分支:experiments 紅(預期),
+**cpp 32 個 case 全綠(預期外)**;且 assert_metrics 在第五個 claim
+處 ZeroDivisionError,整支 traceback。
+
+**假設(對 cpp 全綠)** ① 測試沒編到新碼;② 性質型測試對參數改壞
+天生盲;③ 容差太鬆。
+
+**先驗哪個、為什麼** 看 run 裡 cpp job 的測試數(有跑=①排除),
+再對照本機 mutation 表:M6(rthMin 調**小**)是被「飽和條件」測試
+抓的 —— 調大讓飽和更容易,該守門自然不叫 → ②。
+
+**根因** 性質型測試驗「關係」(守恆/單調/飽和條件),不驗「數值」;
+數值的守門在 claims 斷言層 —— 這正是 assert_metrics 存在的理由,
+一次紅燈證明把「測試綠 ≠ 數字對」變成可指認的實測。
+第二個發現:檢查器自己會倒 —— 單一 claim 崩潰讓其餘九個沒被檢查。
+修正 = 逐 claim 攔截、記 FAIL 繼續查(commit 805ab36,pytest +
+mutation AM5 守著;AM5 用 `except ()` 植回「接不到任何東西」)。
+
+**教訓(方法論)** ① 紅燈證明的價值不只「會紅」,在於**紅的形狀**
+與預測的差 —— R2 我預測 parity 全綠,實際
+`NoDivergenceWhenFeedForwardIsZero` 也紅(它交叉比對我的一般路徑與
+上游,等價一破就叫):預測落空要照實記,那是測試網密度的實測。
+② 檢查器要被檢查;倒地的檢查器比沒有檢查器更危險,因為它上半場
+印的 PASS 會被當成全卷。
+
+## 2026-08-13(W10)Gerrit push 斷線:小查詢通、大串流死
+
+**現象** `git push` 到 Gerrit(ssh:29418)兩次 `Broken pipe`,
+斷點在 `git-receive-pack` exec 被接受、伺服器要回大量 ref 廣告的
+瞬間;同時 `gerrit query`(小回應)正常、`gerrit ls-projects`
+(大串流)回 0 行。
+
+**假設** ① Gerrit 端限制;② 本機到 Gerrit 的路徑問題(MTU 級);
+③ 同時在跑的 docker image build(--network=host,狂載套件)
+把 WSL NAT 打飽。
+
+**先驗哪個、為什麼** 用 ls-projects 當探針(不用 push 就能重現
+「大串流」條件);等 docker build 結束後重試 —— 一次成功,③ 實錘。
+
+**根因** 併發的大量下載讓長連線的大流量階段活不過去;兩天前
+(93397)同一條路徑推送成功,環境變因就是今天的 docker build。
+
+**教訓(方法論)** 「同一台機器、同一條指令、昨天可以今天不行」
+先問**現在還有誰在用這條路** —— 併發負載是環境變因的第一嫌疑;
+探針要挑「能重現故障條件的最小指令」,不要拿主作業本身試錯。
+
+## 2026-08-13(W10)本機 docker CI:兩次失敗,兩個根因
+
+**現象** run-unit-test-docker 在本機第一次 3 秒死(缺 sh 模組,
+與 GitHub runner 同病),裝了 sh 後第二次跑 40 分鐘死在
+phosphor-objmgr 的 COPY --from 找不到 boost 中繼映像、
+轉去 docker.io 拉被拒。
+
+**假設(第二次)** ① docker hub 授權問題;② boost 映像根本沒建成,
+下游才會去遠端找;③ buildx 驅動看不到本地映像。
+
+**先驗哪個、為什麼** 在 log 裡往前找 boost 自己的建置紀錄
+(「下游找不到」的最常見原因是「上游沒產出」,先驗因果鏈上游)。
+找到:`boost: #5 ERROR ... ./b2 ... exit code: 2` —— ② 實錘,
+docker.io 拒絕是正常的(那個 tag 本來就只存在於本地)。
+
+**根因** boost 從源碼建置在高併發下 flake(當時 mutation 66 案 +
+多映像並行搶 CPU/RAM);對**純 .md 的 93470** 而言,該 pipeline
+本來就沒有任何檢查會碰到文件(repo 只有 .clang-format)——
+【判】不擋推送,重試與 CI 乾淨環境驗證並行。
+
+**教訓(方法論)** 錯誤訊息指到哪裡,不等於錯誤發生在哪裡 ——
+「pull access denied」是第 12120 行,病灶在第 6918 行;
+在建置圖(DAG)上永遠先驗**上游節點**。資源競爭下的 flake,
+重試前先把競爭者清場,否則重試只是擲骰子。
+
+**★ 第三次執行的後記(同日稍晚)** 重試跑通了整條 pipeline,
+這次死在 format-code —— 而且它**改了 configure.md**(prettier
+全域檢查會重排 markdown 表格:新增的長列撐寬欄位,整張表重新
+padding,40+/40−、內容零變)。我在第二次失敗後寫下的「該
+pipeline 對 .md 沒有任何檢查」,是**用 repo 裡有沒有設定檔推理
+出來的**,被真正的執行推翻。格式化後 amend 成 patchset 2 推回
+93470。追加教訓:「這條 pipeline 會不會碰到我的變更」是實證問題
+不是推理問題 —— 推理只該決定「值不值得等」,不該替代「跑過一次」。
+
+**★★ 第四、五輪:檢查表的階梯繼續往上。** 第四輪 codespell 紅在
+commit message:`behaviour ==> behavior` ×2(檔內另有一處)——
+英式拼寫,上游字典是美式;修正時用 `git log -1 --format=%B` 撈出
+現有訊息再改,**直接拿原稿覆蓋會弄丟 hook 加的 Change-Id**。
+第五輪 codespell 綠了,換 markdownlint MD060:我手改一個字母
+(behaviour→behavior,短一格)沒重排表格,pipe 對不齊 —— 同輪的
+prettier 已當場把樹修好,amend 即 patchset 4。三輪三個 patchset,
+每個問題(表格 padding、拼寫、pipe 對齊)都是「推理想不到、
+執行一次就冒出來」的那種 —— 檢查表的每一項都要真的執行,
+而且**要執行到綠為止**,不是執行到「我覺得剩下的都沒事」為止。
+
+**收尾(第六輪 + 乾淨環境權威)** 第六輪 format 階段全綠
+(codespell 0、markdownlint 無、prettier 零變更 —— 會碰到 .md 的
+部分全部通過),build 階段死於 `c++: fatal error: Killed`:cc1plus
+被 OOM killer 收走 —— `-flto` 的重編譯撞上同時在跑的 66 案
+mutation,純資源競爭。同時刻,本 repo CI 的 `upstream-build` job
+(pristine master、乾淨 runner、同一支腳本)**端到端綠**
+(run #5)—— 那才是這條 pipeline 的權威證據;本機的角色只是
+把 format 階段(唯一會碰到我的 .md 的部分)驗到綠。
+
+## 2026-08-13(W10)體檢 W1~W9:三處「文件對不齊」
+
+**現象** 開工體檢(使用者指定)發現:① docs/upstream.md 候選 3
+寫「改成現行 tag」,同 repo 的 robot-qemu-ci.md 觀察 3 寫「刪行是
+唯一解」——互相矛盾;② README 的 mutation 數停在 41(W9 已是 61);
+③ 記憶說 W8 跑過上游 docker CI(見上則,實未跑過)。
+
+**假設** 不適用(這是盤點,不是除錯)—— 但要回答「為什麼會發生」:
+候選 3 那句寫於探針**之前**,探針推翻結論後只改了 robot-qemu-ci.md,
+沒有回頭改 upstream.md;README 數字是 W9 收工六項裡「與當天產出
+一致」檢查的漏網。
+
+**根因** 同一結論寫在兩個檔案,更新時只改了一份 —— 結論沒有
+single source of truth。
+
+**教訓(方法論)** 會演化的結論(修法、數字)只該有一個權威位置,
+其他地方用指標;做不到時,收工檢查要加一條「grep 這個結論的
+所有出現點」。矛盾的兩份文件比錯的一份更傷 —— 讀者無從判斷
+哪份是新的。
