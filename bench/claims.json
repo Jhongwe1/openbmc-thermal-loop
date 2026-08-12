@@ -173,6 +173,6 @@
     "measured_on": "2026-08-12",
     "source": "bench/data/exp10_latency/events.csv",
     "figure": null,
-    "note": "★ 本欄原登記為 e2e_redfish_vs_dbus_ratio(④/①):實測發現 guest 時鐘(TCG)以 0.81× 速率行走、每 ~39.7 s 跳步 +7.59 s,跨時鐘域的 ①④ 無法以小於跳步幅度的精度分離 —— 改 claim 發生在 value 仍為 null 時(規則一),兩個原始預測(計畫:④最慢;我:①最慢)與「判定不了」的結論都留檔於 docs/measurement.md exp10 與 bench/exp10_latency.py docstring。系統量測受 host 負載影響大 → 容差 0.40;逐 rep 量具健康(zone epoch 連續性/Redfish host 節奏/注入節奏)拒收 2 個 rep,理由在 exp10_meta.json。★ CI 跑不了 QEMU:W10 的 assert_metrics.py 要把這一項標 informational(只報告不斷言)。"
+    "note": "★ 本欄原登記為 e2e_redfish_vs_dbus_ratio(④/①):實測發現 guest 時鐘(TCG)以 0.81× 速率行走、每 ~39.7 s 跳步 +7.59 s,跨時鐘域的 ①④ 無法以小於跳步幅度的精度分離 —— 改 claim 發生在 value 仍為 null 時(規則一),兩個原始預測(計畫:④最慢;我:①最慢)與「判定不了」的結論都留檔於 docs/measurement.md exp10 與 bench/exp10_latency.py docstring。系統量測受 host 負載影響大 → 容差 0.40;逐 rep 量具健康(zone epoch 連續性/Redfish host 節奏/注入節奏)拒收 2 個 rep,理由在 exp10_meta.json。★ CI 跑不了 QEMU:量測無法重做,但原始串流在 git 裡、推導可以重做 —— assert_metrics.py 把本欄列為 recompute 類(斷言推導的可重現性,不斷言量測)。W9 原定標 informational(只報告不斷言),W10 刻意升級:informational 會讓分析程式碼悄悄漂移而 CI 永遠綠。見 assert_metrics.py docstring 與 measurement.md §5.1。"
   }
 }

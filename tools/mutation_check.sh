@@ -40,6 +40,7 @@ SIM="bench/sim.cpp"
 PRS="bench/parse_l2.py"
 EX9="bench/exp09_failsafe.py"
 EXA="bench/exp10_latency.py"
+AST="bench/assert_metrics.py"
 
 if [ ! -d "$BUILD" ]; then
     echo "找不到 build 目錄 '$BUILD'。先跑：meson setup $BUILD" >&2
@@ -73,7 +74,7 @@ fi
 # trap ... EXIT 的意思是「不管這支腳本怎麼結束（正常、出錯、Ctrl-C），
 # 都要執行 restore」。沒有它，中途按 Ctrl-C 會讓 plant 停在被植入錯誤的狀態。
 BACKUP="$(mktemp -d)"
-ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS $EX9 $EXA"
+ALL_SOURCES="$SRC $HDR $IDN $CTL $MET $STD $PRV $SIM $PRS $EX9 $EXA $AST"
 # shellcheck disable=SC2086
 cp $ALL_SOURCES "$BACKUP/"
 
@@ -595,6 +596,46 @@ run_case "P23 pidcore 抓箝位前的 integralTerm1" "$PRS" \
         "integral": df["integralTerm"] / RPM_PER_PCT,' \
     '"integral_rpm": df["integralTerm1"],
         "integral": df["integralTerm1"] / RPM_PER_PCT,'
+
+# ── AM 系列:assert_metrics.py(W10)———————————————————————
+# CI 的最後一道閘門如果自己是壞的,前面所有測試的意義都會被它洗掉。
+# 「檢查器要被檢查」不是修辭 —— 下面每一條都是檢查器安靜失效的真實方式。
+
+# AM1 植回計畫 W10 範本的原始寫法:lo=v(1−t)、hi=v(1+t) 不排序。
+# value<0 時區間上下顛倒(fopdt_k = −0.31),斷言恆 FAIL ——
+# 方向是「誤報」不是「漏報」,但誤報的檢查器會被人加 || true 繞過,
+# 下場一樣。守門員:test_band_handles_negative_claims。
+run_case "AM1 允收區間不排序(計畫的寫法)" "$AST" \
+    'lo, hi = sorted((value * (1.0 - tolerance_pct),
+                     value * (1.0 + tolerance_pct)))' \
+    'lo = value * (1.0 - tolerance_pct)
+    hi = value * (1.0 + tolerance_pct)'
+
+# AM2 配對比值退化成「兩組中位數相除」:13.727 → 13.79,差 0.4%,
+# 允收區間(±15%)照樣過 —— 只有 rel=1e-3 的釘死測試分得出來。
+# 守門員:test_paired_ratio_convention_pinned。
+run_case "AM2 recover 比值不配對(中位數相除)" "$AST" \
+    'pairs = zip(_csvs("exp07_awopen_seed*.csv"),
+                _csvs("exp07_awclamp_seed*.csv"), strict=True)
+    return statistics.median(rec(o) / rec(c) for o, c in pairs)' \
+    'opens = _csvs("exp07_awopen_seed*.csv")
+    clamps = _csvs("exp07_awclamp_seed*.csv")
+    return (statistics.median(rec(o) for o in opens)
+            / statistics.median(rec(c) for c in clamps))'
+
+# AM3 失敗聚合變成「最後一個說了算」:中段 FAIL 被尾端 PASS 洗白,
+# CI 恆綠 —— 一個永遠是綠的 CI 跟沒有 CI 一樣(Gate 7 原文)。
+# 守門員:test_tampered_claim_fails(竄改的就是中段的 claim)。
+run_case "AM3 失敗聚合被最後一項覆寫" "$AST" \
+    'ok = ok and passed' \
+    'ok = passed'
+
+# AM4 e2e 忘了排除暖身 rep:median 位置偏移,量到的混入尚未穩定的
+# 前兩筆 —— 與 T6(exp10 統計忘了排除暖身)同病,但這裡是檢查器側。
+# 守門員:test_e2e_uses_only_non_warmup_reps(獨立重算 + n=28)。
+run_case "AM4 e2e 檢查不排除暖身" "$AST" \
+    'kept = df[df["warmup"].astype(str) != "True"]' \
+    'kept = df'
 
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
