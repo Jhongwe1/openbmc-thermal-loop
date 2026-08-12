@@ -27,7 +27,7 @@ struct PlantParams
 {
     double tAmb = 25.0;         ///< 機房進風溫度 (°C)
     double rthMax = 0.35;       ///< 風扇停轉時的熱阻 (°C/W)：自然對流
-    double rthMin = 0.12;       ///< 風扇滿速時的熱阻 (°C/W)：強制對流
+    double rthMin = 0.144;      ///< 風扇滿速時的熱阻 (°C/W)：強制對流
     double flowExp = 0.8;       ///< 強制對流的經驗指數 n，Rth ∝ 1/v^n
     double tauDie = 45.0;       ///< 元件+散熱片的熱時間常數 (s)
     double tauSense = 3.0;      ///< 感測器本身熱容造成的遲滯 (s)
