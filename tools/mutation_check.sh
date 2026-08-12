@@ -637,6 +637,14 @@ run_case "AM4 e2e 檢查不排除暖身" "$AST" \
     'kept = df[df["warmup"].astype(str) != "True"]' \
     'kept = df'
 
+# AM5 例外攔截失效:`except ()` 是合法 Python 但什麼都接不到 ——
+# 單一 claim 崩潰會讓整支腳本倒地,後面的 claim 全部沒被檢查。
+# 這一條是紅燈證明 R1 當天實際發生過的行為(LOG 2026-08-13)。
+# 守門員:test_crashing_compute_is_a_fail_not_an_abort。
+run_case "AM5 例外攔截接不到任何東西" "$AST" \
+    'except Exception as e:' \
+    'except () as e:'
+
 # ── 收尾 ──────────────────────────────────────────────────────────────
 meson compile -C "$BUILD" >/dev/null 2>&1
 

@@ -250,8 +250,16 @@ def main() -> int:
             print(f"SKIP [{'—':9s}] {name}: value 尚未量測(null)")
             continue
         mode, fn = COMPUTE[name]
-        actual = fn()
         lo, hi = band(c["value"], c["tolerance_pct"])
+        try:
+            actual = fn()
+        except Exception as e:
+            # 紅燈證明 R1 實抓的洞:改壞的 plant 讓 pwm_pp 掉到 0,
+            # 比值計算除以零,整支腳本 traceback —— 後面的 claim 全部
+            # 沒被檢查。檢查器的失敗要「記下來、繼續查」,不是倒地。
+            ok = False
+            print(f"FAIL [{mode:9s}] {name}: 計算路徑丟出例外 —— {e!r}")
+            continue
         passed = lo <= actual <= hi
         ok = ok and passed
         print(f"{'PASS' if passed else 'FAIL'} [{mode:9s}] {name}: "

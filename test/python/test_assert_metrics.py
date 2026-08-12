@@ -105,6 +105,27 @@ def test_tampered_claim_fails(monkeypatch, capsys):
     assert "fopdt_tau_s" in out
 
 
+def test_crashing_compute_is_a_fail_not_an_abort(monkeypatch, capsys):
+    """單一 claim 計算崩潰 → 記 FAIL 並繼續查(紅燈證明 R1 實抓的洞)。
+
+    R1(rthMin +20%)讓 pwm_pp 除以零:修正前整支腳本 traceback,
+    後面九個 claim 沒被檢查。檢查器要倒,也要倒得有完整報告。
+    對應 mutation AM5(except 改成 catch 不到任何東西)。
+    """
+    def boom():
+        raise ZeroDivisionError("float division by zero")
+
+    broken = dict(am.COMPUTE)
+    broken["fopdt_tau_s"] = ("rerun", boom)
+    monkeypatch.setattr(am, "COMPUTE", broken)
+    monkeypatch.setattr(sys, "argv", ["assert_metrics.py"])
+    assert am.main() == 1
+    out = capsys.readouterr().out
+    assert "FAIL" in out
+    assert "fopdt_tau_s" in out
+    assert "e2e_inject_to_redfish_s" in out  # 崩潰之後的 claim 仍要被檢查
+
+
 def test_only_unknown_claim_is_an_error(monkeypatch, capsys):
     """--only 打錯名字要報錯,不能「什麼都沒檢查」卻回 0。"""
     monkeypatch.setattr(sys, "argv",
