@@ -19,6 +19,10 @@
 #     never reaches Robot: lib/resource.robot defaults OPENBMC_HOST to EMPTY
 #     and Robot does not import environment variables. -v flags are the
 #     working route (verified against the setup suite on 2026-08-12).
+#   * Console output is tee'd next to the reports: the boot-test framework
+#     runs its plug-ins as child processes whose output never reaches
+#     Robot's log.html — the Auto_reboot 500 behind "Plug-in setup failed."
+#     (2026-08-13) was visible only on the console.
 set -uo pipefail
 
 MODE="${1:-both}"
@@ -50,12 +54,12 @@ VFLAGS=(-v OPENBMC_HOST:"$HOST"
 
 run_setup() {
   echo "==> templates/test_openbmc_setup.robot"
-  robot -d "$OUT/setup" "${VFLAGS[@]}" templates/test_openbmc_setup.robot || true
+  robot -d "$OUT/setup" "${VFLAGS[@]}" templates/test_openbmc_setup.robot 2>&1 | tee "$OUT/setup_console.log" || true
 }
 
 run_qemu_ci() {
   echo "==> test_lists/QEMU_CI (redfish/ + ipmi/)"
-  robot -d "$OUT/qemu_ci" "${VFLAGS[@]}" -A test_lists/QEMU_CI redfish/ ipmi/ || true
+  robot -d "$OUT/qemu_ci" "${VFLAGS[@]}" -A test_lists/QEMU_CI redfish/ ipmi/ 2>&1 | tee "$OUT/qemu_ci_console.log" || true
 }
 
 case "$MODE" in
