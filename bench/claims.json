@@ -21,7 +21,7 @@
   },
 
   "fopdt_tau_s": {
-    "value": 43.972,
+    "value": 57.163,
     "tolerance_pct": 0.10,
     "unit": "s",
     "meaning": "開環階躍識別出的一階時間常數（5 seed 中位數）。",
