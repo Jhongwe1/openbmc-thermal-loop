@@ -16,8 +16,8 @@
 | 三個 repo clone ＋ `commit-msg` hook 安裝 | **已完成** | 2026-08-04 | hook 來自 Gerrit 3.11.7;三個 repo 預設分支皆為 `master` |
 | 推一次 `%private,wip` change 驗證流程 | **已完成** | 2026-08-05 | change [93169](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93169),3 個 patchset(含一組單一變因 A/B),驗完立即 Abandon |
 | 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠) |
-| 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄 |
-| 至少一筆 change 掛在 Gerrit 上(open) | **重新歸零** | — | 預計 **W10**(`phosphor-pid-control`);⚠️ 前置:CI 白名單(Discord 找管理員)、網頁顯示名 `wei` 要修 |
+| 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄。★ 2026-08-13 查證:此 change 帶 `private` 旗標,**匿名不可見**(REST 回 Not found,ssh authed 查得到)——決策:維持 private;此連結僅本人登入可見,對外敘事以本檔文字為準 |
+| 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。⚠️ CI 白名單仍未請核 —— **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
 | 至少收到一次 reviewer 回覆 | 未開始 | — | 預計 W10~W11 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
@@ -158,9 +158,33 @@
 其中 `derivativeCoeff` 這次順手確認過:程式碼支援(`pid/ec/pid.cpp` **每一輪無條件**
 計算 D 項),但 `configure.md` 的 PID 範例沒有列它。
 
-- **狀態:** ★ 2026-08-12 已逐項重驗:7 個欄位全部「程式碼有、`configure.md`
-  0 次」,且上游自 `f6d4cb9`(2026-07-31)之後無新 commit —— 候選完好。
-  送幾個、怎麼分批,W10 推送前決定。
+- **狀態:** ★★ **已推:change [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(2026-08-13,reviewer = OWNERS 兩位)。**
+  推送當日第三次查證:七欄在 tip 的 configure.md **不分大小寫**皆 0 次;
+  Gerrit open/merged 皆無人先占。★ 查證抓到一根刺:merged 清單裡 47606
+  (「UNA sensors」,2022-01)動過 configure.md —— 細看它文件化的是
+  sensor 層的 `unavailableAsFailed`(存在但自報 unavailable),與
+  controller 層的 `missingIsAcceptable`(整顆缺席)是兩個機制;
+  這個區分直接寫進了 patch 的 margin 表(reviewer 最可能問的問題,
+  先答在文件裡)。上游官方 docker CI 當日在本機跑了三次:
+  ① 3 秒死於 `sh` 模組缺失;② boost 中繼映像建置 flake;
+  ③ **跑通到 format-code,而它改了 configure.md** —— 我在 ② 之後
+  寫下的判斷「該 pipeline 對 .md 沒有任何檢查(repo 僅
+  `.clang-format`)」被第三次執行**推翻**:format-code 的 prettier
+  全域檢查會重排 markdown 表格(新增的長列撐寬欄位,整張表重新
+  padding,40+/40−、內容零變)。已以 **patchset 2** 推上格式化後的
+  版本;第四次執行又抓到 `commit_spelling`(codespell):
+  `behaviour ==> behavior`(訊息 ×2 + 檔內 ×1,英式拼寫)——
+  修正後 **patchset 3**(amend 時以 `git log --format=%B` 保留
+  Change-Id);第五輪 codespell 綠、換 markdownlint MD060(手改一個
+  字母沒重排表格,pipe 對不齊),prettier 同輪修好 → **patchset 4**。
+  錯誤判斷與整串 patchset 都保留不塗銷,理由見 LOG 2026-08-13
+  (「會不會碰到我的變更」是實證問題,不是推理問題;檢查表的每一項
+  都要真的執行,而且要執行到綠為止)。第六輪本機 format 階段
+  **全綠**(codespell/markdownlint/prettier —— 會碰到 .md 的檢查
+  全數通過),build 階段死於 OOM(與 66 案 mutation 併發,cc1plus
+  被殺);同刻本 repo CI 的 `upstream-build`(pristine master、
+  乾淨 runner、同一支腳本)**端到端綠** —— pipeline 的權威證據
+  以該 run 為準。
 
 ### 候選 3:`test_lists/QEMU_CI` 的死 include(2026-08-12 發現)
 
@@ -183,8 +207,13 @@
   (硬體上該 suite 可能跑得動,正確修法可能是改指新 tag,無硬體無法驗證
   —— 這個範圍取捨寫進了 commit message)。
 - **【判】三個候選裡最小、證據最硬,適合當 `openbmc-test-automation`
-  的第一筆。** W10 推(CI 白名單核准後),commit message 引用 5236ec54。
-- **狀態:** 已驗證、已起草、待推。
+  的第一筆。** 2026-08-13 已推(白名單刻意後補 —— 帶 URL 請核),
+  commit message 引用 5236ec54。
+- **狀態:** ★★ **已推:change [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(2026-08-13,reviewer = OWNERS 的 gkeishin)。**
+  推送當日重驗:死行仍在 tip(`QEMU_CI:13`)、舊 tag 全 repo 0 個 .robot
+  引用、Gerrit 無人先占;`HW_CI`/`HW_CI_DEV` 的同病行**刻意不動**
+  (真硬體上該 suite 可能跑得動,正確修法可能是改指新 tag,無硬體無法
+  驗證 —— 範圍取捨寫進 commit message)。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 

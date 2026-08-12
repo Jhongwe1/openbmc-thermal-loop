@@ -4,8 +4,12 @@
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
 [![ci](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml)
-　🔗 **上游貢獻(Gerrit):** change 連結、review 往返與未提交候選的完整
-紀錄在 [`docs/upstream.md`](docs/upstream.md)。
+　🔗 **上游貢獻(Gerrit):**
+[93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
+(configure.md 補七個未文件化欄位)、
+[93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
+(官方 QEMU_CI 清單刪除掛了四年的死 include)——
+完整往返與未提交候選在 [`docs/upstream.md`](docs/upstream.md)。
 
 ![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
 
@@ -23,7 +27,7 @@ swampd @ `c5e5955`。
 | 程式碼真的能跑 | 10 秒 | 點上面的 CI badge 看最近一次執行(cpp 91 s、experiments 68 s,實測於 GitHub 的 ubuntu-24.04 runner) |
 | 數字是真的 | 60 秒 | CI 的 `experiments` job **重跑全部 L1 實驗**,[`bench/assert_metrics.py`](bench/assert_metrics.py) 斷言 [`claims.json`](bench/claims.json) 的 14 個數字,外加重跑 CSV 的**逐 byte 決定性檢查** |
 | 我讀得懂上游 C++ | 60 秒 | [`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp):meson wrap 把上游 `ec::pid()`(釘 `c5e5955`)真的編進來,144 組參數逐步比對到 1e-12 |
-| 測試有在保護東西 | 60 秒 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 65 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 |
+| 測試有在保護東西 | 60 秒 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 66 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 |
 | 圖是資料產的 | 60 秒 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD |
 | 我碰過真的 OpenBMC | 90 秒 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) |
 | 我知道自己的邊界 | 90 秒 | [`docs/limitations.md`](docs/limitations.md)(W11 補完)+ 每張圖旁的誠實標註 |
@@ -354,7 +358,7 @@ swampd 外圈輸出 RPM setpoint)填進去,BMC 上 `pidcore.die0` 的實測:
 ```bash
 meson test -C build              # 6 個測試（5 支 gtest 執行檔 + pytest）
                                  # = 32 個 gtest case + 145 個 pytest case
-./tools/mutation_check.sh        # 故意植入 65 個錯誤，每一個都要讓某個測試變紅
+./tools/mutation_check.sh        # 故意植入 66 個錯誤，每一個都要讓某個測試變紅
 python bench/assert_metrics.py   # README 的 14 個數字，逐一從資料重算並斷言
 ```
 
@@ -364,7 +368,7 @@ python bench/assert_metrics.py   # README 的 14 個數字，逐一從資料重�
 把 `rthMin` 調小讓飽和條件悄悄消失……),重編、重跑、記錄哪些測試變紅,
 **有任何一個活下來就離開碼 1**。
 
-實測 **65 個全被抓到**(2026-08-13),其中數個**各自只有一個測試抓得到** ——
+實測 **66 個全被抓到**(2026-08-13),其中數個**各自只有一個測試抓得到** ——
 那些測試是它們各自性質的唯一防線,而這份對照證明了它們守得住。
 
 > ★ **有兩個植入的錯誤,植的是「另一種合理的寫法」而不是「明顯的 bug」。**
@@ -399,6 +403,27 @@ python bench/assert_metrics.py   # README 的 14 個數字，逐一從資料重�
 > 於是「slewNeg 忘了乘 ts」仍然活著。**一個只驗一半的測試,看起來跟驗完整的一樣綠。**
 >
 > 這三個洞都**不是跑測試發現的**(跑幾次都綠),是「**我要植入哪一種錯**」逼出來的。
+
+### 這個 CI 真的在守東西(W10 紅燈證明)
+
+一個永遠是綠的 CI 跟沒有 CI 一樣。所以在分支 `ci-red-proof` 上做了三種
+「故意改壞」,每一種都推上去看它會不會紅 —— 紅完立刻 revert,
+**每一次 run 的連結都留著,點進去可以自己驗**:
+
+| # | 改壞什麼 | 誰紅了(點連結驗) | 學到什麼 |
+|---|---|---|---|
+| 1 | plant 的 `rthMin` +20%(模型參數) | [run 3](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/runs/31628795341):`experiments` 紅(`assert_metrics` 抓到 `fopdt_k` 漂出 ±5%);**`cpp` 全綠** | ★ 性質型單元測試(守恆/單調/飽和條件)對「參數改壞」天生盲 —— 守**數字**的是 claims 斷言層,這正是它存在的理由 |
+| 2 | 拿掉自家 Clamp 路徑的積分箝位(控制律) | [run 4](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/runs/31629054432):`cpp` 紅(`Pi.ClampCapsTheIntegral`、`ClosedLoop.AntiWindupRecoversFasterThanNone`,**連 parity 套件的跨實作等價案例也紅**)+ `experiments` 紅 | 我原預測 parity 全綠(上游路徑沒動)—— 預測**落空**:`NoDivergenceWhenFeedForwardIsZero` 交叉比對兩條路徑,等價一破就叫。測試網比我自己建模的更密,miss 照實記 |
+| 3 | **只把 `claims.json` 的 τ 灌水 30%,程式碼一行不動** | [run 6](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/runs/31629396793):`experiments` 紅 —— 14 個 claim 裡**恰好只有被灌水的那個** FAIL(重算 43.972,落在宣稱 57.163 的允收區間外);`cpp` 也紅(pytest 的 claims 守門測試,雙保險) | ★★ 最重要的一發:它證明的不是「程式有 bug 會紅」,而是「**README 上的數字如果不成立,CI 會紅**」 |
+| — | 三發全 revert | [run 7](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/runs/31629553495):**全綠** | 書擋:分支終態與 main 等價 —— 改壞是真的改壞,還原是真的還原 |
+
+你可以 fork 這個 repo、改一行參數或一個宣稱,CI 會告訴你我的數字不成立了。
+
+> **意外收穫:** 第 1 發讓檢查器自己崩潰 —— 改壞的 plant 把穩態 `pwm_pp`
+> 推到 0,比值計算除以零,整支 `assert_metrics` traceback,**後面九個
+> claim 根本沒被檢查**。修正(逐 claim 攔截、記 FAIL 繼續查)+ 守門測試
+> + mutation AM5 在 commit `805ab36`。紅燈證明不只驗了 CI,還驗了檢查器
+> 本身。
 
 ### ★★ Fig 3 —— anti-windup 單變因 A/B(核心證據)
 
@@ -569,14 +594,17 @@ python bench/plot.py --fig 4
         guest 時鐘鋸齒(0.81× 速率、每 39.7 s 跳 +7.59 s)被量化,
         ①④ 依此宣告**不可分離** ←
         [`docs/measurement.md`](docs/measurement.md) exp10
-- [ ] Gate 6　Upstream　← 第一筆 change(docs,93397)2026-08-11 完整走過
-      推送流程(commit-msg hook、refs/for/master、OWNERS 加 reviewer)後
-      **由我決定收回**;過程與決策記錄在 [`docs/upstream.md`](docs/upstream.md)。
-      主線 patch(`phosphor-pid-control`:configure.md 未文件化欄位、
-      `ec::pid()` 釘住測試)照計畫 **W10** 提交;W9 新增兩個有依據的
-      候選(官方清單死 include、ThermalSubsystem 測試案例草稿)與
-      兩項前置(CI 白名單、Gerrit 顯示名)
-- [ ] Gate 7　交付與敘事
+- [ ] Gate 6　Upstream　← **兩筆 change 已上 Gerrit(2026-08-13):**
+      [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
+      (configure.md 補七個未文件化欄位 —— 最相關 repo)、
+      [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
+      (官方 QEMU_CI 清單的四年死 include 刪行)。第一筆 93397(docs)
+      推出後由我決定收回,過程在 [`docs/upstream.md`](docs/upstream.md)。
+      剩:CI 白名單請核(帶 URL 上 Discord)與**收到 reviewer 回覆**(W11)
+- [ ] Gate 7　交付與敘事　← **W10 主體完成:** CI 三 job + badge、
+      `assert_metrics` 斷言 14 個 claim、紅燈證明 ×3(見上)、README
+      第一屏、Makefile。剩:limitations(W11)、demo 影片(W12)、
+      三個 debug 故事(W13)
 
 ## 授權
 
