@@ -141,6 +141,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      - name: Install build-unit-test-docker's Python dependency
+        # 第一次跑就紅在這:build-unit-test-docker 第 38 行 `from sh import
+        # git`,runner 的 python 沒有 sh 模組(本機 W8 跑得動是因為 WSL
+        # 環境裝過)。根因與過程見 LOG.md 2026-08-13。
+        run: pip install sh
       - name: Build & test upstream phosphor-pid-control the upstream way
         run: |
           git clone --depth 1 \
