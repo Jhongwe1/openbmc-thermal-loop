@@ -43,6 +43,7 @@ double Pi::step(double input, double setpoint)
         if (p_.antiWindup == AntiWindup::Clamp ||
             p_.antiWindup == AntiWindup::BackCalculation)
         {
+            candidate = clamp(candidate, p_.integralMin, p_.integralMax);
         }
     }
 
