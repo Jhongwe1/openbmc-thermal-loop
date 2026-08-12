@@ -1,0 +1,11 @@
+Re-verification (2026-08-13) of the 2026-08-12 probe, before replying
+to the review comment on Gerrit 93469: running the renamed tag
+Verify_Redfish_Update_Service_Enabled alone, same variables as the
+official run (harness/qemu/run_robot_qemu_ci.sh VFLAGS).
+date=2026-08-13T06:53:49+08:00
+obmc_test_automation_commit=6aaed673
+robot_version=Robot Framework 7.2.2 (Python 3.12.3 on linux)
+repo_commit=e2bf61b
+qemu_version=QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+image_manifest=obmc-phosphor-image-bletchley-20260728025045.manifest
+console.log.gz = full stdout of the rerun; the Auto_reboot 500 detail lives only here, not in log.html

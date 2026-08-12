@@ -160,6 +160,19 @@ AccountService、BMC dump。**沒有任何熱控或感測器路徑的驗證。**
   輸出為空)。整個 firmware-inventory suite 天生進不了 QEMU_CI。
 - 正確修法:**刪掉那一行**。證據三件套(改名 commit、blame、
   探針報告)與 patch 規劃見 `docs/upstream.md` 候選 3。
+- **2026-08-13 重驗 + 根因精化**(93469 review 往返觸發;fresh boot、
+  同官方變數):FAIL 復現(`docs/robot/20260813_renamed_tag_probe_rerun/`)。
+  死點比「需要 host 電源堆疊」更具體:`Redfish Power Off` 進 boot-test
+  框架後,內建 `Auto_reboot/cp_setup` plug-in 先 PATCH
+  `/redfish/v1/Systems/system` 的 `{"Boot":{"AutomaticRetryConfig":
+  "Disabled"}}`(host 開機設定),bmcweb 回 **500**、三試全敗 →
+  `Plug-in setup failed`。⚠️ 此層只在 **console 流**可見(8/12 與 8/13
+  的 log.html 皆 0 筆 `AutomaticRetryConfig`)—— 故 rerun 打包含
+  `console.log.gz`,且 `run_robot_qemu_ci.sh` 已加 `tee`。對照組:
+  舊 tag 單獨跑,Robot 拒跑(rc 252,`no tests matching tag`)。
+  **範圍修正:上述皆量於 bletchley;「天生進不了 QEMU_CI」對其他
+  QEMU target 是未驗證的外推 —— 此問題已拋回 maintainer
+  (見 upstream.md 候選 3 往返 1)。**
 
 ## 我沒有做的
 

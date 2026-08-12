@@ -214,6 +214,19 @@
   引用、Gerrit 無人先占;`HW_CI`/`HW_CI_DEV` 的同病行**刻意不動**
   (真硬體上該 suite 可能跑得動,正確修法可能是改指新 tag,無硬體無法
   驗證 —— 範圍取捨寫進 commit message)。
+- **往返 1(2026-08-13):** George Keishing 投 **−1**,inline comment
+  要求改成**重指新 tag**(「please update with this commit」)。處理:
+  先審自己 —— 發現 commit message 第二段「a BMC-only QEMU target」是把
+  bletchley 單平台量測寫成全稱命題(外推);再 fresh boot 重跑探針:
+  **FAIL 復現**,且 console 流把根因釘到具體呼叫 ——
+  `Auto_reboot/cp_setup` plug-in PATCH `/redfish/v1/Systems/system`
+  (AutomaticRetryConfig)→ HTTP 500×3 → `Plug-in setup failed`
+  (證據:`docs/robot/20260813_renamed_tag_probe_rerun/`,含
+  console.log.gz;機制詳見 `docs/robot-qemu-ci.md` 觀察 3)。
+  回覆(已發)= 證據 + 明說「bletchley 是我唯一能測的 target」+
+  問「CI 跑這份清單用哪台 QEMU」。兩種答案都有既定下一步:
+  跑得動 → 照改重指(同 commit `--amend` 推 PS2);跑不動 →
+  維持刪行。comment 留 unresolved、未投票,等他回。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 
