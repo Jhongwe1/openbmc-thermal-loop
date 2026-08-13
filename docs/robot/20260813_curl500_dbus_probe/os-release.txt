@@ -1,0 +1,10 @@
+ID=openbmc-phosphor
+NAME="Phosphor OpenBMC (Phosphor OpenBMC Project Reference Distro)"
+VERSION="3.1.0-dev"
+VERSION_ID=3.1.0-dev-739-gba9070d60b
+VERSION_CODENAME="styhead"
+PRETTY_NAME="Phosphor OpenBMC (Phosphor OpenBMC Project Reference Distro) 3.1.0-dev"
+CPE_NAME="cpe:/o:openembedded:openbmc-phosphor:3.1.0-dev-739-gba9070d60b"
+BUILD_ID="20260728025045"
+OPENBMC_TARGET_MACHINE="bletchley"
+EXTENDED_VERSION="3.1.0-dev-739-gba9070d60b"

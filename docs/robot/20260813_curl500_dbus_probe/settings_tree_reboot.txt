@@ -1,0 +1,29 @@
+    │ │ ├─ /xyz/openbmc_project/control/host1/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host1/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host1/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host1/boot
+--
+    │ │ ├─ /xyz/openbmc_project/control/host2/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host2/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host2/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host2/boot
+--
+    │ │ ├─ /xyz/openbmc_project/control/host3/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host3/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host3/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host3/boot
+--
+    │ │ ├─ /xyz/openbmc_project/control/host4/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host4/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host4/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host4/boot
+--
+    │ │ ├─ /xyz/openbmc_project/control/host5/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host5/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host5/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host5/boot
+--
+    │ │ ├─ /xyz/openbmc_project/control/host6/acpi_power_state
+    │ │ ├─ /xyz/openbmc_project/control/host6/auto_reboot
+    │ │ │ └─ /xyz/openbmc_project/control/host6/auto_reboot/one_time
+    │ │ ├─ /xyz/openbmc_project/control/host6/boot

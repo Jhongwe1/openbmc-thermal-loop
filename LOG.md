@@ -2501,3 +2501,83 @@ Jenkins 白名單、93469/93470 的 CI、ec::pid() 測試貢獻全排在它
 
 **教訓(方法論)** 任何交到別人手上的依賴,寄出當下就記
 「N 天沒回音就做什麼」。等別人踢到才發現,已經晚了九天。
+
+## 2026-08-13(W11)紅隊自查 93469:把 500 釘到 D-Bus 物件層
+
+**現象** 使用者三重懷疑自己:①change 沒基於最新 master?
+②CLA 沒過害的?③會不會是 WSL/環境問題,「其他人都可以」?
+先擺正一個事實:兩個 change 上沒有任何紅色 CI(bot 只說
+no CI,Jenkins 根本沒跑)——唯一的負訊號是 George 的人工 −1。
+
+**假設** ①基底過舊;②CLA 擋了 review;③500 是我們環境的
+假訊號(WSL 網路/Robot 框架/自建流程),別人的機器不會發生。
+
+**先驗哪個、為什麼** ①②一次 Gerrit REST 查詢就能殺,最便宜:
+落後 master 僅 2 commits、皆未碰 test_lists、死 tag 今天仍在
+tip、mergeable=True(submit 策略 REBASE_IF_NECESSARY,單純
+落後不需 rebase);CLA 只擋 Jenkins 白名單與最終 merge
+(maintainer-workflow.md 寫明是 maintainer 人工核),不擋
+review——George 的 −1 是純技術意見,與 CLA 無關。③要開
+QEMU 才能驗,方法是**剝層**:把 Robot 整個拿掉,用純 curl
+重打同一個 PATCH(payload 抄 lib/utils.robot:719)。
+
+**根因** fresh boot 後純 curl PATCH ×2(RetryAttempts /
+Disabled)皆 HTTP 500 → Robot 框架無罪;journal 抓到 bmcweb
+自己的錯:dbus_utils.cpp:85 `ec=Invalid request descriptor
+[generic:53]`(=EBADR)→ WSL 網路無罪,5xx 是 BMC 內部產生;
+busctl:Settings 樹上 host1~host6 的 auto_reboot 都在,
+**host0 不存在**(bletchley 一殼六主機);對照組:對 host1
+同介面同屬性寫回原值 rc=0 → 寫入機制無罪。bmcweb
+systems.hpp 的 setAutomaticRetry() 用
+`"/xyz/openbmc_project/control/host" +
+std::to_string(computerSystemIndex)` 拼路徑,而這個 image 的
+Systems collection 只有一個 member(index=0)→ 每次都打向
+不存在的 host0。四層收斂:不是版本、不是 CLA、不是 WSL——是
+「單主機 Redfish 路由 × 多主機 settings 樹」的結構不相容,
+stock bletchley QEMU 上任何人都復現。
+證據:docs/robot/20260813_curl500_dbus_probe/(meta.txt 含
+image sha256;bmcweb 引文為 2026-08-13 的 master,與 image
+版 3.1.0-dev-739-gba9070d60b 行為一致,未逐 rev 比對)。
+
+**「其他人怎麼都沒事」拆成兩個命題,都為真** (a) 大多數人在
+單主機平台:host0 存在,PATCH 就成功——IBM 的 HW_CI 世界即
+如此,George 的直覺沒錯,只是不適用 bletchley;(b) 這份清單
+沒有活的守門 CI:in-tree 消化鏈(run-qemu-robot-test.sh,
+DEFAULT_MACHINE=versatilepb → run-robot.sh --argumentfile
+test_lists/QEMU_CI)檔頭自標 WIP,四年死 include 沒人發現,
+本身就是「沒人在跑」的量測。我們大概是第一個把 bletchley ×
+QEMU × boot-test 框架三件事同時跑起來的人。
+
+**教訓(方法論)** 紅隊「環境嫌疑」的順序:便宜的先殺(REST
+查詢),貴的剝層(拿掉框架用最原始工具復現),最後補對照組
+(同一機制打一個存在的物件)。HTTP 5xx 本身就是「伺服器承認
+是自己的錯」——4xx 才輪得到懷疑客戶端。「別人都沒問題」要拆成
+「別人的環境踩不到」與「根本沒有別人在測」兩個可分別驗證的
+命題,不能混成一團恐慌。
+
+## 2026-08-13(W11)自己踩坑:背景化的最小單位是「整條鏈」
+
+**現象** 照坑 26 的 setsid 模板經 `wsl -- bash -lc` 啟動
+QEMU:回了 LAUNCHED,但 .out 檔根本沒生出來;等待探針第一圈
+就宣判 QEMU_DEAD。
+
+**假設** ①run_bmc.sh 自己死了;②setsid 沒保護到,鏈在
+exec 前就被收走;③探針誤判。
+
+**先驗哪個、為什麼** 看 .out:**檔案不存在**——連重定向都
+沒執行過,①出局(它死也會留檔)。剩②:
+`A && B && setsid C & D` 的 `&` 綁的是**整條** `A && B && C`,
+setsid 只保護 exec 之後的 QEMU;`bash -lc` 一退出、session
+拆掉,還沒走到 setsid 的前段子 shell 先被 SIGHUP 收走。
+③也真:探針 loop 1 就 pgrep,沒給啟動器前置作業任何 grace。
+
+**根因** 兩個獨立 bug 疊加:背景化保護的範圍畫錯(保護了
+「將來的 QEMU」,沒保護「現在的鏈」)+ 探針比被測物先開槍。
+症狀與坑 26 一模一樣,機轉是第三種(坑 14 是 stdin EOF、
+坑 26 是 QEMU 蓋 SIGHUP handler、這次是鏈的前段不在新
+session)。修法:`setsid -f` 包整個腳本檔 + 探針前三圈免死。
+
+**教訓(方法論)** 背景化就用 `setsid -f` 包**整個腳本檔**,
+不要掛在鏈尾;任何等待式探針,第一次判死之前要有 grace
+period,否則探針的誤判會蓋掉真正的死因。「同症狀≠同根因」
+這句 runbook 裡自己寫過的話,第三次應驗在自己身上。

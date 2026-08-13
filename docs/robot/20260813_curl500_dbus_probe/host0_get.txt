@@ -1,0 +1,1 @@
+Failed to get property AutoReboot on interface xyz.openbmc_project.Control.Boot.RebootPolicy: Unknown object '/xyz/openbmc_project/control/host0/auto_reboot'.

@@ -1,0 +1,6 @@
+Aug 12 16:39:46 bletchley systemd[1]: Started bmcweb server.
+Aug 12 16:39:50 bletchley bmcweb[646]: [dbus_privileges.hpp:155] User manager service not reachable, this suggests the user manager service is not healthy
+Aug 12 22:34:30 bletchley bmcweb[646]: [dbus_utils.cpp:85] D-Bus error setting Redfish Property Boot/AutomaticRetryConfig ec=Invalid request descriptor [generic:53]
+Aug 12 22:34:30 bletchley bmcweb[646]: [error_messages.cpp:1253] Internal Error /usr/src/debug/bmcweb/1.0+git/redfish-core/src/utils/dbus_utils.cpp(86:32) `void redfish::details::afterSetProperty(const std::shared_ptr<bmcweb::AsyncResp>&, const std::string&, const nlohmann::json_abi_v3_12_0::json&, const boost::system::error_code&, const sdbusplus::message_t&)`:
+Aug 12 22:34:32 bletchley bmcweb[646]: [dbus_utils.cpp:85] D-Bus error setting Redfish Property Boot/AutomaticRetryConfig ec=Invalid request descriptor [generic:53]
+Aug 12 22:34:32 bletchley bmcweb[646]: [error_messages.cpp:1253] Internal Error /usr/src/debug/bmcweb/1.0+git/redfish-core/src/utils/dbus_utils.cpp(86:32) `void redfish::details::afterSetProperty(const std::shared_ptr<bmcweb::AsyncResp>&, const std::string&, const nlohmann::json_abi_v3_12_0::json&, const boost::system::error_code&, const sdbusplus::message_t&)`:

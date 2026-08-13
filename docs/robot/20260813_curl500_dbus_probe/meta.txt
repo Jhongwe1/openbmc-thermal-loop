@@ -1,0 +1,24 @@
+date: 2026-08-13 (probe run same evening, fresh boot)
+purpose: red-team check for Gerrit 93469 review discussion --
+  reproduce the AutomaticRetryConfig HTTP 500 WITHOUT Robot
+  (plain curl), then localize it on D-Bus.
+gerrit: https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469
+machine: bletchley-bmc via harness/qemu/run_bmc.sh bletchley
+qemu: QEMU emulator version 11.0.1 (v11.0.1-3179-g9c2fa9d4b4)
+wsl kernel: 6.6.87.2-microsoft-standard-WSL2
+image: /home/key/work/openbmc-thermal-loop/images/bletchley/image.mtd
+image sha256: 41bedb5cca8ef7adc4ed340bc96ff6cb0c64d680e10e8b75eab6c20c1eea54a4
+bmc build: VERSION_ID=3.1.0-dev-739-gba9070d60b
+
+method: see probe_500.sh (curl PATCH x2 + journal + mapper/busctl)
+        and control_probe.sh (same D-Bus write on host1 = rc 0).
+result: PATCH Boot.AutomaticRetryConfig -> HTTP 500 (both values);
+        journal: D-Bus error ec=Invalid request descriptor [generic:53]
+        = EBADR; Settings tree has host1..host6/auto_reboot, NO host0;
+        identical write to host1 succeeds (write_rc=0).
+root cause: single-host Redfish route resolves index 0 ->
+        /xyz/openbmc_project/control/host0/auto_reboot (bmcweb
+        systems.hpp setAutomaticRetry builds the path from
+        computerSystemIndex); bletchley is multi-host (host1..6)
+        and publishes no host0 object -> every such PATCH 500s.
+        Independent of WSL, Robot, and our build steps.
