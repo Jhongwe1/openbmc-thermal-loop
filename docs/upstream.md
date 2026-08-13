@@ -227,6 +227,19 @@
   問「CI 跑這份清單用哪台 QEMU」。兩種答案都有既定下一步:
   跑得動 → 照改重指(同 commit `--amend` 推 PS2);跑不動 →
   維持刪行。comment 留 unresolved、未投票,等他回。
+- **往返 2(2026-08-14):** 貼出根因補充(messages 第 5 則,已查核
+  送出)。內容 = 8/13 深夜紅隊把 500 從「症狀」釘到「地址」:
+  ① 純 curl(無 Robot)復現 500 ×2;② bmcweb journal 承認
+  D-Bus 寫入失敗(`Invalid request descriptor`);③ Settings 樹
+  只有 host1~host6、**無 host0**,對 host1 同寫入成功(rc 0)——
+  機制無罪,地址不存在;④ bmcweb `systems.hpp` 單主機路由
+  string-build host<index>、index 恆 0。bletchley 一殼六主機 →
+  **任何 stock bletchley 都會在此 suite 的 Test Setup 掛掉,與本地
+  環境無關**。先排除的三重嫌疑(基底落後 2 commits 但 mergeable、
+  CLA 只擋 Jenkins/merge 不擋 review、WSL 偽造不出格式完好的
+  Redfish 500)也留檔。證據包:
+  `docs/robot/20260813_curl500_dbus_probe/`(commit `313aded`);
+  LOG 2026-08-13 紅隊一則。CI target 的問題維持開放,球在 George。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 
