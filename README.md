@@ -37,10 +37,17 @@ swampd @ `c5e5955`。
 ```bash
 git clone https://github.com/Jhongwe1/openbmc-thermal-loop.git
 cd openbmc-thermal-loop
+python3 -m venv .venv && . .venv/bin/activate   # Ubuntu 24.04 是 PEP 668,必須 venv
+pip install -e '.[dev]'                          # numpy/pandas/… + pytest(裝一次)
 make test      # C++ 測試 + 上游 parity + pytest(GitHub runner 實測 91 s)
 make figures   # 重跑全部 L1 實驗、重畫六張圖(不需要 QEMU;runner 上 68 s)
 make qemu      # 抓 bletchley 映像 + 開 QEMU BMC(需網路;部署步驟見 runbook)
 ```
+
+> ⚠️ **`Ok: 6` 才是全部。** 沒裝 Python 相依時,pytest 那包會被 meson
+> **跳過而不是失敗**(configure 時有 WARNING),`make test` 會顯示
+> `Ok: 5` 的假全綠 —— 146 個 Python 測試根本沒跑。這一段本身就是
+> 2026-08-14 乾淨 clone 檢查抓到的(詳見 LOG.md 當日)。
 
 > **現在能做到什麼:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)
 > 改溫度,經 kernel driver → hwmon sysfs → `dbus-sensors` → D-Bus,

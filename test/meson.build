@@ -115,8 +115,13 @@ if python_tests_ok
         depends: sim_exe,
     )
 else
+    # ⚠️ 文案是給「任何 clone 的人」看的,不能指向本機私有的 venv 路徑
+    #   (2026-08-14 乾淨 clone 檢查抓到:原文案教人 source 一個
+    #    只存在於作者機器上的路徑,對外等於沒教)。
     warning(
-        'Python 測試被跳過：' + py.full_path() + ' 沒有 pytest 或 pandas。' +
-        '先 `source ~/.venvs/thermal/bin/activate` 再 `meson setup --reconfigure build`。',
+        'Python tests SKIPPED: ' + py.full_path() + ' lacks pytest or pandas. ' +
+        'Install deps first: python3 -m venv .venv && . .venv/bin/activate && ' +
+        'pip install -e ".[dev]"  then: meson setup --reconfigure build. ' +
+        'A full run reports "Ok: 6" -- "Ok: 5" means the 146 python tests did not run.',
     )
 endif

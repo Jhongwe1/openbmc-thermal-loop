@@ -2611,3 +2611,39 @@ P=I=0 純前饋(「沒有量測就不整定」),語義比「沒調」強得多 �
 工作」寫於 W6,W7 做完沒人回頭改,文件靜靜錯了五週。文件過期不是
 恥辱,過期了不校準才是;本次順手立了規矩:凡「還沒做」的句子要嘛
 帶日期、要嘛指向會過期時自動變紅的東西(測試/CI),不然就別寫。
+
+## 2026-08-14(W11)乾淨 clone 抓到「Ok: 5 假全綠」——檢查器自己也在裝綠
+
+**現象** 收工乾淨 clone 檢查:`meson test` 回 `Ok: 5`(本機是 6)、
+`assert_metrics.py` 直接 `ModuleNotFoundError: pandas`——但整支檢查
+腳本 exit 0,還印了 CLEAN CLONE CHECK DONE。
+
+**假設** ① repo 壞了(少 commit 了什麼);② clone 環境沒 Python
+相依,測試被跳過;③ 檢查腳本自己吞錯。
+
+**先驗哪個、為什麼** 先 ②③——一次 grep 就能殺:`test/meson.build`
+的注釋自己寫著這個坑(configure 沿 PATH 找 python,系統 python 沒
+pandas/pytest → `python_tests_ok=false` → pytest 目標**不註冊**)。
+① 最貴(要 diff 兩棵樹)排最後——結果不用走到。
+
+**根因** 三層,一層比一層難看:
+(1) 檢查腳本用非 login shell 跑,venv 沒啟用 → 意外撞進「陌生人
+clone」的真實環境——這半是好事,它暴露了 (2)(3)。
+(2) README「自己跑一次」的三行指令**沒有任何一步裝 Python 相依**;
+meson 的 warning 又把修復指示寫成 `source ~/.venvs/thermal/...`——
+一條只存在於我機器上的路徑。**對外,這個警告等於沒警告。**
+(3) 檢查腳本 `set -e` 沒配 `set -o pipefail`:`python3 … | tail`
+讓 pandas 的爆炸變成 tail 的 exit 0——**檢查器自己會裝綠**
+(W10 R1 修 assert_metrics 除零守門的同族錯,這次輪到我的 shell)。
+
+**修了什麼** README 補 `python3 -m venv` + `pip install -e '.[dev]'`
+兩行與「**Ok: 6 才是全部**,Ok: 5 = 146 個 Python 測試沒在跑」的
+警語;meson warning 文案改成對任何人可執行的指令;檢查腳本 v2 加
+`set -euo pipefail` 並改成**逐字照 README 的指令**走(檢查的就是
+README 教的那條路,不是我自己的捷徑)。
+
+**教訓(方法論)** 「跳過而不是失敗」是測試基礎設施最危險的仁慈:
+可以跳,但要大聲,而且修復指示要寫給**讀者**而不是寫給自己。
+檢查器與被檢查物適用同一套紀律(shell 的 pipefail = Python 的
+除零守門)。乾淨 clone 檢查再次抓到本機永遠抓不到的東西——這次
+抓到的是「README 教的路走不通」,那正是它唯一的視角。
