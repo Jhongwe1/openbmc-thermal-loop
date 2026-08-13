@@ -30,7 +30,7 @@ swampd @ `c5e5955`。
 | 測試有在保護東西 | 60 秒 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 66 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 |
 | 圖是資料產的 | 60 秒 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD |
 | 我碰過真的 OpenBMC | 90 秒 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) |
-| 我知道自己的邊界 | 90 秒 | [`docs/limitations.md`](docs/limitations.md)(W11 補完)+ 每張圖旁的誠實標註 |
+| 我知道自己的邊界 | 90 秒 | [`docs/limitations.md`](docs/limitations.md)(五層面 31 條 + 每張圖的適用邊界)+ 每張圖旁的誠實標註 |
 
 ## 自己跑一次
 
@@ -80,7 +80,39 @@ DC-SCM)之後,感測器到風扇這條鏈路跨的抽象層更多 —— 我想�
 
 ## 架構
 
-見 `docs/architecture.md`。
+完整版(行程級資料流、〈一個溫度值的旅程〉、每層 IPC 次數)在
+[`docs/architecture.md`](docs/architecture.md);設計文件(照 OpenBMC 官方
+design template 寫:goals / alternatives / impacts)在
+[`docs/design.md`](docs/design.md)。下面是導覽版 ——
+**實線 = 有實測證據指得到;虛線 = 理解、但本專案沒做或沒有的東西**。
+
+### 閉環在哪一層、時間尺度是多少(數字全部是量的)
+
+```mermaid
+flowchart LR
+    subgraph L2["L2 閉環 — Fig 3 虛線與 Fig 4 的量測現場"]
+        plant["自建熱模型 plant(C++)<br/>一階熱容 + 對流熱阻<br/>死區 3 s + 感測遲滯<br/>量化 1/16 °C(exp04 實測)"]
+        swampd["未修改上游 swampd @ c5e5955<br/>外圈熱 PID:1000 ms(量到)<br/>內圈 fan:100 ms(量到)"]
+        plant -- "溫度:私有 D-Bus(Sensor.Value)" --> swampd
+        swampd -- "PWM:檔案寫出(0~255)" --> plant
+    end
+    L1["L1:bench/sim<br/>我的 PI + 同一份 plant<br/>5 seeds、快於真時間<br/>→ Fig 1/2/3/5"] -. "同一份 plant、同一套指標" .- plant
+    L3["L3:QEMU bletchley 全映像<br/>注入 → Redfish 中位 0.860 s<br/>(路徑證明,非閉環)→ Fig 6"] -. "同版 swampd 二進位" .- swampd
+    HW["真硬體:AST2600 板、真風扇、<br/>I2C 故障模式、多 zone"] -. "沒有 — 見下方〈限制〉" .- plant
+```
+
+### 四層驗證,每層測不同的宣稱
+
+| 層 | 跑在哪 | 真的部分 | 一輪成本 |
+|---|---|---|---|
+| L0 | `meson test` | 控制律與 plant 方程(32 gtest + 146 pytest) | 秒 |
+| L1 | `./build/sim` | 我的 PI(統計:5 seeds) | 秒 |
+| L2 | 私有 D-Bus | **上游 swampd 二進位**(即時,1500 s = 真 25 分鐘,單 seed) | 半小時 |
+| L3 | QEMU | 整個 OpenBMC 映像 + 官方 Robot 清單 | 開機 150 s 起 |
+
+分層的理由:**迭代成本差六個數量級,而發現問題的層越低,修的成本越低**。
+L2 的統計由 L1 扛(swampd 的迴路週期掛在牆鐘上,快轉不了)——
+這個取捨寫在 [`docs/design.md`](docs/design.md) 的 Impacts。
 
 ## 現況
 
@@ -600,11 +632,39 @@ python bench/plot.py --fig 4
       [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
       (官方 QEMU_CI 清單的四年死 include 刪行)。第一筆 93397(docs)
       推出後由我決定收回,過程在 [`docs/upstream.md`](docs/upstream.md)。
-      剩:CI 白名單請核(帶 URL 上 Discord)與**收到 reviewer 回覆**(W11)
+  - [x] **收到 reviewer 回覆(2026-08-13)**:93469 被頭號 maintainer
+        −1(「改指新 tag 而非刪行」)→ 實測他的改法(fresh boot 兩輪
+        FAIL)→ 純 curl + journal + D-Bus 對照把 500 釘到「bletchley
+        無 host0」→ 兩則帶量測回覆已上線,等他答「CI 用哪台」。
+        往返全文與證據 ← [`docs/upstream.md`](docs/upstream.md)、
+        `docs/robot/20260813_curl500_dbus_probe/`
+  - [ ] 剩:CI 白名單(卡在 CLA 處理中)、依 George 的回答決定
+        推 PS2(改指)或維持(刪行)
 - [ ] Gate 7　交付與敘事　← **W10 主體完成:** CI 三 job + badge、
       `assert_metrics` 斷言 14 個 claim、紅燈證明 ×3(見上)、README
-      第一屏、Makefile。剩:limitations(W11)、demo 影片(W12)、
-      三個 debug 故事(W13)
+      第一屏、Makefile。**W11 補齊:** limitations(五層面 31 條)、
+      design.md(上游模板)、cascade.md 補完、本 README 架構/限制兩節。
+      剩:demo 影片(W12)、三個 debug 故事(W13)
+
+## 限制與未完成
+
+完整清單:[`docs/limitations.md`](docs/limitations.md)——五個層面
+(模型/環境/控制/跨層/驗證)、31 條,每條都寫「缺了什麼、影響什麼」,
+外加**每張圖的適用邊界**(K 只在哪個工作點成立、13.7× 是哪兩個設定
+之比、5.081 s 由哪四段組成)。
+
+三條最重要的,主動講:
+
+1. **我沒有真實的 AST2600 板子。** I2C bus recovery 只能講原理、無法
+   驗證 —— QEMU 模擬不出 SDA 被實體拉低。我驗證的是「感測器讀不到值
+   **之後**的行為」(Fig 4),不是「感測器為什麼讀不到」。
+2. **`reversals_per_min` 是我自己定義的聲學代理**,沒做過聲壓量測驗證
+   這個代理有效 —— Fig 5 的 3.43× 是「方向反轉變少」,不直接等於
+   「變安靜」。
+3. **內圈風扇 PID 在我的測試床上是開環前饋**(P=I=0,增益 1/150 直接
+   從 `rpmMax` 算出、非整定):plant 沒建模個別風扇的轉速誤差,回授
+   沒有殘差可修。真實平台的內圈是閉環的,吃掉風扇個體差異與老化 ——
+   **那一層價值這裡量不到**。
 
 ## 授權
 
