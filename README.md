@@ -4,12 +4,14 @@
 可重現的熱控閉環，並**量化上游既有抗飽和機制（anti-windup）的實際效果**。
 
 [![ci](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/Jhongwe1/openbmc-thermal-loop/actions/workflows/ci.yml)
-　🔗 **上游貢獻(Gerrit):**
-[93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
-(configure.md 補七個未文件化欄位)、
+
+🔗 **上游 patch(Gerrit,審查中):**
 [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
-(官方 QEMU_CI 清單刪除掛了四年的死 include)——
-完整往返與未提交候選在 [`docs/upstream.md`](docs/upstream.md)。
+(官方 QEMU_CI 清單一行失效四年的 include —— 維護者 −1 → 以實測數據
+回覆,修法往返中)、
+[93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
+(configure.md 補七個未文件化欄位,待首輪人工審查)——
+完整審查往返與未提交候選在 [`docs/upstream.md`](docs/upstream.md)。
 
 ![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
 
@@ -20,17 +22,17 @@ diff 見下方〈Fig 3〉一節):飽和解除後的恢復時間 **197.2 s → 14
 是自建熱模型([`docs/plant-model.md`](docs/plant-model.md)),
 swampd @ `c5e5955`。
 
-## 5 分鐘驗證這個 repo
+## 驗證這個 repo 的宣稱(逐條可查,約 7 分鐘)
 
-| 你想確認 | 花多久 | 怎麼做 |
+| 宣稱 | 怎麼驗 | 花多久 |
 |---|---|---|
-| 程式碼真的能跑 | 10 秒 | 點上面的 CI badge 看最近一次執行(cpp 91 s、experiments 68 s,實測於 GitHub 的 ubuntu-24.04 runner) |
-| 數字是真的 | 60 秒 | CI 的 `experiments` job **重跑全部 L1 實驗**,[`bench/assert_metrics.py`](bench/assert_metrics.py) 斷言 [`claims.json`](bench/claims.json) 的 14 個數字,外加重跑 CSV 的**逐 byte 決定性檢查** |
-| 我讀得懂上游 C++ | 60 秒 | [`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp):meson wrap 把上游 `ec::pid()`(釘 `c5e5955`)真的編進來,144 組參數逐步比對到 1e-12 |
-| 測試有在保護東西 | 60 秒 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 66 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 |
-| 圖是資料產的 | 60 秒 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD |
-| 我碰過真的 OpenBMC | 90 秒 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) |
-| 我知道自己的邊界 | 90 秒 | [`docs/limitations.md`](docs/limitations.md)(五層面 31 條 + 每張圖的適用邊界)+ 每張圖旁的誠實標註 |
+| 能編能跑 | 點上面的 CI badge 看最近一次執行(cpp 91 s、experiments 68 s,實測於 GitHub 的 ubuntu-24.04 runner) | 10 秒 |
+| README 的 14 個數字可從資料重算 | CI 的 `experiments` job **重跑全部 L1 實驗**,[`bench/assert_metrics.py`](bench/assert_metrics.py) 斷言 [`claims.json`](bench/claims.json) 的每一個數字,外加重跑 CSV 的**逐 byte 決定性檢查** | 60 秒 |
+| 控制律與上游逐步一致 | [`test/test_parity_upstream.cpp`](test/test_parity_upstream.cpp):meson wrap 把上游 `ec::pid()`(釘 `c5e5955`)真的編進來,144 組參數逐步比對到 1e-12 | 60 秒 |
+| 測試網抓得到植入的錯 | [`tools/mutation_check.sh`](tools/mutation_check.sh) 植入 66 個真實錯誤,任一活下來就非零離開 —— 測試綠 ≠ 測試在守,這一條才是 | 60 秒 |
+| 圖由資料產生 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD | 60 秒 |
+| 官方映像 + 官方測試套件實測過 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) | 90 秒 |
+| 適用邊界寫清楚了 | [`docs/limitations.md`](docs/limitations.md)(五層面 31 條 + 每張圖的適用邊界)+ 每張圖旁的誠實標註 | 90 秒 |
 
 ## 自己跑一次
 

@@ -1,4 +1,4 @@
-# 三個 job,訊號各不相同(對應 README「5 分鐘驗證這個 repo」那張表):
+# 三個 job,訊號各不相同(對應 README「驗證這個 repo 的宣稱」那張表):
 #
 #   cpp            —— C++ 單元測試 + 與上游 ec::pid() 的逐步 parity
 #   experiments    —— 重跑 L1 實驗、重算全部 claim、斷言 README 的數字仍成立
