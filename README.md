@@ -48,7 +48,7 @@ make qemu      # 抓 bletchley 映像 + 開 QEMU BMC(需網路;部署步驟見 r
 
 > ⚠️ **`Ok: 6` 才是全部。** 沒裝 Python 相依時,pytest 那包會被 meson
 > **跳過而不是失敗**(configure 時有 WARNING),`make test` 會顯示
-> `Ok: 5` 的假全綠 —— 146 個 Python 測試根本沒跑。這一段本身就是
+> `Ok: 5` 的假全綠 —— 153 個 Python 測試根本沒跑。這一段本身就是
 > 2026-08-14 乾淨 clone 檢查抓到的(詳見 LOG.md 當日)。
 
 > **現在能做到什麼:** 一行指令從**模擬硬體層**(QEMU 的 tmp421 晶片模型)
@@ -114,7 +114,7 @@ flowchart LR
 
 | 層 | 跑在哪 | 真的部分 | 一輪成本 |
 |---|---|---|---|
-| L0 | `meson test` | 控制律與 plant 方程(32 gtest + 146 pytest) | 秒 |
+| L0 | `meson test` | 控制律與 plant 方程(32 gtest + 153 pytest) | 秒 |
 | L1 | `./build/sim` | 我的 PI(統計:5 seeds) | 秒 |
 | L2 | 私有 D-Bus | **上游 swampd 二進位**(即時,1500 s = 真 25 分鐘,單 seed) | 半小時 |
 | L3 | QEMU | 整個 OpenBMC 映像 + 官方 Robot 清單 | 開機 150 s 起 |
@@ -398,7 +398,7 @@ swampd 外圈輸出 RPM setpoint)填進去,BMC 上 `pidcore.die0` 的實測:
 
 ```bash
 meson test -C build              # 6 個測試（5 支 gtest 執行檔 + pytest）
-                                 # = 32 個 gtest case + 145 個 pytest case
+                                 # = 32 個 gtest case + 153 個 pytest case
 ./tools/mutation_check.sh        # 故意植入 66 個錯誤，每一個都要讓某個測試變紅
 python bench/assert_metrics.py   # README 的 14 個數字，逐一從資料重算並斷言
 ```

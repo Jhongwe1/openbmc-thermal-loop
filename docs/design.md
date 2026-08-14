@@ -210,7 +210,7 @@ Each layer tests a different claim at a different iteration cost:
 | Layer | Runs on          | Under test                      | Output      |
 | ----- | ---------------- | ------------------------------- | ----------- |
 | L0    | `meson test`     | plant equations, my PI, parity  | 32 gtest    |
-|       |                  | against upstream `ec::pid()`    | + 146 pytest|
+|       |                  | against upstream `ec::pid()`    | + 153 pytest|
 | L1    | `./build/sim`    | my PI + plant, 5 seeds          | Fig 1/2/3/5 |
 | L2    | private D-Bus    | unmodified swampd + plant       | Fig 3 (L2), |
 |       |                  |                                 | Fig 4       |

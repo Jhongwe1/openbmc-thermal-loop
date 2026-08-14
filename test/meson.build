@@ -122,6 +122,6 @@ else
         'Python tests SKIPPED: ' + py.full_path() + ' lacks pytest or pandas. ' +
         'Install deps first: python3 -m venv .venv && . .venv/bin/activate && ' +
         'pip install -e ".[dev]"  then: meson setup --reconfigure build. ' +
-        'A full run reports "Ok: 6" -- "Ok: 5" means the 146 python tests did not run.',
+        'A full run reports "Ok: 6" -- "Ok: 5" means the python tests did not run.',
     )
 endif
