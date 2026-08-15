@@ -43,9 +43,9 @@
 │      phosphor-virtual-sensor : Virtual_Inlet_Temp、nvme1~6 …                  │
 │      phosphor-pid-control (swampd):                                          │
 │          熱 PID  ~1 Hz ──RPM setpoint──▶ 風扇 PID ~10 Hz ──PWM──▶            │
-│          【查】cycleIntervalTimeMS / updateThermalsTimeMS(W6 要實測)          │
-│      ⚠️ 目前狀態:「No fan zones, application pausing until new configuration」 │
-│          ← Gate 1 的任務就是給它設定,不是讓它跑起來                            │
+│          【驗】cycleIntervalTimeMS = 100 ms / updateThermalsTimeMS = 1000 ms  │
+│      ⚠️ 首次開機的狀態:「No fan zones, application pausing …」                 │
+│          ← 那是本專案的起點;W3 給了 entity-manager 設定之後 zone 才建立        │
 └──────────────────────────────────────────────────────────────────────────────┘
         ▲ /sys/class/hwmon/hwmonX/temp1_input     │ /sys/.../pwm1
         │                                        ▼
@@ -103,12 +103,15 @@ QEMU 時間不精確,量到的延遲摻雜模擬器抖動;CI 跑不動,別人重
 
 | 層 | 跑在哪 | 被測物 | 產出 | 迭代成本 | 目前狀態 |
 |:--:|---|---|---|:--:|:--:|
-| **L0** | `meson test`(gtest) | 我的 plant 方程、我的 PI、**上游 `ec::pid()`** | 通過的測試 | ms | ⬚ 未開始(W4~W5) |
-| **L1** | `./build/sim` | 我的 PI ＋ 我的 plant | **Fig 1/2/3/5 ＋ 所有 CSV** | 秒 | ⬚ 未開始(W4) |
-| **L2** | 本機私有 D-Bus ＋ 真 swampd | **上游 swampd** ＋ 我的 plant | **Fig 3(上游版)、Fig 4** | 秒~分 | ⬚ 未開始(W7) |
-| **L3** | QEMU `bletchley-bmc` | 完整 OpenBMC 映像 | **Fig 6、Robot 報告、demo 影片** | 分 | ▣ **開機成功、SSH/Redfish 通** |
+| **L0** | `meson test`(gtest) | 我的 plant 方程、我的 PI、**上游 `ec::pid()`** | 通過的測試 | ms | ▣ **完成**(32 gtest + 153 pytest) |
+| **L1** | `./build/sim` | 我的 PI ＋ 我的 plant | **Fig 1/2/3/5 ＋ 所有 CSV** | 秒 | ▣ **完成**(Fig 1/2/3/5) |
+| **L2** | 本機私有 D-Bus ＋ 真 swampd | **上游 swampd** ＋ 我的 plant | **Fig 3(上游版)、Fig 4** | 秒~分 | ▣ **完成**(W7 Fig 3、W8 Fig 4) |
+| **L3** | QEMU `bletchley-bmc` | 完整 OpenBMC 映像 | **Fig 6、官方 Robot 報告、exp10 延遲** | 分 | ▣ **完成**;demo 影片未做 |
 
 **圖例:** ▣ = 已完成且有證據　▢ = 進行中　⬚ = 理解但未實作
+
+> **狀態欄更新於 2026-08-16。** 這一欄會過期,**權威來源是 `README.md` 的
+> 〈現況〉Gate 勾選**;這裡只是同一份事實在架構視角下的投影。
 
 ### 關鍵設計:同一份 plant model 貫穿 L1~L3
 
@@ -214,15 +217,21 @@ QEMU 時間不精確,量到的延遲摻雜模擬器抖動;CI 跑不動,別人重
 
 > **這張表就是〈為什麼 Redfish 不能當 PID 輸入〉的量化依據。**
 > 一次讀值要 TLS 握手 + 3 次跨行程往返 + JSON 序列化;
-> 而 swampd 的內圈迴路是 **100 ms 一輪**。W9 會實際去量這條鏈路的延遲。
+> 而 swampd 的內圈迴路是 **100 ms 一輪**。
+> **W9 量到了:** 注入 → Redfish 可見全程中位 **0.860 s**(exp10,n=28) ——
+> 比內圈週期慢了將近一個數量級。見 [`measurement.md`](measurement.md) exp10。
 
 ## 圖例與現況
 
 **實線(上面全部)＝ 已完成、有實測證據。** 2026-08-05 起,從 ① 到 ⑧ 全部是實線。
 
-尚未實作(虛線,之後補):
-- `harness/dbus_bridge.py` —— L2 用,W7
-- 閉環:PWM 讀回開發機 → 餵進 plant model → 算出新溫度 → 再注入 ①,W7
+**原本標成虛線的兩條,W7 之後也是實線了**(2026-08-16 更新):
+
+- `harness/dbus_bridge.py` —— L2 的橋接。Fig 3 上那條虛線就是它跑出來的。
+- 閉環:plant 的溫度經**私有** D-Bus 進 swampd,swampd 寫出的 PWM 再餵回 plant。
+  ⚠️ 最終做法**不是**這裡原本規劃的「PWM 讀回開發機 → 再注入 ①」那條 host 驅動
+  路線 —— 那條每一輪多一次注入延遲(中位 351 ms),會被誤判成額外的死區 θ,
+  剛好就是 W4 量出來的那個量。理由見 [`plant-model.md`](plant-model.md) §2.1。
 
 ## 兩條注入路線的對照
 

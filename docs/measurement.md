@@ -50,12 +50,15 @@ README、本目錄的文件、圖上的標註、CI 斷言全部引用同一個�
 > ### ⚠️ 2026-08-09:這份「唯一定義來源」曾經**一個測試都沒有**
 >
 > 對照組是**當時**的 C++ 那一側:26 個 gtest case、21 個被證明會咬人的 mutation
-> (現在兩邊都長大了 —— 32 個 gtest case、32 個 pytest case、33 個 mutation)。
+> (兩邊後來都長大了 —— **2026-08-16 實測:32 個 gtest case、153 個 pytest case、
+> 66 個 mutation**)。
 > Python 這一側只有 `ruff` —— 而 ruff 只查風格,不查算得對不對。
 > **W7 的主要宣稱 `recover_s_ratio` 就是這裡的函式算出來的**,
 > 等它寫完再補測試等於讓數字先進 README、測試後到。
 >
-> 現在:`test/python/test_metrics.py`(接進 `meson test`)+ 7 個 Python mutation。
+> 補起來之後:`test/python/test_metrics.py`(接進 `meson test`),外加打在
+> `metrics.py` 上的 **18 個** mutation(P 系列;P 系列共 23 個,其餘掃
+> `parse_l2.py` / `provenance.py` / `set_die_temp.py`)。
 >
 > **寫測試順手改掉的一個真隱患:** `fan_power_rel` 的「最後 120 秒」原本是
 > **用列數**框的(取樣週期從**前兩列**推),所以
@@ -172,6 +175,12 @@ image: obmc-phosphor-image-bletchley-20260728025045.static.mtd  |  data commit: 
 | **`exp07`** | **anti-windup A/B → Fig 3 ★核心** | W7 | **原 exp03** |
 | `exp08` | slew 掃描 → Fig 5 | W8 | 原 exp05 |
 | `exp09` | L1 vs L2 對照 | W9 | 原 exp06 |
+
+> ⚠️ **2026-08-16 補註:上表是 2026-08-09 當天的決定,`exp09` 那一列是預測。**
+> 實際執行順序把 `exp09` 給了 failsafe(W8)、`exp10` 給了端到端延遲(W9),
+> 「L1 vs L2 對照」順延成 `exp11`(未排定)。
+> **現況一律以本頁〈exp06 / exp09 / exp10 狀態〉那張表為準**,上表保留原樣是因為
+> 它記的是「當天怎麼決定的」,不是「現在是什麼」。
 
 **★ 最重要的一句:沒有任何一個已經量到的數字被重新貼標籤。**
 會改到的兩個 `bench/claims.json` 條目(`recover_s_ratio`、`reversals_reduction_ratio`)

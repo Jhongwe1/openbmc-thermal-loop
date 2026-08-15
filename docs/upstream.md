@@ -18,7 +18,7 @@
 | 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠) |
 | 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄。★ 2026-08-13 查證:此 change 帶 `private` 旗標,**匿名不可見**(REST 回 Not found,ssh authed 查得到)——決策:維持 private;此連結僅本人登入可見,對外敘事以本檔文字為準 |
 | 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。⚠️ CI 白名單仍未請核 —— **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
-| 至少收到一次 reviewer 回覆 | 未開始 | — | 預計 W10~W11 |
+| 至少收到一次 reviewer 回覆 | **已完成** | 2026-08-13 | 93469 收到 owner George Keishing 的 **−1** 與 inline comment(要求改指新 tag 而非刪行)。實測他的改法後以量測數據回覆,兩次往返全文見下方〈候選 3〉 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
 > 理由:本專案〈誠實準則〉第 1 條 ——「沒做到的不要寫」。
