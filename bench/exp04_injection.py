@@ -28,7 +28,7 @@
     python bench/exp04_injection.py            # 跑實驗（需要 QEMU + BMC）
     python bench/exp04_injection.py --check    # 只驗證 repo 裡的 CSV（不需要 BMC）
 
-★★ 這個實驗的方法學重點（面試會問，而且這是我踩到才想清楚的）
+★★ 這個實驗的方法學重點（踩到才想清楚的）
     `tools/set_die_temp.py --verify` 是「**輪詢到讀值等於我的預測值為止**」。
     那個機制拿來當**閘門**很好，拿來**產生這裡的資料就會變成同義反覆** ——
     我等到它等於我的預測，然後宣稱「看，它等於我的預測」。

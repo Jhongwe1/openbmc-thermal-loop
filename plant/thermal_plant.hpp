@@ -21,7 +21,7 @@ namespace thermal
  * 熱模型的參數。單位一律是 SI 或工程慣用單位，寫在每一行後面。
  *
  * 這些值是 order-of-magnitude 合理的工程判斷，不是從某台真實機器量來的。
- * 面試講到它們時要用「我的理解是」開頭 —— 見 docs/plant-model.md 的【判】標記。
+ * 引用它們時要一併說明「這是判斷不是量測」—— 見 docs/plant-model.md 的【判】標記。
  */
 struct PlantParams
 {

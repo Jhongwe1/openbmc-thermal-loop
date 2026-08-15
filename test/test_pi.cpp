@@ -281,7 +281,7 @@ TEST(Pi, BackCalculationIsANoOpWhileUnsaturated)
 ///
 /// 這一條存在的理由是「`BackCalculation` 這個名字要名副其實」。
 /// W5 的實作只有 Tt = ts 那一個特例，而且是**隱含**的 —— 沒有參數、
-/// 沒有文件、面試被問「你的 tracking time constant 設多少」答不出來。
+/// 沒有文件 —— 讀這段程式的人看不出 Tt 是多少，也沒有旋鈕可以改它。
 ///
 /// 兩個斷言各自釘住一件事：
 ///   · `Tt = ts`（預設）要**完全等於** W5 的舊行為 `out − pTerm − dTerm − ffTerm`

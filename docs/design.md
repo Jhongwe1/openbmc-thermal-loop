@@ -94,10 +94,11 @@ a private D-Bus; no performance concern at that rate.  CI budget: the
 C++ job runs in about 91 s and the experiment re-run job in about 68 s
 on GitHub's ubuntu-24.04 runners.
 
-Users of this testbed: primarily reviewers of the portfolio (they need
-`git clone` + `meson test` + `python bench/...` to work and nothing
-else), and the author on the next platform, where the identification
-and tuning procedure is meant to be reused with new numbers.
+Users of this testbed: primarily engineers evaluating or reusing the
+method (they need `git clone` + `meson test` + `python bench/...` to
+work and nothing else), and the author on the next platform, where the
+identification and tuning procedure is meant to be reused with new
+numbers.
 
 ## Proposed Design
 

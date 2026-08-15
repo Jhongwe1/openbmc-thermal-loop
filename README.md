@@ -15,7 +15,7 @@
 
 ![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
 
-**招牌圖(Fig 3):** 同一份 swampd 設定只差 `integralLimit` 兩行(完整
+**核心結果(Fig 3):** 同一份 swampd 設定只差 `integralLimit` 兩行(完整
 diff 見下方〈Fig 3〉一節):飽和解除後的恢復時間 **197.2 s → 14.3 s
 (13.7×,5 seed 配對範圍 [12.8, 13.9])**。虛線是**未修改的上游 swampd
 二進位**在同一 plant 上重現(12.9×,落在 L1 範圍內)。模擬結果:plant
@@ -158,12 +158,12 @@ L2 的統計由 L1 扛(swampd 的迴路週期掛在牆鐘上,快轉不了)——
   - [x] **熱系統模型**(C++,一階熱容 + 對流熱阻 + 風扇慣性 + 傳輸死區 + 感測遲滯)
         ← [`plant/`](plant/)、[`docs/plant-model.md`](docs/plant-model.md)
   - [x] meson + gtest 骨架,與上游 `phosphor-pid-control` 同一套
-  - [x] 我說得出每個參數的物理意義與量級理由(含哪些是【判】、哪些是【驗】)
+  - [x] 每個參數的物理意義與量級理由都寫下來了(含哪些是【判】、哪些是【驗】)
   - [x] **七個 L0 gtest 全綠**(能量守恆、單調性、死區、時間常數、決定性、**飽和條件**)
         —— 外加識別測試(現為 6 個)
   - [x] **開環階躍跑得出 K、τ、θ**(FOPDT 兩點法,5 個 seed)→ **Fig 1**,見下
   - [x] **Fig 6**:dts → i2c bus → hwmon → D-Bus → Redfish 的完整對照,見下
-  - [x] 我能指著 dts 的一行說「這一行決定了 Redfish 上這個 URI」
+  - [x] dts 的哪一行決定了 Redfish 上的哪個 URI —— 五層逐格對照得出來
         ← [devicetree-to-dbus.md](docs/devicetree-to-dbus.md)
 
 ### ★ Fig 1 —— 開環系統識別(第一張證據圖)
@@ -515,7 +515,7 @@ dump 強制。所以圖上的每一點差異,只可能來自 `integralLimit` 這
 > 回算,**上游 `pid/ec/pid.cpp` 本來就有**;我做的是量化它值多少 ——
 > 同一份設定只改兩行,飽和解除後的恢復時間差 **13.7 倍**。
 > 順帶的意外收穫:open arm 的 **−1e6 下界在冷開機段挖出反向 windup**
-> (積分負向挖坑,風扇晚開、暖機超調更高)—— 同一機制的下界版展品,
+> (積分負向挖坑,風扇晚開、暖機超調更高)—— 同一個機制在下界側的表現,
 > 刻意留在圖上而不是裁掉(見圖上的 LIMIT 行)。
 >
 > 📌 **模擬聲明:** plant 是我自己的熱模型(`docs/plant-model.md`),

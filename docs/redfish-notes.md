@@ -40,9 +40,8 @@
 bmcweb **兩套都實作**,用 meson build option 控制是否編入 ——
 所以「這台支援哪一套」是**建置期決定的**,不是規格決定的。
 
-> ⚠️ **不要說「舊版即將於 2026 年底全面移除」。**
+> ⚠️ **「舊版即將於 2026 年底全面移除」這句話沒有依據,不要引用。**
 > **Deprecated 沒有公布移除時程**,DMTF 的 schema 相容性政策也不輕易移除。
-> 這句話是編的,講出來會被抓。
 
 **現場的機器世代是混的,所以工具要同時支援兩套。這是真實的相容性問題。**
 
@@ -98,18 +97,24 @@ entity-manager 在 QEMU 上沒有真的 FRU EEPROM 可以 probe,inventory 是不
 **這就是 W3 要做 route (b) 的理由:走 entity-manager + `"Probe": "TRUE"`,
 才會有完整的 association 鏈,感測器才會真的出現在 Redfish。**
 
-### 面試題(§13 Q14):「你的感測器 `busctl` 看得到、Redfish 看不到,怎麼查?」
+### 除錯流程:感測器 `busctl` 看得到、Redfish 看不到
 
-> 「先分段。第一段是 D-Bus 上有沒有這個物件跟 `Sensor.Value` 介面 ——
-> `busctl introspect` 兩秒就知道。第二段是 ObjectMapper 找不找得到 ——
-> `GetSubTreePaths` 查。第三段是有沒有 `chassis`/`all_sensors` association ——
-> bmcweb 靠這個把感測器掛到 Chassis 底下,缺了它感測器就是孤兒。
-> **我先驗第三段,因為前兩段各花兩秒但幾乎不會錯,第三段是最常見的根因。**
->
-> 我實際查的時候還多發現一件事:**不只我的感測器不見,上游的也不見。**
-> 那一下就把問題從「我的服務寫錯了」改判成「這台機器的 inventory 本來就不完整」——
-> 因為 QEMU 沒有真的 FRU EEPROM 給 entity-manager probe。
-> **如果只驗自己那一顆,我會往錯的方向查兩天。**」
+**三段分割法**,每一段各有一條兩秒跑得完的指令:
+
+| 段 | 要回答的問題 | 怎麼查 |
+|:--:|---|---|
+| 1 | D-Bus 上有沒有這個物件與 `Sensor.Value` 介面? | `busctl introspect` |
+| 2 | ObjectMapper 找不找得到? | `GetSubTreePaths` |
+| 3 | 有沒有 `chassis` / `all_sensors` association? | `busctl get-property … Associations` |
+
+**先驗第 3 段。** 前兩段各花兩秒但幾乎不會錯;第 3 段才是最常見的根因 ——
+bmcweb 靠 association 把感測器掛到 Chassis 底下,缺了它感測器就是孤兒。
+
+★ **而且要連上游的感測器一起查,不要只查自己那一顆。**
+本次實測:不只自建的那顆不見,`nvme1`~`nvme6` 與 `Virtual_Inlet_Temp` 也不見 ——
+那一下就把問題從「我的服務寫錯了」改判成「這台機器的 inventory 本來就不完整」
+(QEMU 沒有真的 FRU EEPROM 給 entity-manager probe)。
+**只驗自己那一顆,會往錯的方向查兩天。**
 
 ---
 

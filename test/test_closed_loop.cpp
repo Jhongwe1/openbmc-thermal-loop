@@ -236,7 +236,7 @@ TEST(ClosedLoop, WrongSignLatchesAtALimitInsteadOfControlling)
 /// 功耗階躍到 400 W，此時**即使風扇滿速**穩態也是 73 °C > setpoint 65 ——
 /// 誤差持續為正，積分持續累加。然後把功耗放回 150 W 解除飽和。
 ///
-/// 這正是 Fig 3（W7 招牌）要量的那個過程，只是這裡在 L1 上、用不等式斷言。
+/// 這正是 Fig 3（W7 核心實驗）要量的那個過程，只是這裡在 L1 上、用不等式斷言。
 TEST(ClosedLoop, AntiWindupRecoversFasterThanNone)
 {
     const Schedule saturating{150.0, 400.0, 200.0, 600.0};

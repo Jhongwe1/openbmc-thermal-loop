@@ -8,7 +8,7 @@
     ./tools/set_die_temp.py --read       # 只讀，不寫
     ./tools/set_die_temp.py --list       # 列出這台機器上所有 tmp421
 
-★ 這支工具在做什麼（面試會問「你的溫度是從哪裡進去的」）
+★ 這支工具在做什麼（也就是：溫度到底是從哪一層進去的）
     tmp421 是一顆真的 i2c 溫度晶片，QEMU 有它的行為模型（hw/sensor/tmp421.c）。
     這個模型把溫度存在一個 QOM property `temperature0`（單位：千分之一度 C），
     而 QOM property 可以從外面經由 QMP（QEMU Machine Protocol）寫入。

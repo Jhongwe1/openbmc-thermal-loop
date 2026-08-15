@@ -185,17 +185,17 @@ $ busctl tree xyz.openbmc_project.EntityManager
 > 不是「上 D-Bus」的普遍條件。這台機器上至少還有兩條獨立的路徑
 > —— `phosphor-nvme` 與 `phosphor-virtual-sensor` —— **各自有自己的設定機制**。
 
-> **面試講法(改完之後反而更值錢):**
-> 「一顆感測器上 D-Bus 有好幾條路。`dbus-sensors` 那條要 entity-manager 的
+> **修正之後的除錯順序(比原本那句話更有用):**
+> 一顆感測器上 D-Bus 有好幾條路。`dbus-sensors` 那條要 entity-manager 的
 > Configuration;`phosphor-nvme` 走自己的 `/etc/nvme/nvme_config.json`;
 > 虛擬感測器又是另一套 JSON。**所以 debug 的第一步不是去翻 EM 設定,
 > 是先問這顆是從哪一條路上來的** ——
 > `busctl call ... GetObject` 兩秒就知道擁有者是誰,
-> 知道擁有者才知道該去看哪一份設定檔。」
+> 知道擁有者才知道該去看哪一份設定檔。
 >
-> 「而**在 `dbus-sensors` 那一條路裡面**,『硬體在』與『設定在』才是兩個獨立的
-> 必要條件 —— 我在同一台機器上同時觀察到兩種失敗,看
-> `/sys/bus/i2c/devices/` 有沒有那個節點,兩秒就分得出來是哪一種。」
+> 而**在 `dbus-sensors` 那一條路裡面**,「硬體在」與「設定在」才是兩個獨立的
+> 必要條件 —— 同一台機器上兩種失敗都觀察得到;看
+> `/sys/bus/i2c/devices/` 有沒有那個節點,兩秒就分得出來是哪一種。
 
 ---
 

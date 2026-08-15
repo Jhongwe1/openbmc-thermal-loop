@@ -140,8 +140,9 @@ AccountService、BMC dump。**沒有任何熱控或感測器路徑的驗證。**
 
 所以跑完 QEMU_CI 我有真實的 IPMI **測試**接觸(在本映像上它們因
 沒有 netipmid 而失敗,失敗本身也是接觸)。
-⚠️ **誠實說明:我是「跑過官方 IPMI 測試」,不是「開發過 IPMI 命令」。**
-履歷的 JD 對照表上,IPMI 標「中」不標「強」。
+⚠️ **誠實說明:這是「跑過官方 IPMI 測試」,不是「開發過 IPMI 命令」。**
+本專案對 IPMI 的涵蓋度到此為止,同一條也記在
+[limitations.md](limitations.md) 的環境層面。
 
 ### 觀察 3:清單裡有一行掛了四年的死 include(→ 候選 3)
 

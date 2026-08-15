@@ -548,12 +548,12 @@ def fig3() -> None:
        open arm 在冷開機段就有故事 —— 下界 −1e6 讓積分往負向挖坑
        （**反向 windup**），風扇比 clamp 組晚開、暖機超調更高，
        兩組帶著略不同的狀態進入 400 W 階躍。裁掉暖機等於把
-       「同一機制的下界版展品」裁掉。指標視窗仍從階躍起算（meta 記了）。
-    2. **第三面板（積分項）是招牌**：windup 從名詞變成一條爬升的曲線。
+       「同一個機制在下界側的表現」裁掉。指標視窗仍從階躍起算（meta 記了）。
+    2. **第三面板（積分項）是這張圖的核心**：windup 從名詞變成一條爬升的曲線。
        clamp 的上限畫成參考線 —— 藍線「頂」在它上面、橘線穿過它，
        機制一眼可見，不用讀任何文字。
     3. 飽和區間灰底，與 exp07 的 sat_frac 用同一個視窗定義。
-    4. **recover_s 的兩個數字直接標在 PWM 面板** —— 履歷會引用的就是它們，
+    4. **recover_s 的兩個數字直接標在 PWM 面板** —— README 的結論引用的就是它們，
        順便把 90% 門檻畫成參考線，數字與圖形互相指認。
     5. 指標表直接讀 exp07 的 meta，不重算（與 Fig 2 同一條理由）。
     """
@@ -686,7 +686,7 @@ def fig3() -> None:
               fontsize=9, family="monospace", color="#0b0b0b", zorder=6,
               bbox=dict(boxstyle="round,pad=0.5", fc=C_SURFACE, ec=C_GRID))
 
-    # ── 下：積分項（招牌面板）───────────────────────────────────────────
+    # ── 下：積分項（核心面板）───────────────────────────────────────────
     clamp_hi = table["clamp"]["integral_limit"][1]
     ax_i.axhline(clamp_hi, ls="--", lw=1.0, color=C_MODEL, zorder=4)
     ax_i.text(float(t[-1]) - 10, clamp_hi + 10,
