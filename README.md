@@ -581,6 +581,11 @@ python bench/exp09_failsafe.py    # 5 runs × 330 s 即時 ≈ 28 min
 python bench/plot.py --fig 4
 ```
 
+不想等 28 分鐘的話,`./tools/failsafe_demo.sh` 是同一個 rig 的**單次
+縮時版**(2.5 分鐘):即時顯示 PWM 與 `busctl` 輪詢的 `FailSafe` 屬性,
+收尾用與 exp09 相同的方法從 zone log 算出這一趟的 t1/t2。它是演示
+不是量測 —— 輸出走 `/tmp`,不進 `bench/data/`。
+
 - [x] Gate 3　控制器與量測　　　　← **7/7,W8 收關**
   - [x] 我自己的 PI(C++,四種抗飽和 + 一個上游相容模式)← [`controller/`](controller/)
   - [x] 與上游 `ec::pid()` 的 gtest parity 測試(六個參數 144 組,`1e-12`)
