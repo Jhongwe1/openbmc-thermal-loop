@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出** | 2026-08-04 | 簽名 `Chung-Wei Lan`;等待人工審核,【判】數天到數週 |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,審核中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-18 無回音**,追蹤中(Discord 上已獲「可 CC 社群成員推一把」的指引) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -115,7 +115,22 @@
 
 ---
 
-## 未提交的候選(同樣有訊號值)
+## 已提交的 change(索引;本表更新於 2026-08-18,權威來源是 Gerrit)
+
+| Change | Repo | 提交日 | 內容一句話 | 狀態 |
+|---|---|---|---|---|
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**。owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆已上線(8/13、8/14),等他答「CI 用哪台 QEMU target」——答案決定推 PS2(改指)或維持(刪行) |
+| [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆 |
+| [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
+
+兩筆 open change 的 CI 皆為 `User not approved`:新貢獻者要先請管理員
+加入 CI 白名單,而白名單卡在 CLA 人工處理(2026-08-04 寄出,至
+2026-08-18 無回音,追蹤中 —— 見 LOG 2026-08-13「對外依賴要自帶 timer」)。
+
+93469 的完整往返紀錄在下方〈候選 3〉,93470 在〈候選 2〉——
+兩段保留在候選清單原位,因為本 repo 其他文件以「候選 N」為錨點引用它們。
+
+## 候選清單(候選 2、3 已提交,見上表;1、4 未提交)
 
 ### 候選 1:`ec::pid()` 在 slew 生效時的積分回算
 
@@ -143,7 +158,11 @@
   設計還是我理解錯。如果對方認為值得,我送的會是一個**把現行行為釘住的單元測試**
   (不改行為)—— 這符合上游「可被測試的變更要附測試」的要求,而且不管結論是
   「這是對的」還是「這要改」,測試本身都有價值。
-- **狀態:** 待 W10 提問。
+- **狀態(2026-08-18 更新):** 尚未徵詢。W10 的提交給了證據更硬的
+  候選 2、3;本條的現行行為已由 `test/test_parity_upstream.cpp` 釘住,
+  不會因為等待而流失。徵詢排在 93470 的往返收斂之後 —— 它與 93470
+  是同一個 repo、同兩位 owner(Ed Tanous / Patrick Williams),
+  同時開兩條提問線對雙方都不利。
 
 > ⚠️ **絕對不要說「OpenBMC 有 bug」。** 正確講法:
 > 「我讀 `ec::pid()` 時注意到,slew 生效時的積分回算是 `output − proportionalTerm`,
@@ -256,7 +275,9 @@
   0 成員,這一點不寫進去的話,案例會在官方 CI 的 pristine 映像上假紅)。
 - **上游規矩:** 介於「文件修正」與「新功能」之間 → 先 Discord 徵詢,
   有共識才推(訊息已擬;發出時間與回應回填於此)。
-- **狀態:** 已起草;Discord 徵詢待發。
+- **狀態(2026-08-18 更新):** 已起草;Discord 徵詢未發。排序理由同
+  候選 1:它與 93469 是同一個 repo、同一位 owner(George Keishing),
+  93469 的往返還開著,先把一條線走完。
 
 ---
 
