@@ -2944,3 +2944,37 @@ bridge 死後那秒印 `die0=?`,腳本繼續走完 summary)。診斷時的
    就要想好之後怎麼拿到真實的退出狀態(`PIPESTATUS`、重導向到檔案、
    或乾脆別包)。這與 08-14「檢查腳本 set -e 沒配 pipefail 自己裝綠」
    是一體兩面:那次是管道讓失敗變成綠,這次是管道讓失敗變成靜音。
+
+## 2026-08-18(W12)bmcweb 會回答 ≠ inventory 就緒:readiness 是三層的
+
+**背景** 預演 demo 段 4(QEMU 上的 Redfish 指令),開機後
+sleep 165 s 再 curl。
+
+**現象** 第一輪:`/Chassis/chassis/ThermalSubsystem` 回空物件(其實
+是 404 —— id 寫錯,`chassis` 是文件範例的字面值,W9 Robot 的
+`CHASSIS_ID` 同一顆雷)。改用正確 id `Bletchley_Front_Panel_Board`
+再開一輪:**還是 404,而且 `/redfish/v1/Chassis` collection 是空的**
+—— 但 W2 實測過 `ThermalSubsystem.v1_0_0` ✅、W9 Robot 也用這個 id
+過了測試。
+
+**假設** ① id 又錯(被第二輪的正確 id + 完整格式的 404 排除);
+② **部署丟失**(EM 設定不在 flash 的持久層了);③ **inventory 還沒
+就緒** —— 165 秒只夠 bmcweb 起來,不夠 entity-manager 把板子掛上。
+
+**先驗哪個、為什麼** ③。成本最低:再開一次機、每 30 秒輪詢一次
+collection 就能分辨,不用 ssh 進去翻檔案;而且已有反證線索壓低 ②
+的機率 —— 同一輪開機的 healthcheck 顯示 swampd 讀到了 zone 設定,
+表示 `/etc` 持久層是活的,EM 設定沒理由單獨消失。若 ③ 成立,② 不用查。
+
+**根因(輪詢實測)** t=150/180/210 s collection 皆空,**t=240 s 出現
+2 個成員**(原生前面板 + 我們 EM 設定產生的 `Thermal_Loop_Demo`,
+部署完好),ThermalSubsystem 回 `v1_0_0` + Status OK。
+而 bmcweb 早在 t=165 s 就能回**格式完整的** 404 ——
+服務可答與資料就緒,中間隔了約 75 秒。
+
+**教訓(方法論)** readiness 至少三層:**程序活著**(systemd
+active)→ **介面可答**(HTTP 有回應,哪怕是 404)→ **資料就緒**
+(inventory 非空)。W1 坑 6 的「Redfish 要等 60~120 秒」只保證第二層;
+拿第二層的訊號當第三層的門,得到的是格式完美的空答案。凡是
+「等它好」的腳本,要明確寫出等的是哪一層、用哪個訊號判定 ——
+demo 錄影 checklist 現在用「collection 非空」當第三層的門。
