@@ -675,6 +675,137 @@ python bench/plot.py --fig 4
    沒有殘差可修。真實平台的內圈是閉環的,吃掉風扇個體差異與老化 ——
    **那一層價值這裡量不到**。
 
+## 踩過的坑(五則精選)
+
+完整紀錄在 [`LOG.md`](LOG.md)(85 則,截至 2026-08-16),每則都照
+「現象 → 假設 → 先驗哪個、為什麼 → 根因 → 教訓」寫。這裡挑五則:
+選擇標準是**想在 QEMU 上重現這類測試床的人,單位閱讀時間能省掉最多彎路**。
+
+### 1. 參考資料指定的平台,沒有本專案的主體套件
+
+- **現象:** 兩份參考資料對「用哪台 QEMU machine」給了不同答案
+  (`gb200nvl` / `romulus`),互相矛盾。
+- **假設:** (1) 各有側重、都對;(2) 其中一份過期;
+  (3) 兩份都沒實際查過映像的套件清單。
+- **先驗哪個、為什麼:** (3) —— 排除成本最低:Jenkins 對每個 target 都出
+  `*.manifest`,一支 `curl` 就知道,不必開機;而且 (3) 成立則 (1)(2) 自動失效。
+- **根因:** 兩台的 manifest 都沒有 `phosphor-pid-control`。`romulus` 有的是
+  另一套 `phosphor-fan-control`(事件驅動)——「這台有沒有風扇控制」
+  不是是非題,要問「**哪一套**」。
+- **教訓:** 「換一台試試」是試錯,「拉 manifest 比對」是查證。19 個 target
+  的掃描 44 秒(`harness/qemu/platform_matrix.sh`),比開一次機(150 s)還快。
+- 完整紀錄:`LOG.md` 2026-07-28 兩則;[`docs/platform-matrix.md`](docs/platform-matrix.md)。
+
+### 2. PID 係數的符號:一次預防,一次被自己的測試反駁
+
+- **第一層(預防性實驗):** 寫任何係數之前,先在 BMC 上做兩點檢查
+  (55 / 75 °C 各量一次溫度 PID 的輸出):`+500` 越熱轉越慢,`−500`
+  越熱轉越快 —— `temp` 型別要用負係數。成本兩分鐘。而且**單點量不出來**:
+  低誤差側被 `outLim_min` 箝住,兩組輸出一模一樣 —— 箝位吃掉一半資訊,
+  安靜的錯比大聲的錯難查。
+- **第二層(敘事被反駁):** 我從此帶著「符號錯 = 風扇停掉、溫度飆高」的
+  結論走。後來寫 plant + controller 的閉環收斂測試,紅的方向相反:
+  **風扇鎖死 100 %、溫度停在 43 °C(比目標低 22 度)**。根因:正回饋往
+  「起始誤差那一邊」鎖死,落到哪個極限取決於初始條件 —— 把兩點量測
+  簡化成一句話時,初始條件被我丟掉了。
+- **教訓:** 閉環測試的價值不是多抓幾個 mutation,是**它會反駁你對機制的
+  敘事** —— 那種錯誤沒有任何單行 mutation 表達得出來。
+- 完整紀錄:`LOG.md` 2026-08-09(W5 D1 與稽核 6);資料 `bench/data/exp02_signcheck/`。
+
+### 3. 量測工具比現象慢,於是量出「現象不存在」
+
+- **現象:** 懷疑 hwmon 讀值有快取(kernel `tmp421.c` 白紙黑字寫著
+  `HZ/2` = 500 ms 的更新窗),實測四次「注入後立刻讀」卻全拿到新值 ——
+  看起來就是「沒有快取」。
+- **為什麼不接受這個結論:** 它與一手原始碼衝突,一定有一邊錯。
+- **假設:** (1) 這個 kernel 版本改掉了;(2) QEMU 模型繞過了它;
+  (3) 我的取樣太慢,每次都晚於快取窗口。
+- **先驗哪個、為什麼:** (3) —— 唯一能立刻量的(讀取迴圈外包一層計時,
+  五秒鐘的事);而且 (3) 成立則 (1)(2) 不必查。
+- **根因:** 每讀一次就開一條新 ssh,單次 ~0.4 s,與要量的 0.5 s 窗口
+  **同一個量級**。改成一條持久連線上跑迴圈(單次毫秒級)後,量到
+  中位 351 ms、範圍 178~423 ms —— 與「注入時刻相對快取窗均勻分布」一致。
+- **教訓:** 「我量不到」和「它不存在」是兩件事。取樣速度沒有比現象快
+  一個數量級以上,任何「沒觀察到」都不算數。
+- 完整紀錄:`LOG.md` 2026-08-09(稽核 2)。
+
+### 4. 對照變因在沒設計的區段生效:反向 windup 意外現身
+
+- **現象:** anti-windup A/B 預期「飽和期間兩組輸出同頂 100 %、曲線重合」,
+  實測峰值差 1.9 °C,而且差異在進飽和**之前**就存在。
+- **假設:** ① 單變因破功(有參數跟著一起變了);② 機制真實 ——
+  無箝位組的下界 −1e6 在暖機段就生效;③ seed 沒對齊的假象。
+- **先驗哪個、為什麼:** ① —— 它最致命,破功則整個實驗作廢。已由
+  逐欄參數比對機器排除;seed 配對共用排除 ③;剩 ② → 直接看積分面板。
+- **根因:** 冷開機段誤差為正、ki 為負 → 積分往**負向**累積;無箝位組
+  挖到約 −45 %PWM,要先「爬出坑」風扇才開始加速。設定 README 在寫
+  「下界為什麼是 0」時預言過的機制,自己走進圖裡。
+- **教訓:** A/B 的差異不會等你想觀察的視窗才出現。把「不該分家處的分家」
+  標出來(Fig 3 從 t=0 整段畫、標 LIMIT),比裁掉開頭讓圖乾淨誠實得多 ——
+  而且它是同一機制在**下界側**的第二個證據。
+- 完整紀錄:`LOG.md` 2026-08-11(W7);[`figures/fig3_antiwindup.png`](figures/fig3_antiwindup.png)。
+
+### 5. 檢查器自己也會裝綠:「Ok: 5」假全綠
+
+- **現象:** 乾淨 clone 檢查回 `Ok: 5`(本機是 6)、`assert_metrics.py`
+  直接 `ModuleNotFoundError: pandas` —— 但整支檢查腳本 exit 0,
+  還印了 DONE。
+- **假設:** ① repo 少 commit 了東西;② clone 環境沒 Python 相依,
+  測試被**跳過**;③ 檢查腳本自己吞錯。
+- **先驗哪個、為什麼:** 先 ②③ —— 一次 grep 就能殺(`test/meson.build`
+  的註解自己寫著這個坑);① 最貴(要 diff 兩棵樹)排最後,結果不用走到。
+- **根因:** 三層 —— README 沒教裝 Python 相依;meson 的修復警告指向
+  一條只存在於我機器上的 venv 路徑(對外等於沒警告);檢查腳本
+  `set -e` 沒配 `pipefail`,管線讓爆炸變成 `tail` 的 exit 0。
+- **教訓:** 「跳過而不是失敗」是測試基礎設施最危險的仁慈 —— 可以跳,
+  但要大聲,而且修復指示要寫給**讀者**,不是寫給自己。README 的
+  〈自己跑一次〉現在明講:**Ok: 6 才是全部,Ok: 5 = Python 測試沒在跑**。
+- 完整紀錄:`LOG.md` 2026-08-14(W11);修正 commit `166cc24`。
+
+## 參考
+
+### 上游程式碼(我實際讀過、且本 repo 有引用的部分)
+
+- `openbmc/phosphor-pid-control` @ `c5e59550d3`(與 BMC 映像同版;
+  meson subproject 釘同一 hash)
+  - `pid/ec/pid.cpp` — PID 演算法、`integralLimit` 箝位、slew 生效時的
+    積分回算(未提交候選 1 的觀察來源,見 `docs/upstream.md`)
+  - `pid/ec/logging.cpp` — `-g` 內部軌跡的欄位定義與 60 s 的 logThrottle
+    (外圈週期的量法為何改用 `zone_0.log`,見 `bench/claims.json`)
+  - `sensors/build_utils.cpp` — readPath/writePath 用 `/sys/` 子字串判斷
+    (W2 設定檔能指向 `/tmp/sys/` 的依據)
+  - `sensors/buildjson.cpp` — 非 fan 型別忽略 min/max
+  - `conf.hpp` — 全部設定欄位(含七個未文件化的 → change 93470)
+  - `configure.md` — 文件缺口(93470 的修改對象)
+  - `README.md` — 串級架構的原始描述
+- `openbmc/docs`
+  - `CONTRIBUTING.md` — CLA 流程、50/72、`Tested:`、新功能先討論
+  - `designs/external-sensor.md` — ExternalSensor 的 Timeout → NaN
+  - `architecture/sensor-architecture.md` — chassis/all_sensors association
+  - `development/gerrit-setup.md` — change 93397 的修改對象
+- `openbmc/openbmc-test-automation`
+  - `test_lists/QEMU_CI` — 20 個生效 include、一行四年死引用(→ change 93469)
+- Linux kernel `drivers/hwmon/tmp421.c` — 500 ms 快取窗
+  (〈踩過的坑〉第 3 則的預期來源)
+
+### 規格
+
+- DMTF Redfish 2020.4 釋出說明 — Chassis schema v1.15 將 `Thermal`/`Power`
+  標為 deprecated,**沒有移除時程**(兩套 schema 的實測見
+  [`docs/redfish-notes.md`](docs/redfish-notes.md))
+- OCP DC-SCM — BMC 從主機板模組化拆出的產業背景(見〈為什麼做這個〉)
+
+### 環境(量測數字產生時的版本)
+
+- BMC 映像:`obmc-phosphor-image-bletchley-20260728025045.static.mtd`
+  (官方 Jenkins `latest-master`,target=`bletchley`;manifest 進 git,
+  在 `images/bletchley/`)
+- QEMU:**11.0.1**(`v11.0.1-3179-g9c2fa9d4b4`,官方 Jenkins 版),
+  machine `bletchley-bmc`
+- `phosphor-pid-control`(swampd):`0.1+git0+c5e59550d3-r1`(映像內版本)
+- 各圖的資料版本:以圖上 caption 的 data commit 為準
+  (由 `bench/provenance.py` 產生,記的是**資料的 commit**,不是 HEAD)
+
 ## 授權
 
 Apache-2.0（與 OpenBMC 上游一致）。
