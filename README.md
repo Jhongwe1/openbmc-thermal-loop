@@ -562,7 +562,7 @@ python bench/plot.py --fig 5
 
 **感測器讀不到值,風扇怎麼辦?—— fail to safe,不是 fail to
 last-known-good。** 我實際量了這個延遲:停止推送溫度後,
-**中位數 5.081 s [5.010, 5.155](5 次獨立 run)** PWM 拉到
+**中位數 5.081 s [5.010, 5.155]**(5 次獨立 run)PWM 拉到
 `failsafePercent`,組成是 sensor timeout(config 5 s)+ 逾時檢查節奏
 (騎在外圈 1 Hz 上)+ **恰好一個內圈週期(100 ms,5/5 次)** + ms 級
 傳遞。⚠️ 不是「100 ms 內觸發」—— timeout 本來就是秒級設定。
