@@ -115,12 +115,12 @@
 
 ---
 
-## 已提交的 change(索引;本表更新於 2026-08-18,權威來源是 Gerrit)
+## 已提交的 change(索引;本表更新於 2026-08-30,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
 
 | Change | Repo | 提交日 | 內容一句話 | 狀態 |
 |---|---|---|---|---|
-| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**。owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆已上線(8/13、8/14),等他答「CI 用哪台 QEMU target」——答案決定推 PS2(改指)或維持(刪行) |
-| [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆 |
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆已上線(8/13、8/14),等他答「CI 用哪台 QEMU target」——答案決定推 PS2(改指)或維持(刪行)。**2026-08-30 查核:8/13 之後無新訊息(17 天)**;死 include 仍在 master 第 13 行,前提未變 |
+| [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
 | [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
 
 兩筆 open change 的 CI 皆為 `User not approved`:新貢獻者要先請管理員

@@ -22,7 +22,7 @@ diff 見下方〈Fig 3〉一節):飽和解除後的恢復時間 **197.2 s → 14
 是自建熱模型([`docs/plant-model.md`](docs/plant-model.md)),
 swampd @ `c5e5955`。
 
-## 驗證這個 repo 的宣稱(逐條可查,約 7 分鐘)
+## 驗證這個 repo 的宣稱(逐條可查,約 8 分鐘)
 
 | 宣稱 | 怎麼驗 | 花多久 |
 |---|---|---|
@@ -33,6 +33,7 @@ swampd @ `c5e5955`。
 | 圖由資料產生 | 原始 CSV 全在 [`bench/data/`](bench/data),每張圖旁附產圖指令;caption 記**資料的** commit([`bench/provenance.py`](bench/provenance.py)),不是 HEAD | 60 秒 |
 | 官方映像 + 官方測試套件實測過 | [`docs/env-baseline.md`](docs/env-baseline.md)(19 個 Jenkins target 實測掃描)、[`docs/robot-qemu-ci.md`](docs/robot-qemu-ci.md)(官方 Robot 套件兩輪實跑 + 逐案根因) | 90 秒 |
 | 適用邊界寫清楚了 | [`docs/limitations.md`](docs/limitations.md)(五層面 31 條 + 每張圖的適用邊界)+ 每張圖旁的誠實標註 | 90 秒 |
+| 引用的上游事實沒有過期 | [`docs/verification-log.md`](docs/verification-log.md):映像 / `ec::pid()` / `configure.md` / OWNERS / `QEMU_CI` / bmcweb 公告 / Gerrit / 平台矩陣八項的最後確認日期與結果,外加量測環境的重跑紀錄;[`tools/reverify_upstream.sh`](tools/reverify_upstream.sh) 可自己重跑(需網路,約 2 分鐘) | 60 秒 |
 
 ## 自己跑一次
 
@@ -658,7 +659,9 @@ python bench/plot.py --fig 4
       `assert_metrics` 斷言 14 個 claim、紅燈證明 ×3(見上)、README
       第一屏、Makefile。**W11 補齊:** limitations(五層面 31 條)、
       design.md(上游模板)、cascade.md 補完、本 README 架構/限制兩節。
-      剩:demo 影片(W12)、三個 debug 故事(W13)
+      **2026-08-30:** 上游事實八項重新確認 + 量測環境重跑,結果與可重跑的
+      腳本在 [`docs/verification-log.md`](docs/verification-log.md)。
+      剩:demo 影片
 
 ## 限制與未完成
 

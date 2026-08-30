@@ -52,6 +52,17 @@ romulus-bmc          OpenPOWER Romulus BMC (ARM1176)
 | `anacapa`、`harma`、`minerva`、`ventura`、`ventura2`、`yosemite4`、`yosemite5`、`santabarbara`、`clemente`、`bletchley15` | 映像齊全,但 **QEMU 沒有對應的 machine model**,開不起來。 |
 | `evb-npcm845`、`gbs` | 有 `phosphor-pid-control` 但缺 `dbus-sensors` / `entity-manager`,且 QEMU 無對應 machine。 |
 
+> ⚠️ **2026-08-30 補註(上文照 2026-07-28 原樣保留):** `gbs` 那一格的
+> 「QEMU 無對應 machine」**不成立** —— QEMU 11.0.1 有 `quanta-gbs-bmc`
+> (Quanta GBS,Cortex-A9),而 Jenkins `gbs` 映像的 deploy 目錄含
+> `nuvoton-npcm730-gbs.dtb`,是同一塊板子。它被排除的理由只有前半句:
+> 缺 `dbus-sensors` 與 `entity-manager`,route (b′) 建不起感測器。
+> 這一格是把「QEMU 有 machine」這個條件交給腳本計算後才抓到的
+> (`tools/reverify_upstream.sh` 第 8 項);上面〈三個條件的交集〉嚴格算出來
+> 是 `{bletchley, catalina, gbs}`,把 `gbs` 剔除的是第四個條件
+> (映像同時含 `dbus-sensors` + `entity-manager`)。詳見
+> [`verification-log.md`](verification-log.md)。
+
 ## ⚠️ 與參考資料的兩處差異(以本次實測為準)
 
 參考資料寫於 2026-07-27,本次掃描為 2026-07-28,**兩處對不上**:
