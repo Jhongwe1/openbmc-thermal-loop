@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,未入列;追件中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3);下次追蹤點 2026-09-04。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,未入列;maintainer 直審中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -116,11 +116,11 @@
 
 ---
 
-## 已提交的 change(索引;本表更新於 2026-08-31,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
+## 已提交的 change(索引;本表更新於 2026-09-01,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
 
 | Change | Repo | 提交日 | 內容一句話 | 狀態 |
 |---|---|---|---|---|
-| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**現在卡的只剩 CLA 登錄**;死 include 仍在 master 第 13 行 |
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**2026-08-31 15:55Z:release maintainer 指路 ICLA 直審通道(93905);2026-09-01 已直寄並在 change 回覆 —— 見〈候選 3〉往返 4。** **現在卡的只剩 CLA 登錄**;死 include 仍在 master 第 13 行 |
 | [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
 | [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
 
@@ -128,7 +128,8 @@
 加入 CI 白名單,而白名單卡在 CLA 人工處理(2026-08-04 寄出,至
 2026-08-31 無回音 —— 見 LOG 2026-08-13「對外依賴要自帶 timer」與
 LOG 2026-08-31「沒放在每天會看的地方的 timer 不是 timer」;8/31 已
-forward 原信追件,下次追蹤點 2026-09-04)。
+forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
+3〉往返 4 與 LOG 2026-09-01,下次追蹤點 2026-09-08**)。
 
 93469 的完整往返紀錄在下方〈候選 3〉,93470 在〈候選 2〉——
 兩段保留在候選清單原位,因為本 repo 其他文件以「候選 N」為錨點引用它們。
@@ -273,9 +274,22 @@ forward 原信追件,下次追蹤點 2026-09-04)。
   回一句「維持刪行」並標 Resolved;不投票。② forward 8/4 原信給 LF(主旨
   不改、附件原封,讓對方搜信箱落在同一串)。③ Discord 回 Milton 8/13 那則,
   先自報 Gerrit 本名(Discord 顯示名不是本名,對方無從對照)再問 CC 名單。
-  下次追蹤點 2026-09-04;LF 仍無回音則用 CC 名單寄第二封。
+  (原定 9/4 用 CC 名單寄第二封 —— 已被往返 4 的 maintainer 直審通道取代。)
   **正確的狀態描述:兩位 reviewer +1、owner 因 CLA −1、未合併、CI 未跑。**
   記錄:LOG 2026-08-31;API 原文見 `docs/verification-log.md`〈2026-08-31〉。
+- **往返 4(2026-08-31 15:55Z → 2026-09-01):** release maintainer Andrew
+  Geissler(docs change [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905)
+  的 owner)在 93469 直接留言:ICLA 受理正在收緊(93905 把 CCLA 對受僱於
+  晶片/韌體/伺服器廠與 CSP 者改為**必要**;ICLA 保留給不屬於這些類別的
+  個人),讀後若仍符資格,可將 ICLA 直寄其信箱審核,需附「盡可能多的
+  背景與可查證方式(I will need mechanisms to verify you)」。我方讀
+  93905 全文後判定 ICLA 仍適用(無雇主個人),2026-09-01 寄出:8/4
+  簽署的原件(不重簽,保留時間戳)、與 Gerrit/ICLA 相同的寄件信箱、
+  CC 學校信箱(第三方核發)、以 GitHub / Gerrit 兩筆 change / 本 repo
+  為查證管道,並主動聲明未來若受僱於 93905 所列類別公司,屆時改走該
+  雇主的 CCLA。同日在 93469 回覆確認(18:25Z,messages=14)。
+  **下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:"on the order of a
+  week")。記錄:LOG 2026-09-01。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 
