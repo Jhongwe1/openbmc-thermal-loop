@@ -483,7 +483,10 @@ Fig 3 刻意從 t=0 畫整段、把它標在圖上,參數區塊誠實寫明
   **節流不影響峰值**:極值出現在「值有變」的那一筆,而變了必寫。
 - 時間類指標(`recover_s`)一律取自 `zone_0.log`(每輪都寫、無節流);
   時間軸用 bridge 落檔的 `epoch0_ms` 對齊。
-- **L2 的 PWM 下限是 30%**(zone `minThermalOutput` 3000 RPM ÷ 150),
+- **L2 的 PWM 下限是 30%**(fan0 PID 的 `outLim_min = 30` %PWM,
+  `config/swampd/config.baseline.json`;zone `minThermalOutput` 3000 RPM 是
+  外圈 RPM setpoint 的下限,經前饋 1/150 只對應 20 %PWM,被內圈的 30 % 箝位
+  蓋過 —— 2026-08-31 更正,原文把 30 % 寫成「3000 RPM ÷ 150」),
   與 L1 的 0% 不同 → 冷開機段軌跡不同:反向 windup 坑更深、
   進飽和更熱(`t_peak` 112.3 vs L1 open 的 92.0)。
   **A/B 的主張活在飽和解除之後,離兩個下限都很遠。**

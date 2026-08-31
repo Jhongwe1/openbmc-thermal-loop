@@ -187,7 +187,7 @@ zone 的輸出不再是被 `minThermalOutput` 撐著,而是**熱 PID 在駕駛**
    而**我的 plant 沒有建模個別風扇的轉速誤差** —— 沒有量測就不要填數字。
    **後果要知道:內圈係數為 0 時 PWM 被箝在 `outLim_min = 30%` 不動。**
    所以 L1/L2 疊圖要比對**外圈的輸出(RPM setpoint)**,不是 PWM。
-   由 `test/python/test_swampd_config.py::test_inner_fan_pid_is_left_untuned_on_purpose`
+   由 `test/python/test_swampd_config.py::test_inner_fan_pid_is_feedforward_only_by_design`
    守著,讓「PWM 不會動」是預期而不是意外。
 
 3. **這台 QEMU 沒有真的風扇。** `fan0` 是 `/tmp/sys/` 底下的檔案替身

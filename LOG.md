@@ -3130,3 +3130,38 @@ N 天」這個數字。
 加一行印「ICLA 寄出至今 N 天、上次追件日」,超過一週標 OVERDUE。另一個切面:
 **技術上收斂與流程上放行是兩件事**,狀態要分開講 —— 「兩位 reviewer +1、owner
 因 CLA −1、未合併、CI 未跑」四個都要說,少說一個就是灌水。
+
+## 2026-08-31(W14)把每個帶來源的句子對回來源:一次通盤重讀抓到 docs 三處錯
+
+**現象** 用 repo 外的工具把 `docs/` 裡每一句「帶數字、帶來源」的話逐條對回
+它宣稱的來源(設定檔、測試檔、原始輸出),回報三處「句子與來源不符」:
+① `measurement.md:486`「PWM 下限 30%(3000 RPM ÷ 150)」—— 3000 ÷ 150 = 20;
+② `cascade.md:190` 引用的守門測試名 `test_inner_fan_pid_is_left_untuned_on_purpose`
+在 `test/python/test_swampd_config.py` 裡不存在;③ `verification-log.md` 環境重跑
+第 3 列寫「Sensors collection 含 `temperature_die0`」。
+
+**假設(各自)** ① 數字錯(下限其實 20%)/ 推導錯(30% 另有來源);
+② 測試被刪 / 測試改名;③ 原始輸出真的有列 / 我把「資源抓得到」寫成「集合有列」。
+
+**先驗哪個、為什麼** 三題都先開**產生那句話的 artifact**,不開文件:
+① 開 `config.baseline.json` —— fan0 PID `outLim_min = 30.0`(%PWM),
+`config/swampd/README.md:222` 也寫 `255 × 0.30 = 76` 實測印證 → **數字對、括號裡的
+推導錯**:30% 來自內圈的 `outLim_min`;3000 RPM 是外圈 setpoint 下限,經前饋 1/150
+只對應 20%,被內圈箝位蓋過。② `grep '^def test_'` —— 第 177 行叫
+`test_inner_fan_pid_is_feedforward_only_by_design`,是改名不是刪除。③ 開
+`demo_rerun.out` —— 列 `Bletchley_Front_Panel_Board/Sensors` 成員那一步**一行都沒印**
+(集合為空);`temperature_die0` 是第 4b 步用資源路徑直接 GET 到的。三處都是**文件
+漂離了它描述的 artifact**,不是 artifact 錯。
+
+**根因** 三種漂移各有一個共同點:句子裡有一個「可以被機器對回去」的東西
+(算式、測試名、原始輸出的某一行),但寫的時候是用腦子想的,不是對著 artifact 抄的。
+① 是把「結果 30%」與「順手想到的一個算式」黏在一起;② 是改測試名時沒 grep docs;
+③ 是 8/30 我看到 4b 的 Redfish 讀值成功,就往回寫「集合含它」。
+
+**處理** ① 改推導、註明更正;② 改名;③ 帶日期區塊不改原文,格內加指標、表下加
+2026-08-31 更正註。LOG 計數 → 96。
+
+**教訓** 「散文裡的數字只有兩種活法」(08-16)要再加一條:**散文裡的算式、測試名、
+「輸出裡有 X」也一樣** —— 要嘛能被腳本對回 artifact,要嘛標成人工判斷。可腳本化的
+兩個:docs 裡出現的 `test_xxx` 名稱是否存在於 `test/`;帶「÷」「×」的算式是否算得出
+右邊的數 —— 先記在這裡,下次再抓到同類問題就進 `tools/`。

@@ -70,7 +70,7 @@
 |:-:|---|---|
 | 1 | 映像還在 | `images/bletchley/` 仍是 `…-20260728025045.static.mtd`(56 MB)+ manifest;`flash-128M.mtd` 由 `run_bmc.sh` 重建 |
 | 2 | 開機 | QEMU 11.0.1 `bletchley-bmc`。三層 readiness:SSH 可連 **+288 s**、bmcweb 回格式完整的 JSON **+289 s**(`RedfishVersion 1.17.0`)、`/redfish/v1/Chassis` collection 非空 **+290 s**(2 個成員:`Bletchley_Front_Panel_Board`、`Thermal_Loop_Demo` —— 後者是本 repo 的 entity-manager 設定,證明部署仍在 flash 的持久層)。guest 自報 `FinishTimestampMonotonic` 202.7 s。2026-08-18 量到的是 bmcweb +165 s、inventory +240 s;本次主機負載不同,兩組數字**不能比**,只記錄 |
-| 3 | SSH + Redfish | kernel `6.18.40`、OpenBMC `3.1.0-dev-739`;`ThermalSubsystem.v1_0_0` 回 OK;Sensors collection 含 `temperature_die0` |
+| 3 | SSH + Redfish | kernel `6.18.40`、OpenBMC `3.1.0-dev-739`;`ThermalSubsystem.v1_0_0` 回 OK;Sensors collection 含 `temperature_die0`(★ 不準確,見表下 2026-08-31 更正) |
 | 4 | swampd 還在跑本 repo 的設定 | `phosphor-pid-control.service` active;drop-in `/etc/systemd/system/phosphor-pid-control.service.d/override.conf` 在(重開機後仍在);`/tmp/pidlog/zone_0.log` 在寫;`FailSafe = false`(**預期**:部署的 `die0` 是 passive、`timeout: 0`,見 `config/swampd/README.md`) |
 | 4b | 一行指令改溫度、三處同時變 | `tools/set_die_temp.py 42.5 --verify`:BMC hwmon 收到 `42438` m°C(等了 2.84 s);`busctl` 讀 `42.438`;Redfish `Reading 42.438 Cel`、`Status OK` |
 | 5 | failsafe demo(L2 rig,`tools/failsafe_demo.sh`) | 觀察到 `FailSafe = true`、PWM `255/255`;這一趟 t1−t0 = **6.456 s**、t2−t0 = **6.556 s**(單趟、不進 `bench/data`)。Fig 4 的五趟量測是中位 5.081 s、範圍 [5.010, 5.155] —— 這趟高出範圍 1.3 s,bridge 節拍(+1 ms)與 swampd 行距(事件窗內無 >0.5 s 空洞)都排除,根因未定;分析見 `LOG.md` 2026-08-30 |
@@ -78,6 +78,12 @@
 
 > ⚠️ 第 6 項**不要**照規劃文件寫的 `git diff --exit-code bench/data/` 檢查 ——
 > 那條在本機重跑後永遠紅(meta 檔記的 data commit 必變)。用上面 CI 的原句。
+>
+> ★ **2026-08-31 更正(第 3 列):** 「Sensors collection 含 `temperature_die0`」與原始輸出不符。
+> 重跑腳本列出 `Bletchley_Front_Panel_Board/Sensors` 成員的那一步**沒有印出任何成員**(集合為空);
+> `temperature_die0` 是第 4b 列用資源路徑 `…/Sensors/temperature_die0` **直接 GET** 成功。
+> 「資源抓得到」與「集合列得出」是兩件事(bmcweb 的集合成員來自 inventory 關聯,見 README〈三段分割法〉);
+> 哪個 chassis 的集合會列出它,8/30 沒查。舊文照規矩不改,以本註為準。
 
 ## 2026-08-31 事件驅動更新(非重跑):#7 Gerrit 有動靜
 
