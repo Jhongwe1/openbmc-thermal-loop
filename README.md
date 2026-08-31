@@ -8,7 +8,7 @@
 🔗 **上游 patch(Gerrit,審查中):**
 [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
 (官方 QEMU_CI 清單一行失效四年的 include —— 維護者 −1 → 以實測數據
-回覆,修法往返中)、
+回覆 → 2026-08-31 維護者與另一位 reviewer +1,現只卡 CLA 登錄)、
 [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
 (configure.md 補七個未文件化欄位,待首輪人工審查)——
 完整審查往返與未提交候選在 [`docs/upstream.md`](docs/upstream.md)。
@@ -653,8 +653,10 @@ python bench/plot.py --fig 4
         無 host0」→ 兩則帶量測回覆已上線,等他答「CI 用哪台」。
         往返全文與證據 ← [`docs/upstream.md`](docs/upstream.md)、
         `docs/robot/20260813_curl500_dbus_probe/`
-  - [ ] 剩:CI 白名單(卡在 CLA 處理中)、依 George 的回答決定
-        推 PS2(改指)或維持(刪行)
+  - [x] **reviewer +1(2026-08-31)**:93469 的 owner +1、第二位 reviewer +1,
+        owner 在技術 thread 接受「刪行」;同日 owner 因 ICLA 未入列改投
+        −1(行政閘門,非技術)。狀態與往返 ← [`docs/upstream.md`](docs/upstream.md)
+  - [ ] 剩:ICLA 登錄(8/4 寄出,8/31 forward 追件)→ CI 白名單 → 合併
 - [ ] Gate 7　交付與敘事　← **W10 主體完成:** CI 三 job + badge、
       `assert_metrics` 斷言 14 個 claim、紅燈證明 ×3(見上)、README
       第一屏、Makefile。**W11 補齊:** limitations(五層面 31 條)、

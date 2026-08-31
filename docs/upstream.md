@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,審核中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-18 無回音**,追蹤中(Discord 上已獲「可 CC 社群成員推一把」的指引) |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,未入列;追件中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3);下次追蹤點 2026-09-04。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -19,6 +19,7 @@
 | 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄。★ 2026-08-13 查證:此 change 帶 `private` 旗標,**匿名不可見**(REST 回 Not found,ssh authed 查得到)——決策:維持 private;此連結僅本人登入可見,對外敘事以本檔文字為準 |
 | 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。⚠️ CI 白名單仍未請核 —— **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
 | 至少收到一次 reviewer 回覆 | **已完成** | 2026-08-13 | 93469 收到 owner George Keishing 的 **−1** 與 inline comment(要求改指新 tag 而非刪行)。實測他的改法後以量測數據回覆,兩次往返全文見下方〈候選 3〉 |
+| 至少一位 reviewer 投 +1 | **已完成** | 2026-08-31 | 93469:owner George Keishing **+1**(08:48Z),reviewer Sridevi Ramesh **+1**(08:50Z);owner 隨後在技術 thread 回「sure got it..」(「刪行」被接受,不需 PS2),再因 ICLA 未入列改投 **−1**(09:05Z,「Verified No votes → 不在 approved list」)—— **行政閘門,不是技術異議**。尚未合併、CI 未跑過。往返見〈候選 3〉 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
 > 理由:本專案〈誠實準則〉第 1 條 ——「沒做到的不要寫」。
@@ -115,17 +116,19 @@
 
 ---
 
-## 已提交的 change(索引;本表更新於 2026-08-30,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
+## 已提交的 change(索引;本表更新於 2026-08-31,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
 
 | Change | Repo | 提交日 | 內容一句話 | 狀態 |
 |---|---|---|---|---|
-| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆已上線(8/13、8/14),等他答「CI 用哪台 QEMU target」——答案決定推 PS2(改指)或維持(刪行)。**2026-08-30 查核:8/13 之後無新訊息(17 天)**;死 include 仍在 master 第 13 行,前提未變 |
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**現在卡的只剩 CLA 登錄**;死 include 仍在 master 第 13 行 |
 | [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
 | [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
 
 兩筆 open change 的 CI 皆為 `User not approved`:新貢獻者要先請管理員
 加入 CI 白名單,而白名單卡在 CLA 人工處理(2026-08-04 寄出,至
-2026-08-18 無回音,追蹤中 —— 見 LOG 2026-08-13「對外依賴要自帶 timer」)。
+2026-08-31 無回音 —— 見 LOG 2026-08-13「對外依賴要自帶 timer」與
+LOG 2026-08-31「沒放在每天會看的地方的 timer 不是 timer」;8/31 已
+forward 原信追件,下次追蹤點 2026-09-04)。
 
 93469 的完整往返紀錄在下方〈候選 3〉,93470 在〈候選 2〉——
 兩段保留在候選清單原位,因為本 repo 其他文件以「候選 N」為錨點引用它們。
@@ -260,6 +263,19 @@
   Redfish 500)也留檔。證據包:
   `docs/robot/20260813_curl500_dbus_probe/`(commit `313aded`);
   LOG 2026-08-13 紅隊一則。CI target 的問題維持開放,球在 George。
+- **往返 3(2026-08-31):** owner 投 **+1**(08:48Z),reviewer Sridevi Ramesh
+  **+1**(08:50Z);owner 在技術 thread 回「sure got it..」—— 「刪行」被接受,
+  不推 PS2。同日 owner 貼出 CLA 清單資料夾、找不到本名,改投 **−1**(09:05Z,
+  「Verified No votes → 不在 approved list,請找公司的 CLA manager」)。這個
+  −1 與 8/13 的 −1 性質不同:**行政閘門,不是技術異議**。處理(同日):
+  ① Gerrit 回覆(09:38Z)—— 個人貢獻者走 ICLA、8/4 已寄 `manager@lfprojects.org`、
+  資料夾的 `individuals` 子目錄確認無本名、今日 forward 追件;技術 thread
+  回一句「維持刪行」並標 Resolved;不投票。② forward 8/4 原信給 LF(主旨
+  不改、附件原封,讓對方搜信箱落在同一串)。③ Discord 回 Milton 8/13 那則,
+  先自報 Gerrit 本名(Discord 顯示名不是本名,對方無從對照)再問 CC 名單。
+  下次追蹤點 2026-09-04;LF 仍無回音則用 CC 名單寄第二封。
+  **正確的狀態描述:兩位 reviewer +1、owner 因 CLA −1、未合併、CI 未跑。**
+  記錄:LOG 2026-08-31;API 原文見 `docs/verification-log.md`〈2026-08-31〉。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 

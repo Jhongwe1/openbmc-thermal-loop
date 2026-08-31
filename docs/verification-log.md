@@ -55,9 +55,9 @@
 | `configure.md` 的缺口 | 送 patch 前 | `reverify_upstream.sh` #3 | 七欄仍 0 |
 | `QEMU_CI` 清單內容 | 送 patch 前 | `reverify_upstream.sh` #5 | 未變 |
 | Redfish schema 支援狀態 | 每次換映像 | `harness/qemu/healthcheck.sh` 第 8、9 項 | 見下方〈環境重跑〉 |
-| CLA 流程與連結 | 簽之前 | `openbmc/docs` 的 `CONTRIBUTING.md` | 2026-08-04 已寄出;ICLA 至今無回音(見 `upstream.md`) |
+| CLA 流程與連結 | 簽之前 | `openbmc/docs` 的 `CONTRIBUTING.md` | 2026-08-04 已寄出;至 2026-08-31 無回音,8/31 forward 追件(見下方〈2026-08-31〉節與 `upstream.md`) |
 | bmcweb 漏洞公告 | 引用前 | `reverify_upstream.sh` #6 | 2 則公開,最新 2026-04-21 |
-| Gerrit change 狀態 | 每天(有 open change 時) | `reverify_upstream.sh` #7 | 見 #7 |
+| Gerrit change 狀態 | 每天(有 open change 時) | `reverify_upstream.sh` #7 | 見 #7;**2026-08-31 有動靜**,見下方〈2026-08-31〉節 |
 
 ## 環境重跑(2026-08-30):量測用的環境還跑得起來嗎
 
@@ -78,3 +78,16 @@
 
 > ⚠️ 第 6 項**不要**照規劃文件寫的 `git diff --exit-code bench/data/` 檢查 ——
 > 那條在本機重跑後永遠紅(meta 檔記的 data commit 必變)。用上面 CI 的原句。
+
+## 2026-08-31 事件驅動更新(非重跑):#7 Gerrit 有動靜
+
+> 觸發:Gerrit 通知信。表格前三列是人讀 change 頁面後的紀錄,權威來源是 change
+> 頁面本身:<https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469>;
+> 最後一列是 `reverify_upstream.sh` #7 當日的輸出(時間為 UTC)。
+
+| 項目 | 2026-08-30 | 2026-08-31 | 影響 |
+|---|---|---|---|
+| 93469 投票 | owner −1(8/13,技術) | owner **+1** → reviewer Sridevi Ramesh **+1** → 17 分鐘後 owner 改投 **−1**(CLA) | 技術面收斂:owner 在 thread 回「sure got it..」,「刪行」被接受,不推 PS2。**現在卡的只剩 CLA 登錄** |
+| ICLA | 8/4 寄出,無回音(26 天) | owner 人工核 CLA 資料夾找不到本名;我方確認資料夾 `individuals` 子目錄無本名、8/4 寄件備份含附件、無退信、無 LF 來信 | 8/31 forward 8/4 原信給 `manager@lfprojects.org`;Discord 追 CC 名單。**下次追蹤點 2026-09-04**。`reverify_upstream.sh` #7 只看 Gerrit,看不到「ICLA 寄出 N 天」—— 見 LOG 2026-08-31 |
+| 93470 | NEW/PS4,無人工 review | 未變(最後一則仍是 2026-08-12) | — |
+| `reverify_upstream.sh` #7(2026-08-31) | — | `93469 NEW ps=1 messages=11 最後一則=2026-08-31 09:38Z Code-Review=['-1', '1']`;`93470 NEW ps=4 messages=8 最後一則=2026-08-12 19:13Z Code-Review=無`;93397 匿名 404(private,預期)。同日 `check_gerrit_msgs.py` 的 93469 時間線(UTC):08:48 George +1 → 08:50 Sridevi +1 → 08:55、08:59 George 留言 → 09:05 George −1 → 09:38 我方回覆(主訊息)→ 09:57 我方回覆(技術 thread,標 Resolved;此後 messages=12) | 與上三列一致 |
