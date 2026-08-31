@@ -3093,3 +3093,40 @@ MISSING,目標是 `5 次獨立 run`。
 **教訓** 校對「別人會看到什麼」要用別人的渲染器,不是讀原文;能寫成腳本的
 檢查就寫成腳本 —— 這支 link 檢查暫時留在本機 scratch,下次再抓到同類問題
 就進 `tools/`。修法:方括號與小括號之間用全形括號斷開。
+
+## 2026-08-31(W14)93469 十七分鐘內 +1、+1、−1:卡的不是技術,是 27 天前寄出的 ICLA
+
+**現象** Gerrit 通知:93469 在同一個下午先後收到 owner George Keishing
+**+1**(08:48Z)、reviewer Sridevi Ramesh **+1**(08:50Z),十七分鐘後 owner
+改投 **−1**(09:05Z)。8/13 那個 −1 之後,這條線已經 18 天沒動靜。
+
+**假設** ① 技術異議重開(他不接受「刪行」,要 PS2);② 行政閘門
+(CLA / CI 白名單);③ 別人先修了同一行,change 失去意義。
+
+**先驗哪個、為什麼** 先讀 −1 旁邊的留言 —— 零成本,而且三個假設在留言裡
+各有不同的字眼。結果:① 不成立 —— 他在技術 thread 回「sure got it..」,
++1 在前、留言在後,「刪行」被接受;③ 不成立 —— `reverify_upstream.sh` #5
+今天仍印出第 13 行那個 include;② 成立:他貼出 CLA 清單資料夾,寫
+「Verified No votes → 你不在 approved list,請找公司的 CLA manager」。
+Verified 欄沒票是因為 Jenkins 從來沒跑(8/13 那句 `User not approved,
+see admin, no CI`),他拿這個反推 CLA 沒入列 —— 推得對。
+
+**根因** ICLA 8/4 寄 `manager@lfprojects.org`,至今 27 天無回音;清單資料夾的
+`individuals` 子目錄確認無本名;寄件備份有附件、無退信、無 LF 來信 —— 所以是
+LF 端沒處理(或漏了),不是沒寄。**但真正的根因在我這邊:** 8/13 就寫下
+「對外依賴要自帶 timer」並擬好催件兩步(Discord 問 CC 名單 → forward 原信),
+然後 18 天一步都沒執行 —— timer 寫在 LOG 與草稿裡,沒有放在任何一個每天會跑、
+會跳出來的地方;`reverify_upstream.sh` #7 每天看 Gerrit,看不到「ICLA 已寄
+N 天」這個數字。
+
+**處理(同日)** ① Gerrit(09:38Z):回覆 owner —— 個人貢獻者走 ICLA、8/4
+已寄、資料夾查無、今日追件;技術 thread 回「維持刪行」並標 Resolved;不投票。
+② forward 8/4 原信給 LF(主旨與附件不動,讓對方搜信箱落在同一串)。③ Discord
+回 Milton 8/13 那則,先自報 Gerrit 本名(Discord 顯示名不是本名,對方無從
+對照),再問 CC 名單。下次追蹤點 2026-09-04。
+
+**教訓** 沒有放在每天會看的地方的 timer,就不是 timer。「對外依賴自帶 timer」
+寫在日誌裡是一句話,寫進每天跑的腳本裡才是機制 —— 待辦:`reverify_upstream.sh`
+加一行印「ICLA 寄出至今 N 天、上次追件日」,超過一週標 OVERDUE。另一個切面:
+**技術上收斂與流程上放行是兩件事**,狀態要分開講 —— 「兩位 reviewer +1、owner
+因 CLA −1、未合併、CI 未跑」四個都要說,少說一個就是灌水。
