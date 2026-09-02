@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已核准 —— 2026-09-02 12:33Z 帳號進 CI approved list**(見往返 5) | 2026-09-02 | 簽名 `Chung-Wei Lan`;8/4 寄出;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已核准 —— 2026-09-02 12:33Z 帳號進 CI approved list**;release maintainer 同時以 email 確認「uploaded your ICLA and added you to the approved CI list」(見往返 5) | 2026-09-02 | 簽名 `Chung-Wei Lan`;8/4 寄出;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -292,7 +292,9 @@ forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
   week")。記錄:LOG 2026-09-01。
 - **往返 5(2026-09-02):** 12:33:25Z Gerrit CI 在 93469 與 93470 同秒留言
   `User approved, CI ok to start` —— 帳號進 approved list(距 9/1 直寄
-  maintainer 約一天;核准者未在 Gerrit 具名)。93470 首跑 **Verified +1**
+  約一天)。同時 12:34Z 收到 Andrew Geissler 的 email(回在 9/1 那串,
+  CC 一位 Patrick):「Thanks for the detailed info. I've uploaded your
+  ICLA and added you to the approved CI list.」—— 核准者與時間都對上。93470 首跑 **Verified +1**
   (Jenkins 147271);93469 首跑 **Verified −1**(Jenkins 147270):
   `openbmc-build-scripts/scripts/format-code.sh` 的 `commit_spelling` 對
   commit message 跑 codespell `--builtin clear,rare,en-GB_to_en-US`,

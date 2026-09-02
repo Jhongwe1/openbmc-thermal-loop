@@ -3201,7 +3201,8 @@ LF 線(原定 9/4 CC 第二封)擱置;下次追蹤點 **2026-09-08** ——
 
 **現象** 12:33Z Gerrit 通知 93469 Build Failed。同一秒兩筆 change 都收到
 `User approved, CI ok to start` —— 9/1 直寄 maintainer 的 ICLA 約一天就
-核准了(核准者未在 Gerrit 具名)。93470 首跑綠(Verified +1);93469 首跑
+核准了(Andrew Geissler 12:34Z email 確認:已上傳 ICLA、加入 approved
+CI list)。93470 首跑綠(Verified +1);93469 首跑
 紅(Verified −1),而它正是 8/31 兩位 reviewer 已 +1、技術面已收斂的那筆。
 
 **假設** ① diff 本身有 lint 問題(刪一行也可能動到檔尾換行或空白);

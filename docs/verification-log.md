@@ -106,7 +106,7 @@
 
 | 項目 | 2026-09-01 | 2026-09-02 | 影響 |
 |---|---|---|---|
-| CI 白名單 | 兩筆 change 皆 `User not approved, see admin, no CI` | **12:33:25Z 兩筆同秒 `User approved, CI ok to start`** | 帳號進 approved list,9/1 直寄 maintainer 後約一天;核准者未在 Gerrit 具名 |
+| CI 白名單 | 兩筆 change 皆 `User not approved, see admin, no CI` | **12:33:25Z 兩筆同秒 `User approved, CI ok to start`** | 帳號進 approved list,9/1 直寄 maintainer 後約一天;Andrew Geissler 12:34Z email 確認(「uploaded your ICLA and added you to the approved CI list」,回在 9/1 那串) |
 | 93470 CI | 從未跑 | Jenkins 147271 **SUCCESS → Verified +1**(12:36Z) | 通過 lint;reviewer Ed Tanous、Patrick Williams 在列,未投票 |
 | 93469 CI(PS1) | 從未跑 | Jenkins 147270 **FAILURE → Verified −1**(12:33Z)。唯一錯誤:`generic-dictionary - misspelling count >> …:25: behaviour ==> behavior`(`commit_spelling`,codespell 2.4.3,`--builtin clear,rare,en-GB_to_en-US`);prettier / black / flake8 / markdownlint 全 unchanged | 擋的是 commit message 的英式拼字,不是 diff;規則不在任何上游文件,只在 `openbmc-build-scripts/scripts/format-code.sh` |
 | 93469 PS2 | — | 14:04:43Z 推 PS2(`a3c6fdb`,只改第 25 行 behaviour → behavior,Change-Id 不變,Gerrit 標 `NO_CODE_CHANGE`)→ Jenkins 147287 **SUCCESS → Verified +1**(14:05:24Z,兩個字典皆 0)。Code-Review 票**被複製到 PS2**:George −1、Sridevi +1(時間戳 14:04Z) | 唯一阻擋 = owner 被複製的 CLA −1,需其本人改票。14:17:33Z 我方回覆(messages=22) |
