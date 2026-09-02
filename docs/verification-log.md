@@ -97,3 +97,17 @@
 | ICLA | 8/4 寄出,無回音(26 天) | owner 人工核 CLA 資料夾找不到本名;我方確認資料夾 `individuals` 子目錄無本名、8/4 寄件備份含附件、無退信、無 LF 來信 | 8/31 forward 8/4 原信給 `manager@lfprojects.org`;Discord 追 CC 名單。**下次追蹤點 2026-09-04**。`reverify_upstream.sh` #7 只看 Gerrit,看不到「ICLA 寄出 N 天」—— 見 LOG 2026-08-31 |
 | 93470 | NEW/PS4,無人工 review | 未變(最後一則仍是 2026-08-12) | — |
 | `reverify_upstream.sh` #7(2026-08-31) | — | `93469 NEW ps=1 messages=11 最後一則=2026-08-31 09:38Z Code-Review=['-1', '1']`;`93470 NEW ps=4 messages=8 最後一則=2026-08-12 19:13Z Code-Review=無`;93397 匿名 404(private,預期)。同日 `check_gerrit_msgs.py` 的 93469 時間線(UTC):08:48 George +1 → 08:50 Sridevi +1 → 08:55、08:59 George 留言 → 09:05 George −1 → 09:38 我方回覆(主訊息)→ 09:57 我方回覆(技術 thread,標 Resolved;此後 messages=12) | 與上三列一致 |
+
+## 2026-09-02 事件驅動更新(非重跑):#7 帳號核准、CI 首跑、PS2
+
+> 觸發:Gerrit 通知信(93469 Build Failed)。權威來源:change 頁面、Jenkins console
+> (`https://jenkins.openbmc.org/job/ci-repository/<n>/console`,n = 147270 / 147271 / 147287)、
+> Gerrit REST(`changes/<n>/detail?o=MESSAGES&o=DETAILED_LABELS`);時間為 UTC。
+
+| 項目 | 2026-09-01 | 2026-09-02 | 影響 |
+|---|---|---|---|
+| CI 白名單 | 兩筆 change 皆 `User not approved, see admin, no CI` | **12:33:25Z 兩筆同秒 `User approved, CI ok to start`** | 帳號進 approved list,9/1 直寄 maintainer 後約一天;核准者未在 Gerrit 具名 |
+| 93470 CI | 從未跑 | Jenkins 147271 **SUCCESS → Verified +1**(12:36Z) | 通過 lint;reviewer Ed Tanous、Patrick Williams 在列,未投票 |
+| 93469 CI(PS1) | 從未跑 | Jenkins 147270 **FAILURE → Verified −1**(12:33Z)。唯一錯誤:`generic-dictionary - misspelling count >> …:25: behaviour ==> behavior`(`commit_spelling`,codespell 2.4.3,`--builtin clear,rare,en-GB_to_en-US`);prettier / black / flake8 / markdownlint 全 unchanged | 擋的是 commit message 的英式拼字,不是 diff;規則不在任何上游文件,只在 `openbmc-build-scripts/scripts/format-code.sh` |
+| 93469 PS2 | — | 14:04:43Z 推 PS2(`a3c6fdb`,只改第 25 行 behaviour → behavior,Change-Id 不變,Gerrit 標 `NO_CODE_CHANGE`)→ Jenkins 147287 **SUCCESS → Verified +1**(14:05:24Z,兩個字典皆 0)。Code-Review 票**被複製到 PS2**:George −1、Sridevi +1(時間戳 14:04Z) | 唯一阻擋 = owner 被複製的 CLA −1,需其本人改票。14:17:33Z 我方回覆(messages=22) |
+| 本機重現 | — | venv 裝 codespell==2.4.3,照 `do_commit_spelling` 原樣跑:PS1 訊息 rc=65(同一行)、改一字後 rc=0、93470 訊息 rc=0 | 推 PS2 前已在本機驗過 CI 會過 |

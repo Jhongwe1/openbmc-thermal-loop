@@ -8,9 +8,10 @@
 🔗 **上游 patch(Gerrit,審查中):**
 [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)
 (官方 QEMU_CI 清單一行失效四年的 include —— 維護者 −1 → 以實測數據
-回覆 → 2026-08-31 維護者與另一位 reviewer +1,現只卡 CLA 登錄)、
+回覆 → 2026-08-31 維護者與另一位 reviewer +1 → 2026-09-02 CLA 核准、
+CI 通過(PS2),等維護者改掉 CLA 期間的 −1)、
 [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)
-(configure.md 補七個未文件化欄位,待首輪人工審查)——
+(configure.md 補七個未文件化欄位,2026-09-02 CI 通過,待首輪人工審查)——
 完整審查往返與未提交候選在 [`docs/upstream.md`](docs/upstream.md)。
 
 ![Fig 3 — anti-windup A/B](figures/fig3_antiwindup.png)
@@ -656,7 +657,11 @@ python bench/plot.py --fig 4
   - [x] **reviewer +1(2026-08-31)**:93469 的 owner +1、第二位 reviewer +1,
         owner 在技術 thread 接受「刪行」;同日 owner 因 ICLA 未入列改投
         −1(行政閘門,非技術)。狀態與往返 ← [`docs/upstream.md`](docs/upstream.md)
-  - [ ] 剩:ICLA 登錄(8/4 寄出,8/31 forward 追件)→ CI 白名單 → 合併
+  - [x] **ICLA 核准、CI 通過(2026-09-02)**:帳號進 CI 白名單;93470 首跑
+        Verified +1;93469 首跑因 commit message 英式拼字被 codespell 擋
+        → PS2 只改一字 → Verified +1;兩張 Code-Review 票複製到 PS2。
+        往返 ← [`docs/upstream.md`](docs/upstream.md)
+  - [ ] 剩:owner 改掉複製到 PS2 的 CLA −1 → 合併
 - [ ] Gate 7　交付與敘事　← **W10 主體完成:** CI 三 job + badge、
       `assert_metrics` 斷言 14 個 claim、紅燈證明 ×3(見上)、README
       第一屏、Makefile。**W11 補齊:** limitations(五層面 31 條)、
@@ -687,7 +692,7 @@ python bench/plot.py --fig 4
 
 ## 踩過的坑(五則精選)
 
-完整紀錄在 [`LOG.md`](LOG.md)(97 則,截至 2026-09-01;計數的權威是
+完整紀錄在 [`LOG.md`](LOG.md)(98 則,截至 2026-09-02;計數的權威是
 `grep -c '^## ' LOG.md`,不是這行字),每則都照
 「現象 → 假設 → 先驗哪個、為什麼 → 根因 → 教訓」寫。這裡挑五則:
 選擇標準是**想在 QEMU 上重現這類測試床的人,單位閱讀時間能省掉最多彎路**。

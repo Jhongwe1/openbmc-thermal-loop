@@ -3196,3 +3196,45 @@ LF 線(原定 9/4 CC 第二封)擱置;下次追蹤點 **2026-09-08** ——
 公開 thread 有人在看、有完整脈絡、且「球在誰那邊」寫清楚了。第二條:
 「流程收緊」四個字讀原文才知道收的是 CCLA 不是 ICLA —— **先讀政策的
 動機再回應**,回應才能命中對方真正要防的風險,而不是照字面交作業。
+
+## 2026-09-02(W14)CLA 核准、CI 首跑就紅:擋我的規則不在任何文件裡,只在 CI 腳本裡
+
+**現象** 12:33Z Gerrit 通知 93469 Build Failed。同一秒兩筆 change 都收到
+`User approved, CI ok to start` —— 9/1 直寄 maintainer 的 ICLA 約一天就
+核准了(核准者未在 Gerrit 具名)。93470 首跑綠(Verified +1);93469 首跑
+紅(Verified −1),而它正是 8/31 兩位 reviewer 已 +1、技術面已收斂的那筆。
+
+**假設** ① diff 本身有 lint 問題(刪一行也可能動到檔尾換行或空白);
+② commit message 被 gitlint(50/72)或 codespell 擋;③ Jenkins 基礎設施
+問題(builder、docker image 過期)。
+
+**先驗哪個、為什麼** 先讀 console 全文再動手。三個假設的驗證成本都是
+「讀 log」,但只有讀 log 能一次分辨三者;先改再推等於拿上游 CI 當測試機。
+log 只有 190 行、一處 FAILED:`commit_spelling`,行內
+`…:25: behaviour ==> behavior`;prettier、black、flake8、markdownlint 對
+所有檔案回報 unchanged → ①、③ 排除。
+
+**根因** `openbmc-build-scripts/scripts/format-code.sh` 的
+`do_commit_spelling` 把 commit message 寫進暫存檔、砍掉 Signed-off-by,
+跑兩次 codespell:第二次帶 `--builtin clear,rare,en-GB_to_en-US`,
+英式拼法一律當錯字。這條規則在 `openbmc-test-automation/CONTRIBUTING.md`、
+它的 `docs/code_standards_check.md`(只示範對 `.robot` 檔跑 codespell)、
+`openbmc/docs/CONTRIBUTING.md`(50/72、Signed-off-by、Tested)三份都沒寫,
+只存在於 CI 腳本。93470 通過只是因為那封訊息剛好全是美式拼法。
+
+**處理** venv 裝同版 codespell 2.4.3,照腳本原樣跑:PS1 訊息 rc=65、
+同一行;改一字後 rc=0;93470 訊息 rc=0。推 PS2(`a3c6fdb`,Change-Id
+不變,Gerrit 標 NO_CODE_CHANGE)→ 30 秒後 Verified +1(Jenkins 147287,
+兩個字典皆 0)。兩張 Code-Review 票被複製到 PS2 —— 實測得知 OpenBMC 的
+copy condition 含 NO_CODE_CHANGE,所以 owner 的 CLA −1 還掛著;14:17Z
+回覆(messages=22):只改訊息、diff 與 PS1 相同、CI 綠,請 owner 重看。
+狀態:CLA 已核准、CI 綠、reviewer +1、owner −1 待其改票、未合併。
+記錄:`docs/upstream.md` 往返 5、`docs/verification-log.md`〈2026-09-02〉。
+
+**教訓** ① **文件寫的規則和 CI 跑的規則是兩套,後者才會擋你;而 CI 腳本
+是公開的** —— 推之前 clone 一份 build-scripts、照同一支 `format-code.sh`
+跑一次,20 天沒 CI 的空窗本來就做得到,「等白名單」不是「等檢查」的理由。
+② 紅燈先列假設、讀 log 排除,不先改再推;三個假設的成本相同時,挑「能同時
+分辨最多假設」的那個驗。③ Gerrit 把「只改 commit message」標成可辨識的
+change kind(NO_CODE_CHANGE)並複製舊票 —— 回覆裡明說「diff identical to
+PS1」是替 reviewer 省成本的關鍵一句,也是請人回來改票時最有用的一句。

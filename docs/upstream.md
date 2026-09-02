@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已寄出,未入列;maintainer 直審中** | 2026-08-04 | 簽名 `Chung-Wei Lan`;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已核准 —— 2026-09-02 12:33Z 帳號進 CI approved list**(見往返 5) | 2026-09-02 | 簽名 `Chung-Wei Lan`;8/4 寄出;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -17,9 +17,9 @@
 | 推一次 `%private,wip` change 驗證流程 | **已完成** | 2026-08-05 | change [93169](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93169),3 個 patchset(含一組單一變因 A/B),驗完立即 Abandon |
 | 目標 repo 的本地檢查綠燈 | **已完成** | 2026-08-11 | `docs` 無單元測試;以 repo 的 `.prettierrc.yaml` 跑 prettier(綠) |
 | 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄。★ 2026-08-13 查證:此 change 帶 `private` 旗標,**匿名不可見**(REST 回 Not found,ssh authed 查得到)——決策:維持 private;此連結僅本人登入可見,對外敘事以本檔文字為準 |
-| 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。⚠️ CI 白名單仍未請核 —— **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
+| 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。CI 白名單 **2026-09-02 隨 ICLA 核准一併生效**(不需另外請核;原本的想法是 **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口)。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
 | 至少收到一次 reviewer 回覆 | **已完成** | 2026-08-13 | 93469 收到 owner George Keishing 的 **−1** 與 inline comment(要求改指新 tag 而非刪行)。實測他的改法後以量測數據回覆,兩次往返全文見下方〈候選 3〉 |
-| 至少一位 reviewer 投 +1 | **已完成** | 2026-08-31 | 93469:owner George Keishing **+1**(08:48Z),reviewer Sridevi Ramesh **+1**(08:50Z);owner 隨後在技術 thread 回「sure got it..」(「刪行」被接受,不需 PS2),再因 ICLA 未入列改投 **−1**(09:05Z,「Verified No votes → 不在 approved list」)—— **行政閘門,不是技術異議**。尚未合併、CI 未跑過。往返見〈候選 3〉 |
+| 至少一位 reviewer 投 +1 | **已完成** | 2026-08-31 | 93469:owner George Keishing **+1**(08:48Z),reviewer Sridevi Ramesh **+1**(08:50Z);owner 隨後在技術 thread 回「sure got it..」(「刪行」被接受,不需 PS2),再因 ICLA 未入列改投 **−1**(09:05Z,「Verified No votes → 不在 approved list」)—— **行政閘門,不是技術異議**。**2026-09-02:帳號核准 → CI 首跑失敗(commit message 英式 `behaviour` 被 codespell 擋)→ PS2 只改一字 → Verified +1;兩張 Code-Review 票被複製到 PS2(含 owner 的 CLA −1),等 owner 改票。** 未合併。往返見〈候選 3〉往返 5 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
 > 理由:本專案〈誠實準則〉第 1 條 ——「沒做到的不要寫」。
@@ -120,8 +120,8 @@
 
 | Change | Repo | 提交日 | 內容一句話 | 狀態 |
 |---|---|---|---|---|
-| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS1)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**2026-08-31 15:55Z:release maintainer 指路 ICLA 直審通道(93905);2026-09-01 已直寄並在 change 回覆 —— 見〈候選 3〉往返 4。** **現在卡的只剩 CLA 登錄**;死 include 仍在 master 第 13 行 |
-| [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4,格式修到本機 CI 全綠)。尚無人工回覆。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS2)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**2026-08-31 15:55Z:release maintainer 指路 ICLA 直審通道(93905);2026-09-01 已直寄並在 change 回覆 —— 見〈候選 3〉往返 4。** **2026-09-02:CLA 核准;CI 首跑因 commit message 拼字 −1 → PS2(只改一字)Verified +1;等 owner 改掉複製到 PS2 的 CLA −1 —— 往返 5。** 死 include 仍在 master 第 13 行 |
+| [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4)。**2026-09-02 CI Verified +1**(帳號核准後首跑,Jenkins 147271);尚無人工回覆(reviewer Ed Tanous、Patrick Williams 在列)。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
 | [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
 
 兩筆 open change 的 CI 皆為 `User not approved`:新貢獻者要先請管理員
@@ -275,7 +275,7 @@ forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
   不改、附件原封,讓對方搜信箱落在同一串)。③ Discord 回 Milton 8/13 那則,
   先自報 Gerrit 本名(Discord 顯示名不是本名,對方無從對照)再問 CC 名單。
   (原定 9/4 用 CC 名單寄第二封 —— 已被往返 4 的 maintainer 直審通道取代。)
-  **正確的狀態描述:兩位 reviewer +1、owner 因 CLA −1、未合併、CI 未跑。**
+  **正確的狀態描述(至 9/1 止;9/2 起見往返 5):兩位 reviewer +1、owner 因 CLA −1、未合併、CI 未跑。**
   記錄:LOG 2026-08-31;API 原文見 `docs/verification-log.md`〈2026-08-31〉。
 - **往返 4(2026-08-31 15:55Z → 2026-09-01):** release maintainer Andrew
   Geissler(docs change [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905)
@@ -290,6 +290,23 @@ forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
   雇主的 CCLA。同日在 93469 回覆確認(18:25Z,messages=14)。
   **下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:"on the order of a
   week")。記錄:LOG 2026-09-01。
+- **往返 5(2026-09-02):** 12:33:25Z Gerrit CI 在 93469 與 93470 同秒留言
+  `User approved, CI ok to start` —— 帳號進 approved list(距 9/1 直寄
+  maintainer 約一天;核准者未在 Gerrit 具名)。93470 首跑 **Verified +1**
+  (Jenkins 147271);93469 首跑 **Verified −1**(Jenkins 147270):
+  `openbmc-build-scripts/scripts/format-code.sh` 的 `commit_spelling` 對
+  commit message 跑 codespell `--builtin clear,rare,en-GB_to_en-US`,
+  第 25 行的英式 `behaviour` 被判錯;檔案層 linter 全 unchanged。這條
+  「commit message 一律美式英語」的規則,test-automation 的 `CONTRIBUTING.md`、
+  它的 `docs/code_standards_check.md`、`openbmc/docs` 的 `CONTRIBUTING.md`
+  都沒寫,只存在於 CI 腳本。本機以同版 codespell 2.4.3 重現後,14:04Z 推
+  **PS2**(只改一字,Change-Id 不變;Gerrit 標 `NO_CODE_CHANGE`),14:05Z
+  **Verified +1**(Jenkins 147287);兩張 Code-Review 票**被複製到 PS2**
+  (OpenBMC 的 copy condition 含 NO_CODE_CHANGE),owner 的 CLA −1 因此
+  還掛著。14:17Z 我方回覆(messages=22):PS2 只改訊息、diff 與 PS1 相同、
+  CI 綠,請 owner 重看。**現在的狀態描述:CLA 已核准、CI 綠(PS2)、一位
+  reviewer +1、owner 的 CLA −1 待其本人改票、未合併。** 一週內不催。
+  記錄:LOG 2026-09-02;`docs/verification-log.md`〈2026-09-02〉。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 
