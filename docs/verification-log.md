@@ -55,9 +55,9 @@
 | `configure.md` 的缺口 | 送 patch 前 | `reverify_upstream.sh` #3 | 七欄仍 0 |
 | `QEMU_CI` 清單內容 | 送 patch 前 | `reverify_upstream.sh` #5 | 未變 |
 | Redfish schema 支援狀態 | 每次換映像 | `harness/qemu/healthcheck.sh` 第 8、9 項 | 見下方〈環境重跑〉 |
-| CLA 流程與連結 | 簽之前 | `openbmc/docs` 的 `CONTRIBUTING.md` | 2026-08-04 已寄出;至 2026-08-31 無回音,8/31 forward 追件(見下方〈2026-08-31〉節與 `upstream.md`) |
+| CLA 流程與連結 | 簽之前 | `openbmc/docs` 的 `CONTRIBUTING.md` | 2026-08-04 已寄出;至 2026-08-31 無回音,8/31 forward 追件(見下方〈2026-08-31〉節與 `upstream.md`);**2026-09-02 核准**(〈2026-09-02〉節);2026-09-05 查證 ICLA 已在 owner 所指資料夾(〈2026-09-05〉節) |
 | bmcweb 漏洞公告 | 引用前 | `reverify_upstream.sh` #6 | 2 則公開,最新 2026-04-21 |
-| Gerrit change 狀態 | 每天(有 open change 時) | `reverify_upstream.sh` #7 | 見 #7;**2026-08-31 有動靜**,見下方〈2026-08-31〉節 |
+| Gerrit change 狀態 | 每天(有 open change 時) | `reverify_upstream.sh` #7 | 見 #7;**2026-08-31、09-02、09-04 有動靜**,見下方各節 |
 
 ## 環境重跑(2026-08-30):量測用的環境還跑得起來嗎
 
@@ -111,3 +111,19 @@
 | 93469 CI(PS1) | 從未跑 | Jenkins 147270 **FAILURE → Verified −1**(12:33Z)。唯一錯誤:`generic-dictionary - misspelling count >> …:25: behaviour ==> behavior`(`commit_spelling`,codespell 2.4.3,`--builtin clear,rare,en-GB_to_en-US`);prettier / black / flake8 / markdownlint 全 unchanged | 擋的是 commit message 的英式拼字,不是 diff;規則不在任何上游文件,只在 `openbmc-build-scripts/scripts/format-code.sh` |
 | 93469 PS2 | — | 14:04:43Z 推 PS2(`a3c6fdb`,只改第 25 行 behaviour → behavior,Change-Id 不變,Gerrit 標 `NO_CODE_CHANGE`)→ Jenkins 147287 **SUCCESS → Verified +1**(14:05:24Z,兩個字典皆 0)。Code-Review 票**被複製到 PS2**:George −1、Sridevi +1(時間戳 14:04Z) | 唯一阻擋 = owner 被複製的 CLA −1,需其本人改票。14:17:33Z 我方回覆(messages=22) |
 | 本機重現 | — | venv 裝 codespell==2.4.3,照 `do_commit_spelling` 原樣跑:PS1 訊息 rc=65(同一行)、改一字後 rc=0、93470 訊息 rc=0 | 推 PS2 前已在本機驗過 CI 會過 |
+
+## 2026-09-05 事件驅動更新(非重跑):#7 owner 撤 −1、ICLA 可在其所指資料夾查到、我方回覆
+
+> 觸發:Gerrit 通知信(owner 9/4 留言)。權威來源:change 頁面、Gerrit REST
+> (`changes/<n>/detail?o=MESSAGES&o=DETAILED_LABELS&o=SUBMIT_REQUIREMENTS&o=DETAILED_ACCOUNTS`、
+> `changes/<n>/comments`)、`openbmc-test-automation` 根目錄 `OWNERS`(GitHub master);時間為 UTC。
+
+| 項目 | 2026-09-02 | 2026-09-04/05 | 影響 |
+|---|---|---|---|
+| 93469 Code-Review | George Keishing −1(複製到 PS2)、Sridevi Ramesh +1 | **09-04 07:42:42Z George `-Code-Review`(−1 → 0,未投 +2)**,patchset 層級留言「Once Andrew see ICLA in place and approves this.. I m good to merge it.」;Sridevi +1 不變 | 行政 −1 消失;合併還缺 owner 的 +2 |
+| submit requirements | — | Verified SATISFIED;Code-Review UNSATISFIED(需 +2);`Code-Review from owners` UNSATISFIED | `OWNERS` 的 `owners:` 只有 `gkeishin@gmail.com`(`reviewers:` 兩人 permitted −1..+1);Andrew Geissler permitted −2..+2 但不在 `owners:` → 他的票不能替代 George 的 +2 |
+| attention set | — | 09-04 起 = 我方 + Andrew Geissler(George 自行移出;Andrew 自 08-31 18:25Z 起未再回 Gerrit);**09-05 08:35:09Z 我方回覆後 = George + Andrew** | 球在兩位維護者手上 |
+| ICLA 可查證處 | Andrew 的 email 稱已上傳(收件人不含 George) | Drive `OpenBMC Executed CLAs/Individuals/` 內有 `Chung-Wei-Lan.OpenBMC.ICLA.pdf`(擁有者 geissonator、Sep 2、121 KB;人工開子資料夾確認 —— 根目錄照修改日期排看不到) | George 8/31 所指的正是這個資料夾 → 他可自行查證 |
+| 我方回覆 | 09-02 14:17Z(messages=22) | 09-05 08:35:09Z(messages=24,patchset 層級、不投票、無 unresolved):ICLA 在該資料夾、email 核准日、CI 已跑,請 Andrew 在 change 上確認 | 下次追蹤點 2026-09-11;之前不催 |
+| 93470 | Verified +1、messages=11 | 未變(Patrick Williams、Ed Tanous 在 attention set,未投票) | — |
+| `QEMU_CI` 死 include | — | GitHub master 第 13 行仍為 `--include Verify_Update_Service_Enabled`;該檔最後變更 2025-04-01(`16920a5a5`) | 93469 的前提未變 |

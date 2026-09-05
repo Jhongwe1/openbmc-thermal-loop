@@ -3239,3 +3239,45 @@ copy condition 含 NO_CODE_CHANGE,所以 owner 的 CLA −1 還掛著;14:17Z
 分辨最多假設」的那個驗。③ Gerrit 把「只改 commit message」標成可辨識的
 change kind(NO_CODE_CHANGE)並複製舊票 —— 回覆裡明說「diff identical to
 PS1」是替 reviewer 省成本的關鍵一句,也是請人回來改票時最有用的一句。
+
+## 2026-09-05(W14)閘門在 email 開了、Gerrit 沒人關迴圈:owner 撤票,但要 maintainer 在 change 上說一句
+
+**現象** 9/4 07:42Z owner 在 93469 PS2 撤掉 Code-Review −1(→ 0,不是 +2),
+留言「Once Andrew see ICLA in place and approves this.. I m good to merge
+it」,並把自己移出 attention set。但 release maintainer 9/2 的 email 已明說
+「uploaded your ICLA and added you to the approved CI list」,CI 也已跑綠。
+看起來閘門早就開了,owner 卻還在等。
+
+**假設** ① owner 不知道那封 email(收件人是我與另一位 maintainer,owner
+不在上面);② owner 知道,但要 ICLA 負責人在 change 上留紀錄才動;③ ICLA
+上傳的位置 owner 查不到(沒放進他 8/31 所指的 Drive 資料夾,或尚未同步)。
+
+**先驗哪個、為什麼** 先驗 ③:最便宜(開一個資料夾),而且結果直接決定回覆
+內容 —— 有檔,就能給 owner 一條自己查的路,不必等第三人;沒檔,就只能請
+maintainer 出面。第一次看根目錄照修改日期排,沒看到 —— Google Drive 資料夾
+的修改日期不隨內容更新,新增的檔不會往上冒;開 `Individuals` 子資料夾才看到
+`Chung-Wei-Lan.OpenBMC.ICLA.pdf`(Sep 2)。③ 排除。①② 不必分辨:同一則回覆
+同時處理 —— 把 email 結論與檔名寫進 change、請 maintainer 在 change 上確認。
+動手前用 REST 看 submit requirements:`Code-Review from owners` 需 `OWNERS`
+檔 `owners:` 名單投票,該名單只有 owner 一人 → maintainer 的票不能替代 owner
+的 +2,回覆必須讓兩個人都能動。
+
+**根因** 決策者不在 out-of-band 頻道上。核准發生在 email(收件人不含
+owner),Gerrit 上只有 CI bot 的 `User approved`;owner 8/31 的 −1 理由是
+「名單找不到你」,他要的是 ICLA 負責人在 change 上的一句話,而 maintainer
+8/31 之後沒再回 Gerrit(在 attention set 掛了五天)。兩個頻道、決策者只在
+其中一個,沒有人把迴圈關上。
+
+**處理** 9/5 08:35Z 在 93469 回覆(patchset 層級、不投票、messages=24):
+ICLA 已在其 8/31 所指資料夾(檔名、日期)、email 核准日、CI 已跑,請
+maintainer 在 change 上確認;attention set = owner + maintainer(REST 查證)。
+只回 Gerrit、不另寄 email:maintainer 的 Gerrit 帳號信箱與 email 往來的是
+同一個收件匣,多寄一封零新資訊。下次追蹤點 2026-09-11。記錄:
+`docs/upstream.md` 往返 6、`docs/verification-log.md`〈2026-09-05〉。
+
+**教訓** ① **out-of-band 解掉的閘門,要由 owner 自己回到 system of record
+收尾**,不要假設兩位維護者會互相轉達 —— 9/2 收到核准信當天就該把結論搬進
+change,而不是只回謝。② 說「沒找到」之前先確認搜的層級與排序鍵;「照日期排
+最新的沒有」在 Drive 資料夾層是無效證據。③ 看 submit requirements 面板,
+不只看票數:誰能投票與誰的票算數是兩件事。④ 通知頻道以「會不會帶來新資訊」
+決定,同一個收件匣不打第二次。

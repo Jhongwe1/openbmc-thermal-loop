@@ -7,7 +7,7 @@
 
 | 項目 | 狀態 | 完成日期 | 備註 |
 |---|---|---|---|
-| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已核准 —— 2026-09-02 12:33Z 帳號進 CI approved list**;release maintainer 同時以 email 確認「uploaded your ICLA and added you to the approved CI list」(見往返 5) | 2026-09-02 | 簽名 `Chung-Wei Lan`;8/4 寄出;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31) |
+| Individual CLA v1.0 簽署並寄至 `manager@lfprojects.org` | **已核准 —— 2026-09-02 12:33Z 帳號進 CI approved list**;release maintainer 同時以 email 確認「uploaded your ICLA and added you to the approved CI list」(見往返 5) | 2026-09-02 | 簽名 `Chung-Wei Lan`;8/4 寄出;人工審核,【判】數天到數週。**至 2026-08-31 無回音(27 天)**;2026-08-31 owner 人工核 CLA 資料夾找不到本名 → 93469 改投 −1;同日 forward 8/4 原信給 LF、Discord 追 CC 名單(見〈候選 3〉往返 3)。**2026-09-01:改走 maintainer 直審通道** —— release maintainer 於 93469 指路(讀 [93905](https://gerrit.openbmc.org/c/openbmc/docs/+/93905) 後若仍符資格,ICLA 直寄他本人並附可查證背景),同日已寄(8/4 原件、CC 學校信箱、附 GitHub/Gerrit/本 repo 為查證管道)並在 93469 回覆確認(見往返 4);LF 線擱置,**下次追蹤點 2026-09-08**(`CONTRIBUTING.md`:合理等待 "on the order of a week")。(8/13 Discord 上已獲「可 CC 社群成員推一把」的指引,8/31 才開始執行 —— 見 LOG 2026-08-31)。**2026-09-04/05:** owner 撤掉 CLA −1(→ 0),要 release maintainer 在 change 上確認;9/5 查證 ICLA 已在 owner 8/31 所指的 Drive `Individuals` 資料夾(`Chung-Wei-Lan.OpenBMC.ICLA.pdf`,Sep 2),同日回覆(見往返 6) |
 | OpenBMC Discord 加入 | **已加入** | 2026-08-04 | 潛水期兩週,期間不發言 |
 | Gerrit 帳號建立(GitHub OAuth 登入) | **已完成** | 2026-08-04 | username `Jhongwe1` |
 | Gerrit Profile Full name 設為本名 | **已完成** | 2026-08-04 | 初始被 GitHub 資料帶成 `wei`,已改為 `Chung-Wei Lan` |
@@ -19,7 +19,7 @@
 | 推送流程完整走通(hook、refs/for、reviewer) | **已完成** | 2026-08-11 | change [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) —— 推出後**我決定收回(Abandoned)**,過程見下方紀錄。★ 2026-08-13 查證:此 change 帶 `private` 旗標,**匿名不可見**(REST 回 Not found,ssh authed 查得到)——決策:維持 private;此連結僅本人登入可見,對外敘事以本檔文字為準 |
 | 至少一筆 change 掛在 Gerrit 上(open) | **已完成 ×2** | 2026-08-13 | [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469)(QEMU_CI 死 include)+ [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470)(configure.md 七欄)。CI 白名單 **2026-09-02 隨 ICLA 核准一併生效**(不需另外請核;原本的想法是 **順序刻意反轉**:先推、拿著 change URL 去 Discord 請核,比抽象請核更好開口)。顯示名 `wei` 經 ssh 查證(`gerrit query` 回 owner.name = `Chung-Wei Lan`)確認**不需修** —— W9 的這條待辦其實不存在 |
 | 至少收到一次 reviewer 回覆 | **已完成** | 2026-08-13 | 93469 收到 owner George Keishing 的 **−1** 與 inline comment(要求改指新 tag 而非刪行)。實測他的改法後以量測數據回覆,兩次往返全文見下方〈候選 3〉 |
-| 至少一位 reviewer 投 +1 | **已完成** | 2026-08-31 | 93469:owner George Keishing **+1**(08:48Z),reviewer Sridevi Ramesh **+1**(08:50Z);owner 隨後在技術 thread 回「sure got it..」(「刪行」被接受,不需 PS2),再因 ICLA 未入列改投 **−1**(09:05Z,「Verified No votes → 不在 approved list」)—— **行政閘門,不是技術異議**。**2026-09-02:帳號核准 → CI 首跑失敗(commit message 英式 `behaviour` 被 codespell 擋)→ PS2 只改一字 → Verified +1;兩張 Code-Review 票被複製到 PS2(含 owner 的 CLA −1),等 owner 改票。** 未合併。往返見〈候選 3〉往返 5 |
+| 至少一位 reviewer 投 +1 | **已完成** | 2026-08-31 | 93469:owner George Keishing **+1**(08:48Z),reviewer Sridevi Ramesh **+1**(08:50Z);owner 隨後在技術 thread 回「sure got it..」(「刪行」被接受,不需 PS2),再因 ICLA 未入列改投 **−1**(09:05Z,「Verified No votes → 不在 approved list」)—— **行政閘門,不是技術異議**。**2026-09-02:帳號核准 → CI 首跑失敗(commit message 英式 `behaviour` 被 codespell 擋)→ PS2 只改一字 → Verified +1;兩張 Code-Review 票被複製到 PS2(含 owner 的 CLA −1),等 owner 改票。** **2026-09-04:owner 撤掉 −1(→ 0,未投 +2),表示 release maintainer 在 change 上確認 ICLA 即合併;2026-09-05 我方回覆。** 未合併。往返見〈候選 3〉往返 5、6 |
 
 > 上表的日期欄一律等該項**實際完成後**才填。
 > 理由:本專案〈誠實準則〉第 1 條 ——「沒做到的不要寫」。
@@ -116,20 +116,20 @@
 
 ---
 
-## 已提交的 change(索引;本表更新於 2026-09-01,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
+## 已提交的 change(索引;本表更新於 2026-09-05,權威來源是 Gerrit —— `tools/reverify_upstream.sh` 第 7 項會印出現況)
 
 | Change | Repo | 提交日 | 內容一句話 | 狀態 |
 |---|---|---|---|---|
-| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS2)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**2026-08-31 15:55Z:release maintainer 指路 ICLA 直審通道(93905);2026-09-01 已直寄並在 change 回覆 —— 見〈候選 3〉往返 4。** **2026-09-02:CLA 核准;CI 首跑因 commit message 拼字 −1 → PS2(只改一字)Verified +1;等 owner 改掉複製到 PS2 的 CLA −1 —— 往返 5。** 死 include 仍在 master 第 13 行 |
+| [93469](https://gerrit.openbmc.org/c/openbmc/openbmc-test-automation/+/93469) | `openbmc-test-automation` | 2026-08-13 | `QEMU_CI` 清單刪除一行掛了四年的死 include | **Open**(PS2)。8/13 owner George Keishing −1(要求改指新 tag)→ 我方兩輪帶量測回覆(8/13、8/14)。**2026-08-31:owner +1、reviewer Sridevi Ramesh +1,owner 在技術 thread 回「sure got it..」(「刪行」被接受,不推 PS2);同日 owner 因 ICLA 未入列改投 −1(行政閘門,非技術)。** 我方同日回覆(ICLA 8/4 已寄、正在追件)並把技術 thread 標 Resolved。**2026-08-31 15:55Z:release maintainer 指路 ICLA 直審通道(93905);2026-09-01 已直寄並在 change 回覆 —— 見〈候選 3〉往返 4。** **2026-09-02:CLA 核准;CI 首跑因 commit message 拼字 −1 → PS2(只改一字)Verified +1;等 owner 改掉複製到 PS2 的 CLA −1 —— 往返 5。** **2026-09-04:owner 撤 −1(→ 0),條件「release maintainer 在 change 上確認 ICLA」;2026-09-05 我方回覆(ICLA 已在其 8/31 所指資料夾)—— 往返 6。** 死 include 仍在 master 第 13 行(2026-09-05 查;該檔最後變更 2025-04-01) |
 | [93470](https://gerrit.openbmc.org/c/openbmc/phosphor-pid-control/+/93470) | `phosphor-pid-control` | 2026-08-13 | `configure.md` 補七個未文件化欄位 | **Open**(PS4)。**2026-09-02 CI Verified +1**(帳號核准後首跑,Jenkins 147271);尚無人工回覆(reviewer Ed Tanous、Patrick Williams 在列)。**2026-08-30 查核:master 的 `configure.md` 七欄仍 0 次、釘點後 0 commit**,前提未變 |
 | [93397](https://gerrit.openbmc.org/c/openbmc/docs/+/93397) | `docs` | 2026-08-11 | `gerrit-setup.md` 三個缺口 | **Abandoned(我自己收回)**,完整過程與收回理由見文末 —— 帶 `private` 旗標,僅本人登入可見 |
 
-兩筆 open change 的 CI 皆為 `User not approved`:新貢獻者要先請管理員
-加入 CI 白名單,而白名單卡在 CLA 人工處理(2026-08-04 寄出,至
-2026-08-31 無回音 —— 見 LOG 2026-08-13「對外依賴要自帶 timer」與
-LOG 2026-08-31「沒放在每天會看的地方的 timer 不是 timer」;8/31 已
-forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
-3〉往返 4 與 LOG 2026-09-01,下次追蹤點 2026-09-08**)。
+兩筆 open change 的 CI 在 2026-08-13 ~ 09-02 間皆為 `User not approved`:
+新貢獻者要先進 CI 白名單,白名單又卡在 CLA 人工處理(見 LOG 2026-08-13
+「對外依賴要自帶 timer」、LOG 2026-08-31「沒放在每天會看的地方的 timer
+不是 timer」)。**2026-09-02 帳號核准後兩筆皆 Verified +1;93469 的 owner
+2026-09-04 撤掉 CLA −1、等 release maintainer 在 change 上確認 —— 見〈候選
+3〉往返 5、6 與 LOG 2026-09-05;下次追蹤點 2026-09-11。**
 
 93469 的完整往返紀錄在下方〈候選 3〉,93470 在〈候選 2〉——
 兩段保留在候選清單原位,因為本 repo 其他文件以「候選 N」為錨點引用它們。
@@ -309,6 +309,25 @@ forward 原信追件;**2026-09-01 起改走 maintainer 直審通道,見〈候選
   CI 綠,請 owner 重看。**現在的狀態描述:CLA 已核准、CI 綠(PS2)、一位
   reviewer +1、owner 的 CLA −1 待其本人改票、未合併。** 一週內不催。
   記錄:LOG 2026-09-02;`docs/verification-log.md`〈2026-09-02〉。
+- **往返 6(2026-09-04 → 2026-09-05):** 09-04 07:42Z owner 在 PS2 撤掉
+  Code-Review −1(→ 0,未投 +2),留言「Once Andrew see ICLA in place and
+  approves this.. I m good to merge it」,並把自己移出 attention set(剩
+  我方與 release maintainer)。Gerrit 的 submit requirements 面板:Verified
+  已滿足;Code-Review 需 +2;`Code-Review from owners` 需 `OWNERS` 檔
+  `owners:` 名單投票 —— 該名單只有 owner 一人,release maintainer 的票不能
+  替代 owner 的 +2。9/2 的核准 email 收件人不含 owner,Gerrit 上可見的只
+  有 CI bot 的 `User approved`;owner 要的是 ICLA 負責人在 change 上確認。
+  09-05 查證:owner 8/31 所指的 CLA Drive 資料夾 `Individuals` 內已有
+  `Chung-Wei-Lan.OpenBMC.ICLA.pdf`(上傳者為 release maintainer 的帳號,
+  日期 Sep 2)—— 第一份 owner 可自行查證的證據(根目錄照修改日期排看不
+  到,Drive 資料夾的修改日期不隨內容更新)。同日 08:35Z 我方在 93469 回覆
+  (messages=24,patchset 層級、不投票):ICLA 已在該資料夾、email 核准日、
+  CI 已跑,請 release maintainer 在 change 上確認;attention set = owner +
+  release maintainer。只回 Gerrit、不另寄 email:release maintainer 的
+  Gerrit 帳號信箱與 email 往來的是同一個收件匣。**現在的狀態描述:CLA 已
+  核准、CI 綠(PS2)、一位 reviewer +1、owner 已撤 −1 並表示確認後即合併、
+  未合併。** 下次追蹤點 2026-09-11,之前不催。記錄:LOG 2026-09-05;
+  `docs/verification-log.md`〈2026-09-05〉。
 
 ### 候選 4:`QEMU_CI` 補一個 ThermalSubsystem/Sensors 案例(2026-08-12 起草)
 
